@@ -1,0 +1,96 @@
+import { Account, Session, NextAuthOptions } from "next-auth";
+import { JWT } from "next-auth/jwt";
+import GoogleProvider from "next-auth/providers/google";
+
+/**
+ * Refreshes the access token using the refresh token
+ */
+async function refreshAccessToken(token: JWT) {
+  try {
+    if (!token.refreshToken) {
+      throw new Error("No refresh token available");
+    }
+
+    const url = "https://oauth2.googleapis.com/token";
+
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      method: "POST",
+      body: new URLSearchParams({
+        client_id: process.env.GOOGLE_CLIENT_ID!,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET!,
+        grant_type: "refresh_token",
+        refresh_token: token.refreshToken as string,
+      }),
+    });
+
+    const refreshedTokens = await response.json();
+
+    if (!response.ok) {
+      throw refreshedTokens;
+    }
+
+    return {
+      ...token,
+      accessToken: refreshedTokens.access_token,
+      idToken: refreshedTokens.id_token || token.idToken,
+      accessTokenExpires: Date.now() + refreshedTokens.expires_in * 1000,
+      refreshToken: refreshedTokens.refresh_token ?? token.refreshToken,
+    };
+  } catch {
+    return {
+      ...token,
+      error: "RefreshAccessTokenError",
+    };
+  }
+}
+
+export const authOptions: NextAuthOptions = {
+  providers: [
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
+      authorization: {
+        params: {
+          prompt: "consent",
+          access_type: "offline",
+          scope: "openid profile email",
+        },
+      },
+    }),
+  ],
+  session: {
+    strategy: "jwt",
+  },
+  callbacks: {
+    async jwt({ token, account }: { token: JWT; account: Account | null }) {
+      if (account) {
+        token.idToken = account.id_token;
+        token.accessToken = account.access_token;
+        token.refreshToken = account.refresh_token;
+        token.accessTokenExpires = account.expires_at
+          ? account.expires_at * 1000
+          : Date.now() + 60 * 60 * 1000;
+      }
+
+      // Return previous token if the access token has not expired yet
+      if (
+        token.accessTokenExpires &&
+        Date.now() < (token.accessTokenExpires as number)
+      ) {
+        return token;
+      }
+
+      // Access token has expired, try to update it
+      return refreshAccessToken(token);
+    },
+    async session({ session, token }: { session: Session; token: JWT }) {
+      session.idToken = token.idToken;
+      session.accessToken = token.accessToken;
+      session.error = token.error;
+      return session;
+    },
+  },
+};
