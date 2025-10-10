@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { TeeEndpoint } from "@/types/tee";
 
 export const TEE_BASE = "https://tee.express.magiclabs.com";
