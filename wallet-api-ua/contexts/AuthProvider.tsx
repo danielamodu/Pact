@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import type { Session } from "next-auth";
-import { walletService } from "@/lib/wallet";
+import { getOrCreateWallet } from "@/lib/express-proxy";
 
 interface AuthContextType {
   publicAddress: string | null;
@@ -67,7 +67,8 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
 
     try {
       setIsLoading(true);
-      const address = await walletService.getOrCreateWallet("ETH");
+      const data = await getOrCreateWallet("ETH");
+      const address = data.public_address;
       setWallet({ address });
       return address;
     } catch (error: unknown) {

@@ -8,7 +8,7 @@ A demo showing how to implement Magic's TEE (Trusted Execution Environment) API 
 - **Universal Account Integration** - Adding Universal Accounts on top of Magic's EOA
 - **OAuth-based Authentication** - Using Google ID tokens for wallet derivation
 - **Unified Balance** - Unified balance tracking across multiple chains and assets
-- **Mint a cross-chain NFT** - Mint a NFT on Avalanche even if you don't hold any funds on Avalanche
+- **Cross-Chain NFT Minting** - Mint an NFT on Avalanche using funds from any supported chain—no manual bridging required
 
 > Docs:
 >
@@ -44,10 +44,17 @@ Universal Accounts provide **chain abstraction** by creating a single smart acco
 User has $100 USDC on Solana
 User wants to mint NFT on Avalanche (costs $5)
 → Universal Account automatically:
-  1. Source the required funds from wherever they are
-  2. Executes the mint transaction
+  1. Sources the required funds from Solana
+  2. Bridges them to Avalanche
+  3. Executes the mint transaction
 → User sees it as one simple action
 ```
+
+### Supported Assets & Chains
+
+Universal Accounts work with [**primary assets**](https://developers.particle.network/universal-accounts/cha/chains#primary-assets) across [**15+ chains**](https://developers.particle.network/universal-accounts/cha/chains).
+
+You can deposit any primary asset on any supported chain, and it will be available for use across all chains through your Universal Account.
 
 ## Prerequisites
 
@@ -137,10 +144,10 @@ Returns EOA public address
 - **No Private Key Exposure**: The private key never leaves Magic's TEE infrastructure
 
 **Code Flow:**
-1. `contexts/AuthProvider.tsx` - Manages authentication state and triggers wallet creation
-2. `lib/express-proxy.ts` - Client-side functions that call your API routes
-3. `app/api/tee/wallet/route.ts` - Validates session and forwards to Magic
-4. `lib/express.ts` - Server-side client that adds Magic API credentials
+1. `contexts/AuthProvider.tsx` - Manages authentication and calls `getOrCreateWallet()` from express-proxy
+2. `lib/express-proxy.ts` - Client-side proxy functions that call your API routes
+3. `app/api/tee/wallet/route.ts` - Server-side route that validates session and forwards to Magic
+4. `lib/express.ts` - Server-side client that adds Magic API credentials and makes TEE requests
 
 ### 2. Universal Account Integration
 
@@ -163,18 +170,48 @@ const ua = new UniversalAccount({
 
 **Code Location:** `app/wallet/page.tsx` - Initializes UA when Magic wallet address is available
 
-#### Account Hierarchy
-```
-Google Account (OAuth)
-    ↓
-Magic EOA (0x123...)           ← Private key in TEE
-    ↓ (owner)
-Universal Account
-    ├── EVM Smart Account (0xabc...)
-    └── Solana Smart Account (xyz...)
-```
+### 3. Cross-Chain NFT Minting Demo
 
-The Magic EOA controls the Universal Account smart contracts through signature-based authorization.
+This demo showcases the power of Universal Accounts through a practical example: minting an NFT on Avalanche using funds from any chain.
+
+#### How to Use the Demo
+
+1. **Deposit Funds**: Send any [primary asset](https://developers.particle.network/universal-accounts/cha/chains#primary-assets) (USDC, USDT, ETH, etc.) to your Universal Account address on any [supported chain](https://developers.particle.network/universal-accounts/cha/chains)
+   - Your Universal Addresses are displayed in the wallet dashboard
+   - You can deposit on Ethereum, Base, Polygon, Solana, or any other supported chain
+
+2. **View Unified Balance**: Your dashboard shows the total USD value of all assets across all chains
+
+3. **Mint NFT**: Click "Mint Cross-Chain NFT" to mint an NFT on Avalanche
+   - The system automatically sources funds from wherever you have them
+   - Bridges the required amount to Avalanche
+   - Executes the mint transaction
+   - All in one seamless operation!
+
+#### Transaction Flow
+
+```typescript
+// 1. Create a universal transaction targeting Avalanche
+const transaction = await universalAccount.createUniversalTransaction({
+  chainId: CHAIN_ID.AVALANCHE_MAINNET,
+  expectTokens: [],  // Let UA auto-source funds
+  transactions: [
+    {
+      to: NFT_CONTRACT_ADDRESS,
+      data: contractInterface.encodeFunctionData("mint"),
+    },
+  ],
+});
+
+// 2. Sign with Magic EOA (via personal_sign)
+const signature = await ethereumService.personalSign(transaction.rootHash);
+
+// 3. Send transaction - UA handles cross-chain bridging automatically
+const result = await universalAccount.sendTransaction(
+  transaction,
+  signature.signature
+);
+```
 
 ## Security Model
 
