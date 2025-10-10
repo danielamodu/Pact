@@ -10,14 +10,15 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
+import type { Session } from "next-auth";
 import { walletService } from "@/lib/wallet";
 
 interface AuthContextType {
   publicAddress: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  userInfo: any | null;
-  session: any | null;
+  userInfo: Session["user"] | null;
+  session: Session | null;
   handleLogout: () => Promise<void>;
 }
 
@@ -29,7 +30,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   });
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [userInfo, setUserInfo] = useState<any | null>(null);
+  const [userInfo, setUserInfo] = useState<Session["user"] | null>(null);
 
   const router = useRouter();
   const { data: session, status } = useSession();
@@ -69,9 +70,9 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       const address = await walletService.getOrCreateWallet("ETH");
       setWallet({ address });
       return address;
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Only sign out if it's an auth-related error
-      if (error.requiresReauth) {
+      if (error && typeof error === "object" && "requiresReauth" in error) {
         console.log("Auth error detected, signing out...");
         await signOut();
       }

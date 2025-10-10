@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Magic API Wallet Demo",
+  title: "Magic API Wallet + Particle Universal Accounts Demo",
   description: "Secure TEE wallet with Universal Account integration",
 };
 

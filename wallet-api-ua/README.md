@@ -1,27 +1,53 @@
-# Magic API Wallet Demo
+# Magic API Wallet + Particle Universal Accounts Demo
 
-A simplified demo of Magic's API Wallet with OAuth authentication, TEE (Trusted Execution Environment) wallet management, and Particle Network Universal Account integration.
+A demo showing how to implement Magic's TEE (Trusted Execution Environment) API Wallet with OAuth authentication, and enhance it with Particle Network's Universal Account for chain abstraction and cross-chain capabilities.
 
-## Features
+## What This Demo Shows
 
-- ✅ **Google OAuth Authentication** via NextAuth.js
-- ✅ **Server-side Wallet Management** using Magic's TEE Express API
-- ✅ **Universal Account Integration** with Particle Network
-- ✅ **EVM Signing Methods**:
-  - Personal Sign
-  - Sign Typed Data (V1, V3, V4)
-  - Sign Transaction
-- ✅ **Cross-chain Balance Tracking** via Universal Account
-- ✅ **Secure Key Management** - Private keys never leave Magic's TEE
+- **Magic Wallet API Implementation** - Server-side EOA wallet creation and management
+- **Universal Account Integration** - Adding Universal Accounts on top of Magic's EOA
+- **OAuth-based Authentication** - Using Google ID tokens for wallet derivation
+- **Unified Balance** - Unified balance tracking across multiple chains and assets
+- **Mint a cross-chain NFT** - Mint a NFT on Avalanche even if you don't hold any funds on Avalanche
 
-## Architecture
+> Docs:
+>
+> [Magic TEE Express API Documentation](https://docs.magic.link/api-wallets/introduction)
+>
+> [Particle Network Universal Account](https://developers.particle.network/universal-accounts/cha/overview)
 
-This demo implements a **server-side wallet solution** where:
-1. Users authenticate via Google OAuth
-2. Magic's TEE creates/manages wallets server-side
-3. All signing operations happen through secure API calls
-4. Private keys never leave Magic's infrastructure
-5. Particle Network's Universal Account provides cross-chain features
+## Key Concepts
+
+### Magic Wallet API (TEE Express)
+Magic's TEE API creates and manages **EOA (Externally Owned Account)** wallets server-side. The private key is derived from the user's OAuth ID token and stored securely in Magic's Trusted Execution Environment. Your application never has access to the private key.
+
+### Universal Accounts: One Account, One Balance, Any Chain
+
+**The Problem Universal Accounts Solve:**
+Traditional blockchain wallets require users to manage separate addresses, balances, and gas tokens on each chain. If for example, you want to interact with a dApp on Avalanche but only have funds on Solana, you need to manually bridge assets and acquire AVAX for gas—a complex, multi-step process.
+
+**How Universal Accounts Work:**
+Universal Accounts provide **chain abstraction** by creating a single smart account that:
+
+1. **Unified Balance Across Chains** - Your assets on Ethereum, Base, Solana, Avalanche, and [15+ other chains](https://developers.particle.network/universal-accounts/cha/chains) are treated as one collective balance
+2. **Automatic Cross-Chain Operations** - When you submit a transaction on any chain, the system automatically bridges funds from wherever you have them to fulfill your intent
+3. **Gas Abstraction** - Pay gas fees using any [primary token](https://developers.particle.network/universal-accounts/cha/chains#primary-assets) you hold, not just the native chain token (e.g., use USDC to pay for Ethereum gas)
+4. **Single Account** - One Universal Account that works across all supported EVM chains + Solana
+
+**In This Demo:**
+- The **Magic EOA** acts as the "owner" (signer) of the Universal Account
+- The **Universal Account** is a smart contract wallet (ERC-4337) deployed across multiple chains
+- Users interact with one account, but can access funds and perform operations on any supported chain seamlessly
+
+**Example Flow:**
+```
+User has $100 USDC on Solana
+User wants to mint NFT on Avalanche (costs $5)
+→ Universal Account automatically:
+  1. Source the required funds from wherever they are
+  2. Executes the mint transaction
+→ User sees it as one simple action
+```
 
 ## Prerequisites
 
@@ -85,82 +111,138 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-## Project Structure
-
-```
-wallet-api-ua/
-├── app/
-│   ├── api/
-│   │   ├── auth/[...nextauth]/    # NextAuth configuration
-│   │   └── tee/                   # TEE API proxy routes
-│   ├── wallet/                    # Wallet page
-│   ├── layout.tsx                 # Root layout with providers
-│   └── page.tsx                   # Login page
-├── components/
-│   ├── AuthButton.tsx             # Google sign-in button
-│   ├── Button.tsx                 # Reusable button component
-│   ├── EVMSignMethods.tsx         # EVM signing interface
-│   └── UserInfo.tsx               # User profile & wallet info
-├── contexts/
-│   ├── SessionProvider.tsx        # NextAuth session provider
-│   └── WalletContext.tsx          # Wallet state management
-├── lib/
-│   ├── express.ts                 # TEE API client (server-side)
-│   ├── express-proxy.ts           # TEE API proxy (client-side)
-│   ├── ethereum.ts                # Ethereum signing service
-│   ├── wallet.ts                  # Wallet service
-│   └── utils.ts                   # Utility functions
-├── types/
-│   ├── next-auth.d.ts            # NextAuth type extensions
-│   ├── particle.ts               # Particle Network types
-│   └── tee.ts                    # TEE API types
-└── constants/
-    └── sign-payloads.ts          # Sample signing payloads
-```
-
 ## How It Works
 
-### Authentication Flow
-1. User clicks "Connect with Google"
-2. NextAuth handles OAuth flow
-3. ID token stored in session
-4. Session validated on protected routes
+### 1. Magic Wallet API Implementation
 
-### Wallet Creation
-1. After auth, context calls `/api/tee/wallet`
-2. API route validates session
-3. Forwards request to Magic TEE API with ID token
-4. TEE creates/retrieves wallet
-5. Public address returned to client
+#### Authentication & Wallet Creation
+```
+User Login (Google OAuth)
+    ↓
+NextAuth generates ID token
+    ↓
+Client calls /api/tee/wallet
+    ↓
+Server forwards ID token to Magic TEE API
+    ↓
+Magic derives private key from ID token
+    ↓
+Returns EOA public address
+```
 
-### Universal Account
-1. Initialized with TEE wallet address as owner
-2. Fetches smart account addresses (EVM + Solana)
-3. Aggregates balance across chains
-4. Enables cross-chain operations
+**Key Implementation Details:**
 
-### Signing Operations
-1. User selects signing method
-2. Client prepares payload
-3. Calls appropriate `/api/tee/wallet/sign/*` endpoint
-4. API route validates session and forwards to TEE
-5. TEE signs with private key
-6. Signature returned to client
+- **ID Token as User Identifier**: Magic uses the Google ID token to deterministically derive the same wallet for a user across sessions
+- **Server-side Proxy**: All Magic API calls go through Next.js API routes (`/app/api/tee/*`) to keep the Magic API key secure
+- **No Private Key Exposure**: The private key never leaves Magic's TEE infrastructure
 
-## Security
+**Code Flow:**
+1. `contexts/AuthProvider.tsx` - Manages authentication state and triggers wallet creation
+2. `lib/express-proxy.ts` - Client-side functions that call your API routes
+3. `app/api/tee/wallet/route.ts` - Validates session and forwards to Magic
+4. `lib/express.ts` - Server-side client that adds Magic API credentials
 
-- ✅ Private keys stored in Magic's TEE
-- ✅ All signing happens server-side
-- ✅ JWT-based authentication
-- ✅ Automatic token refresh
-- ✅ Session validation on all API routes
+### 2. Universal Account Integration
+
+#### Adding Universal Account Layer
+Once the Magic EOA is created, the Universal Account SDK wraps it:
+
+```javascript
+const ua = new UniversalAccount({
+  projectId: PARTICLE_PROJECT_ID,
+  projectClientKey: PARTICLE_CLIENT_KEY,
+  projectAppUuid: PARTICLE_APP_ID,
+  ownerAddress: magicEOAAddress,  // Magic wallet as owner
+});
+```
+
+**What This Provides:**
+- **Universal Account Address** - Contract wallet on EVM chains
+- **Unified Balance** - Aggregated balance across all chains in USD
+- **Cross-chain Operations** - Future: swaps, bridges, gasless transactions
+
+**Code Location:** `app/wallet/page.tsx` - Initializes UA when Magic wallet address is available
+
+#### Account Hierarchy
+```
+Google Account (OAuth)
+    ↓
+Magic EOA (0x123...)           ← Private key in TEE
+    ↓ (owner)
+Universal Account
+    ├── EVM Smart Account (0xabc...)
+    └── Solana Smart Account (xyz...)
+```
+
+The Magic EOA controls the Universal Account smart contracts through signature-based authorization.
+
+## Security Model
+
+### Magic TEE Security
+- **Private keys never exposed** - Keys are generated and stored exclusively in Magic's Trusted Execution Environment
+- **Deterministic derivation** - Same OAuth ID token always produces the same wallet
+- **Server-side signing** - All cryptographic operations happen in the TEE, not in your application
+- **API key protection** - Magic API credentials only used in Next.js API routes (server-side)
+
+### Session Security
+- **JWT-based sessions** - NextAuth manages encrypted session tokens
+- **Automatic token refresh** - Google OAuth tokens refreshed before expiration
+- **Session validation** - All API routes verify authentication before forwarding to Magic
+- **Re-auth on error** - Users are signed out if token refresh fails
+
+## API Reference
+
+### Magic TEE Endpoints (via proxy)
+
+**Create/Get Wallet**
+```typescript
+POST /api/tee/wallet
+Body: { chain: "ETH" }
+Response: { public_address: "0x..." }
+```
+
+**Sign Message**
+```typescript
+POST /api/tee/wallet/sign/message
+Body: { message_base64: "...", chain: "ETH" }
+Response: { signature: "0x..." }
+```
+
+**Sign Data (Typed Data / Transaction)**
+```typescript
+POST /api/tee/wallet/sign/data
+Body: { raw_data_hash: "0x...", chain: "ETH" }
+Response: { r: "0x...", s: "0x...", v: 27 }
+```
+
+### Universal Account SDK
+
+**Initialize**
+```typescript
+const ua = new UniversalAccount({
+  projectId: string,
+  projectClientKey: string,
+  projectAppUuid: string,
+  ownerAddress: string,  // Magic EOA address
+});
+```
+
+**Get Account Info**
+```typescript
+const options = await ua.getSmartAccountOptions();
+// Returns: { ownerAddress, smartAccountAddress, solanaSmartAccountAddress }
+```
+
+**Get Unified Balance**
+```typescript
+const assets = await ua.getPrimaryAssets();
+// Returns: { totalAmountInUSD, assets: [...] }
+```
 
 ## Learn More
 
-- [Magic Documentation](https://magic.link/docs)
-- [Particle Network Docs](https://docs.particle.network/)
-- [NextAuth.js Documentation](https://next-auth.js.org/)
-- [Next.js Documentation](https://nextjs.org/docs)
+- [Magic TEE Express API Documentation](https://docs.magic.link/api-wallets/introduction)
+- [Particle Network Universal Account](https://developers.particle.network/universal-accounts/cha/overview)
 
 ## License
 
