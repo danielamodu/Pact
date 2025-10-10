@@ -98,7 +98,7 @@ export function FooterLinks() {
 
         {/* GitHub Repo */}
         <a
-          href="https://github.com"
+          href="https://github.com/soos3d/universal-accounts-magic-wallet-api"
           target="_blank"
           rel="noopener noreferrer"
           className="group flex items-center gap-2.5 p-3 bg-gradient-to-br from-gray-50 to-slate-50 hover:from-gray-100 hover:to-slate-100 rounded-lg border border-gray-200 transition-all duration-200 hover:shadow-sm"
