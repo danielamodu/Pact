@@ -121,10 +121,10 @@ export default function SettingsPage() {
                 <button
                   onClick={handleLogout}
                   id="logout-btn"
-                  className="w-full flex items-center justify-center gap-3 border border-[#FF8C69]/30 text-[#FF8C69] font-mono text-xs uppercase tracking-[0.2em] py-5 hover:bg-[#FF8C69]/5 transition-all rounded-sm cursor-pointer"
+                  className="w-full flex items-center justify-center gap-3 bg-forest text-white font-mono text-xs font-bold uppercase tracking-[0.2em] py-5 hover:bg-coral hover:text-[#1A3C2B] transition-colors duration-300 rounded-sm cursor-pointer group"
                 >
-                  <iconify-icon icon="lucide:log-out" className="text-lg"></iconify-icon>
-                  Disconnect Session
+                  <iconify-icon icon="lucide:log-out" className="text-lg transition-transform duration-300 group-hover:-translate-x-1"></iconify-icon>
+                  <span>Disconnect Session</span>
                 </button>
                 <p className="mt-4 text-center font-mono text-[9px] text-[#1A3C2B]/40 uppercase tracking-widest leading-relaxed">
                   Logging out will clear your local session keys.
