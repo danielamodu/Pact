@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 
 interface DepositModalProps {
   isOpen: boolean;
@@ -8,6 +9,11 @@ interface DepositModalProps {
 
 export function DepositModal({ isOpen, onClose, address }: DepositModalProps) {
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (copied) {
@@ -16,16 +22,22 @@ export function DepositModal({ isOpen, onClose, address }: DepositModalProps) {
     }
   }, [copied]);
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const handleCopy = () => {
     navigator.clipboard.writeText(address);
     setCopied(true);
   };
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1A3C2B]/40 backdrop-blur-sm">
-      <div className="bg-white max-w-md w-full p-8 shadow-2xl relative">
+  const modalContent = (
+    <div 
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#1A3C2B]/40 backdrop-blur-sm cursor-pointer"
+      onClick={onClose}
+    >
+      <div 
+        className="bg-white max-w-md w-full p-8 shadow-2xl relative cursor-default"
+        onClick={(e) => e.stopPropagation()}
+      >
         <button 
           onClick={onClose}
           className="absolute top-4 right-4 text-[#1A3C2B]/40 hover:text-[#1A3C2B] transition-colors"
@@ -73,4 +85,6 @@ export function DepositModal({ isOpen, onClose, address }: DepositModalProps) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

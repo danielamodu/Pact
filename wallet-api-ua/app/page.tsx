@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/contexts/AuthProvider";
 import Link from "next/link";
+import { PactLogo } from "@/components/PactLogo";
 
 export default function Home() {
   const router = useRouter();
@@ -62,10 +63,7 @@ export default function Home() {
           <header className="w-full pt-8 pb-4 relative z-50">
             <div className="w-full px-8 md:px-14 flex justify-between items-center">
               <div className="flex items-center gap-4 group cursor-pointer">
-                <div className="w-12 h-12 bg-white flex items-center justify-center transition-transform group-hover:rotate-12" style={{ borderRadius: 9999 }}>
-                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "#1A3C2B", fontSize: 22 }}>P</span>
-                </div>
-                <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "white", fontSize: 22, letterSpacing: "-0.02em" }}>Pact</span>
+                <PactLogo inverted className="w-12 h-12 shadow-sm transition-transform group-hover:scale-105" />
               </div>
               <div className="flex items-center gap-8">
                 <div className="hidden md:flex items-center gap-2" style={{ color: "rgba(255,255,255,0.8)", fontFamily: "'JetBrains Mono', monospace", fontSize: 12 }}>
@@ -293,10 +291,8 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-px" style={{ background: "rgba(26,60,43,0.1)", border: "1px solid rgba(26,60,43,0.1)", overflow: "hidden" }}>
             <div style={{ background: "#F7F7F5", padding: 40 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 32 }}>
-                <div style={{ width: 32, height: 32, background: "#1A3C2B", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                  <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, color: "white", fontSize: 12 }}>P</span>
-                </div>
-                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.2em", fontWeight: 700, textTransform: "uppercase", color: "#1A3C2B" }}>Pact Protocol</span>
+                <PactLogo className="w-10 h-10 shadow-sm" />
+                <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.2em", fontWeight: 700, textTransform: "uppercase", color: "#1A3C2B" }}>Protocol</span>
               </div>
               <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(26,60,43,0.4)", textTransform: "uppercase", lineHeight: 1.8 }}>Autonomous Recurring Payments Infrastructure.</p>
             </div>
