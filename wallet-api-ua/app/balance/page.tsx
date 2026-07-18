@@ -62,7 +62,7 @@ export default function BalanceRevealPage() {
             {/* Arbitrum Icon Node */}
             <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 z-20">
               <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#28A0F0]"><path fill="currentColor" d="M50 20L10 90h22l18-31l18 31h22L50 20z" /><path fill="currentColor" d="M50 48L38 69h24L50 48z" /></svg>
+                <svg viewBox="0 0 400 400" className="w-8 h-8" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="290,44 380,200 290,356 110,356 20,200 110,44" fill="#0A1C3A" stroke="#A3D4F5" strokeWidth="24" strokeLinejoin="round"/><polygon points="120,310 180,120 220,120 160,310" fill="#FFFFFF"/><polygon points="180,310 240,120 280,120 220,310" fill="#FFFFFF"/><polygon points="280,120 340,310 300,310 250,160" fill="#28A0F0"/></svg>
               </div>
               <div className="font-mono text-[9px] text-center mt-2 uppercase">Arbitrum</div>
             </div>
@@ -70,7 +70,7 @@ export default function BalanceRevealPage() {
             {/* Base Icon Node */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 z-20">
               <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <svg viewBox="0 0 100 100" className="w-8 h-8"><circle cx="50" cy="50" r="50" fill="#0052FF" /><circle cx="50" cy="50" r="25" fill="none" stroke="white" strokeWidth="12" /></svg>
+                <svg viewBox="0 0 400 400" className="w-8 h-8 text-[#0052FF]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="400" rx="80" fill="currentColor"/></svg>
               </div>
               <div className="font-mono text-[9px] text-center mt-2 uppercase">Base</div>
             </div>
@@ -101,7 +101,7 @@ export default function BalanceRevealPage() {
           {/* Network breakdowns */}
           <div className="mt-16 space-y-4 max-w-xl mx-auto mb-16">
             <div className="flex items-center gap-6 p-4 border border-[#3A3A38]/10 bg-white/40">
-              <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#28A0F0]"><path fill="currentColor" d="M50 20L10 90h22l18-31l18 31h22L50 20z" /><path fill="currentColor" d="M50 48L38 69h24L50 48z" /></svg>
+              <svg viewBox="0 0 400 400" className="w-8 h-8" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="290,44 380,200 290,356 110,356 20,200 110,44" fill="#0A1C3A" stroke="#A3D4F5" strokeWidth="24" strokeLinejoin="round"/><polygon points="120,310 180,120 220,120 160,310" fill="#FFFFFF"/><polygon points="180,310 240,120 280,120 220,310" fill="#FFFFFF"/><polygon points="280,120 340,310 300,310 250,160" fill="#28A0F0"/></svg>
               <div className="flex-1">
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="font-mono text-[10px] uppercase font-bold">Arbitrum One</span>
@@ -114,7 +114,7 @@ export default function BalanceRevealPage() {
             </div>
 
             <div className="flex items-center gap-6 p-4 border border-[#3A3A38]/10 bg-white/40">
-              <svg viewBox="0 0 100 100" className="w-8 h-8"><circle cx="50" cy="50" r="50" fill="#0052FF" /><circle cx="50" cy="50" r="25" fill="none" stroke="white" strokeWidth="12" /></svg>
+              <svg viewBox="0 0 400 400" className="w-8 h-8 text-[#0052FF]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="400" rx="80" fill="currentColor"/></svg>
               <div className="flex-1">
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="font-mono text-[10px] uppercase font-bold">Base Network</span>

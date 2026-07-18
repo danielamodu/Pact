@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@/contexts/AuthProvider";
 import { useState } from "react";
+import { useAuth } from "@/contexts/AuthProvider";
+import { PactLogo } from "@/components/PactLogo";
+import { DepositModal } from "@/components/DepositModal";
 
 interface NavigationBarProps {
   mode?: "landing" | "app";
@@ -11,18 +13,10 @@ interface NavigationBarProps {
 
 export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) {
   const { publicAddress, handleLogout } = useAuth();
-  const [copied, setCopied] = useState(false);
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
 
   const formatAddress = (addr: string) => {
     return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
-  const copyAddress = () => {
-    if (publicAddress) {
-      navigator.clipboard.writeText(publicAddress);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
   };
 
   if (mode === "landing") {
@@ -30,10 +24,7 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
       <header className="w-full pt-8 pb-4 relative z-50">
         <div className="max-w-7xl mx-auto px-8 flex justify-between items-center">
           <Link href="/" className="flex items-center gap-4 group cursor-pointer">
-            <div className="w-12 h-12 bg-white flex items-center justify-center jeton-pill transition-transform group-hover:rotate-12 shadow-sm">
-              <span className="font-bold text-[#1A3C2B] text-2xl font-space">P</span>
-            </div>
-            <span className="font-bold text-white tracking-tight text-2xl font-space">Pact</span>
+            <PactLogo inverted className="w-12 h-12 shadow-sm transition-transform group-hover:scale-105" />
           </Link>
           <div className="flex items-center gap-8">
             <div className="hidden md:flex items-center gap-2 text-white/80">
@@ -57,10 +48,7 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
     <header className="fixed top-0 left-0 w-full h-20 bg-paper/80 backdrop-blur-md border-b border-[#3A3A38]/10 z-50 flex items-center justify-between px-8">
       <div className="max-w-7xl mx-auto w-full flex justify-between items-center">
         <Link href="/" className="flex items-center gap-4 group cursor-pointer">
-          <div className="w-10 h-10 bg-forest flex items-center justify-center jeton-pill transition-transform group-hover:rotate-12 shadow-sm">
-            <span className="font-bold text-white text-xl font-space">P</span>
-          </div>
-          <span className="font-bold text-forest tracking-tight text-xl font-space">Pact</span>
+          <PactLogo className="w-10 h-10 shadow-sm transition-transform group-hover:scale-105" />
         </Link>
 
         <nav className="flex items-center gap-6">
@@ -101,13 +89,15 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
         <div className="flex items-center gap-4">
           {publicAddress ? (
             <div className="flex items-center gap-3">
-              <button
-                onClick={copyAddress}
-                title="Copy Address to Deposit"
-                className="font-mono text-xs bg-forest/5 text-forest px-4 py-2 border border-forest/10 jeton-pill font-bold hover:bg-forest/10 transition-colors flex items-center gap-2"
+              <button 
+                onClick={() => setIsDepositOpen(true)}
+                title="Deposit Funds"
+                className="font-mono text-xs bg-forest/5 text-forest px-4 py-2 border border-forest/10 jeton-pill font-bold hover:bg-forest/10 transition-colors cursor-pointer flex items-center gap-2"
               >
-                {copied ? "Copied!" : formatAddress(publicAddress)}
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                {formatAddress(publicAddress)}
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M12 5v14M5 12h14" strokeLinecap="square"/>
+                </svg>
               </button>
               <button
                 onClick={handleLogout}
@@ -121,11 +111,18 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
               href="/login"
               className="bg-forest text-white px-6 py-2.5 jeton-pill font-bold text-xs hover:scale-105 transition-all shadow-md font-space"
             >
-              Connect Wallet
+              Sign In
             </Link>
           )}
         </div>
       </div>
+      {publicAddress && (
+        <DepositModal 
+          isOpen={isDepositOpen} 
+          onClose={() => setIsDepositOpen(false)} 
+          address={publicAddress} 
+        />
+      )}
     </header>
   );
 }

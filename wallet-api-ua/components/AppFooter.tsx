@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PactLogo } from "@/components/PactLogo";
 
 export function AppFooter() {
   return (
@@ -7,10 +8,7 @@ export function AppFooter() {
         <div className="grid md:grid-cols-5 gap-20 mb-32">
           <div className="col-span-2">
             <div className="flex items-center gap-4 mb-12">
-              <div className="w-12 h-12 bg-forest flex items-center justify-center jeton-pill">
-                <span className="font-bold text-white text-2xl font-space">P</span>
-              </div>
-              <span className="font-bold text-forest tracking-tight text-3xl font-space">Pact</span>
+              <PactLogo className="w-12 h-12 shadow-sm" />
             </div>
             <p className="text-forest/50 text-xl max-w-sm mb-12 font-medium leading-relaxed font-sans">
               Autonomous infrastructure for recurring value exchange on-chain.
