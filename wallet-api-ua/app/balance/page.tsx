@@ -59,24 +59,8 @@ export default function BalanceRevealPage() {
 
           {/* Core Balance Wheel Visualizer */}
           <div className="relative w-80 h-80 mx-auto mb-20 flex items-center justify-center">
-            {/* Ethereum Icon Node */}
-            <div className="absolute top-0 left-0">
-              <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <iconify-icon icon="simple-icons:ethereum" className="text-3xl text-[#627EEA]"></iconify-icon>
-              </div>
-              <div className="font-mono text-[9px] text-center mt-2 uppercase">Ethereum</div>
-            </div>
-
-            {/* Polygon Icon Node */}
-            <div className="absolute top-0 right-0">
-              <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <iconify-icon icon="simple-icons:polygon" className="text-3xl text-[#8247E5]"></iconify-icon>
-              </div>
-              <div className="font-mono text-[9px] text-center mt-2 uppercase">Polygon</div>
-            </div>
-
             {/* Arbitrum Icon Node */}
-            <div className="absolute bottom-0 left-0">
+            <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 z-20">
               <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
                 <iconify-icon icon="simple-icons:arbitrum" className="text-3xl text-[#28A0F0]"></iconify-icon>
               </div>
@@ -84,18 +68,16 @@ export default function BalanceRevealPage() {
             </div>
 
             {/* Base Icon Node */}
-            <div className="absolute bottom-0 right-0">
+            <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 z-20">
               <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <iconify-icon icon="simple-icons:base" className="text-3xl text-[#0052FF]"></iconify-icon>
+                <img src="https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/Base_Symbol_Blue.svg" alt="Base" className="w-8 h-8" />
               </div>
               <div className="font-mono text-[9px] text-center mt-2 uppercase">Base</div>
             </div>
 
             {/* Connecting lines */}
             <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-[1px] h-1/2 bg-gradient-to-t from-[#1A3C2B]/40 to-transparent absolute top-0 left-1/2 -translate-x-1/2"></div>
               <div className="w-1/2 h-[1px] bg-gradient-to-l from-[#1A3C2B]/40 to-transparent absolute top-1/2 left-0 -translate-y-1/2"></div>
-              <div className="w-[1px] h-1/2 bg-gradient-to-b from-[#1A3C2B]/40 to-transparent absolute bottom-0 left-1/2 -translate-x-1/2"></div>
               <div className="w-1/2 h-[1px] bg-gradient-to-r from-[#1A3C2B]/40 to-transparent absolute top-1/2 right-0 -translate-y-1/2"></div>
             </div>
 
@@ -145,67 +127,7 @@ export default function BalanceRevealPage() {
             </div>
           </div>
 
-          {/* Subscription details confirmation box */}
-          <div className="max-w-[640px] mx-auto mb-16">
-            <div className="relative border border-[#3A3A38]/20 bg-white/40 p-10">
-              <div className="corner-marker corner-tl"></div>
-              <div className="corner-marker corner-tr"></div>
-              <div className="corner-marker corner-bl"></div>
-              <div className="corner-marker corner-br"></div>
 
-              <div className="flex justify-between items-center mb-10 pb-6 border-b border-[#3A3A38]/10">
-                <h3 className="font-space text-2xl font-bold">Subscription Ready</h3>
-                <div className={`inline-flex items-center gap-2 border px-3 py-1 text-[9px] font-mono font-bold uppercase tracking-widest ${
-                  (parseFloat(totalETH) > 0.0001 || parseFloat(totalUSDC) > 0) ? "border-[#9EFFBF] bg-[#9EFFBF]/10 text-[#1A3C2B]" : "border-coral bg-coral/10 text-coral"
-                }`}>
-                  <iconify-icon icon={(parseFloat(totalETH) > 0.0001 || parseFloat(totalUSDC) > 0) ? "lucide:check-circle" : "lucide:alert-triangle"}></iconify-icon>
-                  {(parseFloat(totalETH) > 0.0001 || parseFloat(totalUSDC) > 0) ? "Sufficient Funds" : "Insufficient Funds"}
-                </div>
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-10">
-                <div className="space-y-6">
-                  <div>
-                    <span className="font-mono text-[9px] uppercase opacity-40 block mb-1">Merchant Entity</span>
-                    <span className="font-space text-lg font-bold">Lume Finance</span>
-                  </div>
-                  <div>
-                    <span className="font-mono text-[9px] uppercase opacity-40 block mb-1">Billing Frequency</span>
-                    <span className="font-space text-lg font-bold">Monthly Cycle</span>
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div>
-                    <span className="font-mono text-[9px] uppercase opacity-40 block mb-1">Subscription Rate</span>
-                    <span className="font-space text-lg font-bold text-[#1A3C2B]">49.99 USDC</span>
-                  </div>
-                  <div>
-                    <span className="font-mono text-[9px] uppercase opacity-40 block mb-1">Projected Runway</span>
-                    <span className="font-space text-lg font-bold text-[#1A3C2B]">56 Months</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex flex-col md:flex-row items-center justify-center gap-6">
-            <Link
-              href="/wallet"
-              id="cta-activate"
-              className="w-full md:w-auto bg-[#1A3C2B] text-white font-mono text-[10px] tracking-[0.2em] uppercase px-12 py-5 rounded-sm hover:opacity-90 transition-opacity text-center cursor-pointer"
-            >
-              Activate Subscription
-            </Link>
-            <Link
-              href="/permission"
-              id="cta-review"
-              className="w-full md:w-auto border border-[#3A3A38]/20 bg-white/50 font-mono text-[10px] tracking-[0.2em] uppercase px-12 py-5 rounded-sm hover:bg-white transition-colors text-center cursor-pointer"
-            >
-              Review Permissions
-            </Link>
-          </div>
         </section>
       </main>
     </div>
