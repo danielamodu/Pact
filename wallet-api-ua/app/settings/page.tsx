@@ -6,7 +6,7 @@ import { AppFooter } from "@/components/AppFooter";
 import { signOut } from "next-auth/react";
 
 export default function SettingsPage() {
-  const { publicAddress } = useAuth();
+  const { publicAddress, userInfo } = useAuth();
 
   const handleCopyWallet = () => {
     if (publicAddress) {
@@ -104,7 +104,7 @@ export default function SettingsPage() {
                         Linked Account
                       </p>
                       <p className="font-sans font-medium text-[#1A3C2B]">
-                        alex.pact@gmail.com
+                        {userInfo?.email || "Loading email..."}
                       </p>
                     </div>
                   </div>
