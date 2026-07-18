@@ -62,7 +62,7 @@ export default function BalanceRevealPage() {
             {/* Arbitrum Icon Node */}
             <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 z-20">
               <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <iconify-icon icon="simple-icons:arbitrum" className="text-3xl text-[#28A0F0]"></iconify-icon>
+                <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#28A0F0]"><path fill="currentColor" d="M50 20L10 90h22l18-31l18 31h22L50 20z" /><path fill="currentColor" d="M50 48L38 69h24L50 48z" /></svg>
               </div>
               <div className="font-mono text-[9px] text-center mt-2 uppercase">Arbitrum</div>
             </div>
@@ -70,7 +70,7 @@ export default function BalanceRevealPage() {
             {/* Base Icon Node */}
             <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 z-20">
               <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <img src="https://raw.githubusercontent.com/base-org/brand-kit/main/logo/symbol/Base_Symbol_Blue.svg" alt="Base" className="w-8 h-8" />
+                <svg viewBox="0 0 100 100" className="w-8 h-8"><circle cx="50" cy="50" r="50" fill="#0052FF" /><circle cx="50" cy="50" r="25" fill="none" stroke="white" strokeWidth="12" /></svg>
               </div>
               <div className="font-mono text-[9px] text-center mt-2 uppercase">Base</div>
             </div>
@@ -101,7 +101,7 @@ export default function BalanceRevealPage() {
           {/* Network breakdowns */}
           <div className="mt-16 space-y-4 max-w-xl mx-auto mb-16">
             <div className="flex items-center gap-6 p-4 border border-[#3A3A38]/10 bg-white/40">
-              <iconify-icon icon="simple-icons:arbitrum" className="text-2xl text-[#28A0F0]"></iconify-icon>
+              <svg viewBox="0 0 100 100" className="w-8 h-8 text-[#28A0F0]"><path fill="currentColor" d="M50 20L10 90h22l18-31l18 31h22L50 20z" /><path fill="currentColor" d="M50 48L38 69h24L50 48z" /></svg>
               <div className="flex-1">
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="font-mono text-[10px] uppercase font-bold">Arbitrum One</span>
@@ -114,7 +114,7 @@ export default function BalanceRevealPage() {
             </div>
 
             <div className="flex items-center gap-6 p-4 border border-[#3A3A38]/10 bg-white/40">
-              <iconify-icon icon="simple-icons:base" className="text-2xl text-[#0052FF]"></iconify-icon>
+              <svg viewBox="0 0 100 100" className="w-8 h-8"><circle cx="50" cy="50" r="50" fill="#0052FF" /><circle cx="50" cy="50" r="25" fill="none" stroke="white" strokeWidth="12" /></svg>
               <div className="flex-1">
                 <div className="flex justify-between items-baseline mb-2">
                   <span className="font-mono text-[10px] uppercase font-bold">Base Network</span>
