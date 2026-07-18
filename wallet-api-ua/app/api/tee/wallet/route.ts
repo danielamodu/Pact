@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { getServerSession } from "next-auth";
 import { TeeEndpoint } from "@/types/tee";
 import { NextResponse } from "next/server";

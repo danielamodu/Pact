@@ -25,7 +25,8 @@ const computeEip712Hash = (
 
 const personalSign = async (data: string) => {
   const messageBase64 = Buffer.from(data, "utf-8").toString("base64");
-  return await signMessage(messageBase64, "ETH");
+  const response = await signMessage(messageBase64, "ETH");
+  return response.signature;
 };
 
 const signTypedDataV1 = async (data: TypedDataV1) => {
@@ -47,8 +48,12 @@ const signTransaction = async (tx: TransactionRequest) => {
   const resolvedTx = await resolveProperties(tx);
   const txForSigning = { ...resolvedTx };
   delete txForSigning.from;
+  
+  console.log("[DEBUG] txForSigning.data:", txForSigning.data);
 
   const btx = Transaction.from(txForSigning as TransactionLike);
+  
+  console.log("[DEBUG] btx.data after Transaction.from():", btx.data);
 
   const { r, s, v } = await signData(btx.unsignedHash, "ETH");
   btx.signature = Signature.from({ r, s, v });

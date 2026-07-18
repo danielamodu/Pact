@@ -8,7 +8,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { SessionProvider, useSession, signOut } from "next-auth/react";
 import type { Session } from "next-auth";
 import { getOrCreateWallet } from "@/lib/express-proxy";
@@ -33,6 +33,7 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
   const [userInfo, setUserInfo] = useState<Session["user"] | null>(null);
 
   const router = useRouter();
+  const pathname = usePathname();
   const { data: session, status } = useSession();
 
   // Update user info when session changes
@@ -57,9 +58,11 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       setIsAuthenticated(false);
       setIsLoading(false);
       setWallet({ address: null });
-      router.push("/");
+      if (pathname !== "/" && pathname !== "/login") {
+        router.push("/");
+      }
     }
-  }, [status, router]);
+  }, [status, router, pathname]);
 
   // Reusable function to create/fetch wallet address
   const createOrFetchWallet = useCallback(async () => {

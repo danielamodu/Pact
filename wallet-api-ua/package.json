@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@metamask/eth-sig-util": "^8.2.0",
-    "@particle-network/universal-account-sdk": "^1.0.4",
+    "@particle-network/universal-account-sdk": "^1.0.27",
     "clsx": "^2.1.1",
     "ethers": "^6.15.0",
     "next": "15.5.2",

@@ -1,25 +1,27 @@
+"use client";
+
 export function FooterLinks() {
   return (
-    <div className="mt-5 bg-white rounded-xl shadow-lg p-4">
-      <div className="text-center mb-3">
-        <h3 className="text-base font-semibold text-gray-900 mb-0.5">
-          Learn More
+    <div className="mt-6 bg-surface rounded-soft border border-border-custom p-6 shadow-xl">
+      <div className="text-center mb-5">
+        <h3 className="font-display text-sm font-bold text-text mb-1 uppercase tracking-wider">
+          Resources & Frameworks
         </h3>
-        <p className="text-xs text-gray-600">
-          Explore the documentation and source code
+        <p className="text-[10px] text-muted font-body">
+          Explore the official documentation and reference code for this integration.
         </p>
       </div>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {/* Magic Docs */}
         <a
           href="https://docs.magic.link/api-wallets/introduction"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center gap-2.5 p-3 bg-gradient-to-br from-purple-50 to-pink-50 hover:from-purple-100 hover:to-pink-100 rounded-lg border border-purple-200 transition-all duration-200 hover:shadow-sm"
+          className="group flex items-center gap-3 p-3.5 bg-bg/50 hover:bg-bg border border-border-custom rounded-soft transition-all spring-bounce outline-none focus:ring-2 focus:ring-focus"
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 bg-surface border border-border-custom rounded-soft flex items-center justify-center flex-shrink-0 text-text">
             <svg
-              className="w-4 h-4 text-white"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -27,19 +29,19 @@ export function FooterLinks() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={1.5}
                 d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
               />
             </svg>
           </div>
           <div className="flex-1 text-left">
-            <div className="font-semibold text-gray-900 group-hover:text-purple-700 transition-colors text-sm">
+            <div className="font-semibold text-text text-xs tracking-wide">
               Magic Docs
             </div>
-            <div className="text-xs text-gray-600">Wallet API Guide</div>
+            <div className="text-[10px] text-muted font-body mt-0.5">Wallet API Guide</div>
           </div>
           <svg
-            className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors flex-shrink-0"
+            className="w-3 h-3 text-faint group-hover:text-text transition-colors flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -58,11 +60,11 @@ export function FooterLinks() {
           href="https://developers.particle.network/universal-accounts/cha/overview"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center gap-2.5 p-3 bg-gradient-to-br from-blue-50 to-cyan-50 hover:from-blue-100 hover:to-cyan-100 rounded-lg border border-blue-200 transition-all duration-200 hover:shadow-sm"
+          className="group flex items-center gap-3 p-3.5 bg-bg/50 hover:bg-bg border border-border-custom rounded-soft transition-all spring-bounce outline-none focus:ring-2 focus:ring-focus"
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 bg-surface border border-border-custom rounded-soft flex items-center justify-center flex-shrink-0 text-text">
             <svg
-              className="w-4 h-4 text-white"
+              className="w-4 h-4"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -70,19 +72,19 @@ export function FooterLinks() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"
+                strokeWidth={1.5}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
               />
             </svg>
           </div>
           <div className="flex-1 text-left">
-            <div className="font-semibold text-gray-900 group-hover:text-blue-700 transition-colors text-sm">
+            <div className="font-semibold text-text text-xs tracking-wide">
               Particle Docs
             </div>
-            <div className="text-xs text-gray-600">Universal Accounts</div>
+            <div className="text-[10px] text-muted font-body mt-0.5">Chain Abstraction</div>
           </div>
           <svg
-            className="w-4 h-4 text-gray-400 group-hover:text-blue-600 transition-colors flex-shrink-0"
+            className="w-3 h-3 text-faint group-hover:text-text transition-colors flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -96,16 +98,16 @@ export function FooterLinks() {
           </svg>
         </a>
 
-        {/* GitHub Repo */}
+        {/* GitHub Repository */}
         <a
           href="https://github.com/soos3d/universal-accounts-magic-wallet-api"
           target="_blank"
           rel="noopener noreferrer"
-          className="group flex items-center gap-2.5 p-3 bg-gradient-to-br from-gray-50 to-slate-50 hover:from-gray-100 hover:to-slate-100 rounded-lg border border-gray-200 transition-all duration-200 hover:shadow-sm"
+          className="group flex items-center gap-3 p-3.5 bg-bg/50 hover:bg-bg border border-border-custom rounded-soft transition-all spring-bounce outline-none focus:ring-2 focus:ring-focus"
         >
-          <div className="w-8 h-8 bg-gradient-to-br from-gray-700 to-slate-800 rounded-lg flex items-center justify-center flex-shrink-0 shadow-sm">
+          <div className="w-8 h-8 bg-surface border border-border-custom rounded-soft flex items-center justify-center flex-shrink-0 text-text">
             <svg
-              className="w-4 h-4 text-white"
+              className="w-4 h-4"
               fill="currentColor"
               viewBox="0 0 24 24"
             >
@@ -117,13 +119,13 @@ export function FooterLinks() {
             </svg>
           </div>
           <div className="flex-1 text-left">
-            <div className="font-semibold text-gray-900 group-hover:text-gray-700 transition-colors text-sm">
+            <div className="font-semibold text-text text-xs tracking-wide">
               GitHub Repo
             </div>
-            <div className="text-xs text-gray-600">View Source Code</div>
+            <div className="text-[10px] text-muted font-body mt-0.5">View Source Code</div>
           </div>
           <svg
-            className="w-4 h-4 text-gray-400 group-hover:text-gray-600 transition-colors flex-shrink-0"
+            className="w-3 h-3 text-faint group-hover:text-text transition-colors flex-shrink-0"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"

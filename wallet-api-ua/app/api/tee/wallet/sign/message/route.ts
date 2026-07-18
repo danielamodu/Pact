@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { express } from "@/lib/express";
 import { TeeEndpoint } from "@/types/tee";
 import { NextResponse } from "next/server";
