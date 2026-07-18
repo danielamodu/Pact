@@ -2,7 +2,6 @@
 
 import { useAuth } from "@/contexts/AuthProvider";
 import { NavigationBar } from "@/components/NavigationBar";
-import { AppFooter } from "@/components/AppFooter";
 import { signOut } from "next-auth/react";
 
 export default function SettingsPage() {
@@ -136,8 +135,6 @@ export default function SettingsPage() {
           </div>
         </div>
       </main>
-
-      <AppFooter />
     </div>
   );
 }

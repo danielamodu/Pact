@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { NavigationBar } from "@/components/NavigationBar";
-import { AppFooter } from "@/components/AppFooter";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useState, useEffect } from "react";
 import { getUSDCBalance, getETHBalance } from "@/lib/contracts";
@@ -209,8 +208,6 @@ export default function BalanceRevealPage() {
           </div>
         </section>
       </main>
-
-      <AppFooter />
     </div>
   );
 }
