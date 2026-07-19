@@ -93,6 +93,9 @@ export default function BalanceRevealPage() {
     }
   };
 
+  const [uaAssets, setUaAssets] = useState<any>(null);
+  const [loadingUa, setLoadingUa] = useState<boolean>(false);
+
   useEffect(() => {
     async function fetchBalances() {
       if (!publicAddress) return;
@@ -112,6 +115,39 @@ export default function BalanceRevealPage() {
       setLoading(false);
     }
     fetchBalances();
+  }, [publicAddress]);
+
+  useEffect(() => {
+    async function fetchUaAssets() {
+      if (!publicAddress) return;
+      try {
+        setLoadingUa(true);
+        const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || "8e0b60ba-6c33-4293-bfb8-f33f8d889114";
+        const projectClientKey = process.env.NEXT_PUBLIC_CLIENT_KEY || "c27MqU6j4lNYOhOXUsU29A8met2N9KsJli0Ic55u";
+        const projectAppUuid = process.env.NEXT_PUBLIC_APP_ID || "01bc1045-ed39-44c4-b1f2-ecfa8aff3be4";
+
+        const { UniversalAccount } = await import("@particle-network/universal-account-sdk");
+        const ua = new UniversalAccount({
+          projectId,
+          projectClientKey,
+          projectAppUuid,
+          ownerAddress: publicAddress,
+          smartAccountOptions: {
+            name: "BICONOMY",
+            version: "2.0.0",
+            ownerAddress: publicAddress,
+            useEIP7702: true
+          }
+        });
+        const assets = await ua.getPrimaryAssets();
+        setUaAssets(assets);
+      } catch (err) {
+        console.error("Failed to query Particle assets:", err);
+      } finally {
+        setLoadingUa(false);
+      }
+    }
+    fetchUaAssets();
   }, [publicAddress]);
 
   const totalUSDC = (parseFloat(balances.arbitrumUsdc) + parseFloat(balances.baseUsdc)).toFixed(2);
@@ -215,6 +251,66 @@ export default function BalanceRevealPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Particle Chain-Abstraction Index */}
+          <div className="max-w-xl mx-auto mb-16 p-8 border border-[#3A3A38]/20 bg-[#F7F7F5] relative">
+            <div className="corner-marker corner-tl"></div>
+            <div className="corner-marker corner-tr"></div>
+            <div className="corner-marker corner-bl"></div>
+            <div className="corner-marker corner-br"></div>
+
+            <div className="flex justify-between items-start gap-4 mb-6">
+              <div>
+                <h3 className="font-space text-lg font-bold uppercase tracking-tight">Particle Universal Portfolio</h3>
+                <p className="font-mono text-[9px] uppercase tracking-widest opacity-50 mt-1">
+                  Cross-chain aggregated holdings scan via Universal Account SDK
+                </p>
+              </div>
+              <div className="bg-[#0052FF]/10 text-[#0052FF] font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 font-bold border border-[#0052FF]/20">
+                Chain-Abstracted
+              </div>
+            </div>
+
+            {loadingUa ? (
+              <div className="font-mono text-[10px] uppercase opacity-40 py-4 animate-pulse">
+                Querying Particle Universal indexer...
+              </div>
+            ) : uaAssets ? (
+              <div className="space-y-6">
+                <div className="flex justify-between items-baseline pb-4 border-b border-[#3A3A38]/10">
+                  <span className="font-mono text-[10px] uppercase opacity-60">Consolidated Value</span>
+                  <span className="font-space text-3xl font-bold text-[#1a3c2b]">
+                    ${uaAssets.totalAmountInUSD?.toFixed(2) || "0.00"}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4">
+                  {uaAssets.primaryAssets?.map((asset: any, idx: number) => (
+                    <div key={idx} className="bg-white/60 p-4 border border-[#3A3A38]/10">
+                      <span className="font-mono text-[8px] uppercase tracking-widest opacity-40 block mb-1">
+                        {asset.tokenType}
+                      </span>
+                      <span className="font-space text-base font-bold text-forest">
+                        {asset.amount?.toFixed(asset.tokenType === "eth" ? 4 : 2)}
+                      </span>
+                      <span className="font-mono text-[9px] opacity-50 block mt-0.5">
+                        ${asset.amountInUSD?.toFixed(2)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5 font-mono text-[8px] text-[#0052FF] uppercase font-bold tracking-widest pt-2">
+                  <iconify-icon icon="lucide:check-circle" className="text-xs"></iconify-icon>
+                  <span>Real-time indexing compiled across 6 EVM layers</span>
+                </div>
+              </div>
+            ) : (
+              <div className="font-mono text-[10px] text-red-600 uppercase tracking-wider">
+                Failed to resolve Particle portfolio index. Check configuration.
+              </div>
+            )}
           </div>
 
           {/* Withdrawal Section */}
