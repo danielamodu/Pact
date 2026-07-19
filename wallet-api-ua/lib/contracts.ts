@@ -38,13 +38,15 @@ export const NETWORKS = {
     chainId: 42161,
     name: "Arbitrum One",
     rpc: "https://arb1.arbitrum.io/rpc",
-    usdcAddress: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+    usdcAddress: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    deployBlock: 485100000
   },
   base: {
     chainId: 8453,
     name: "Base Mainnet",
     rpc: "https://mainnet.base.org",
-    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913"
+    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913",
+    deployBlock: 487800000
   }
 };
 
@@ -54,6 +56,38 @@ export const NETWORKS = {
 export function getProvider(networkKey: "arbitrum" | "base") {
   const config = NETWORKS[networkKey];
   return new ethers.JsonRpcProvider(config.rpc);
+}
+
+/**
+ * Helper to query contract events taking network RPC limits into account.
+ * Base public gateways limit query range to 10,000 blocks, so we batch it.
+ */
+async function queryEvents(
+  contract: ethers.Contract,
+  filter: any,
+  networkKey: "arbitrum" | "base"
+) {
+  const provider = contract.runner as ethers.JsonRpcProvider;
+  const config = NETWORKS[networkKey];
+  const startBlock = config.deployBlock;
+  
+  if (networkKey === "arbitrum") {
+    // Arbitrum has no range limit on public RPCs, query directly
+    return await contract.queryFilter(filter, startBlock);
+  } else {
+    // Base limits queries to 10,000 block ranges
+    const latestBlock = await provider.getBlockNumber();
+    const chunkSize = 10000;
+    const promises = [];
+    
+    for (let start = startBlock; start <= latestBlock; start += chunkSize) {
+      const end = Math.min(start + chunkSize - 1, latestBlock);
+      promises.push(contract.queryFilter(filter, start, end));
+    }
+    
+    const results = await Promise.all(promises);
+    return results.flat();
+  }
 }
 
 /**
@@ -97,7 +131,7 @@ export async function getPlansForMerchant(merchantAddress: string, networkKey: "
     
     // Filter PlanCreated events by merchant
     const filter = contract.filters.PlanCreated(null, merchantAddress);
-    const events = await contract.queryFilter(filter, -100000); // query last 100,000 blocks
+    const events = await queryEvents(contract, filter, networkKey);
     
     const plansList = [];
     for (const event of events) {
@@ -154,7 +188,7 @@ export async function getSubscriptionsForUser(userAddress: string, networkKey: "
     const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
 
     const filter = contract.filters.Subscribed(null, userAddress);
-    const events = await contract.queryFilter(filter, -100000);
+    const events = await queryEvents(contract, filter, networkKey);
 
     const subsList = [];
     for (const event of events) {
@@ -322,7 +356,7 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
 
   // 1. Fetch Subscribed events for planId
   const subFilter = contract.filters.Subscribed(planId, null, null);
-  const subEvents = await contract.queryFilter(subFilter, -100000);
+  const subEvents = await queryEvents(contract, subFilter, networkKey);
   
   const subscribersSet = new Set<string>();
   const subscribersList: Array<{ address: string; blockNumber: number }> = [];
@@ -342,7 +376,7 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
 
   // 2. Fetch PullExecuted events for planId
   const pullFilter = contract.filters.PullExecuted(planId, null, null, null);
-  const pullEvents = await contract.queryFilter(pullFilter, -100000);
+  const pullEvents = await queryEvents(contract, pullFilter, networkKey);
   
   let totalRevenueUnits = BigInt(0);
   for (const event of pullEvents) {

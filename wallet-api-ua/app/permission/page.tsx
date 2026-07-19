@@ -320,7 +320,7 @@ function PermissionContent() {
                 </label>
               </div>
               <p className="font-mono text-[10px] text-[#3A3A38]/40 uppercase tracking-tight">
-                Notice: You will not be charged until the first billing cycle begins. Gas costs for the account upgrade transaction are paid by your wallet.
+                Notice: You will not be charged until the first billing cycle begins. Gas costs for the account upgrade are covered by Pact. You'll only pay when your subscription actually bills.
               </p>
             </div>
           )}

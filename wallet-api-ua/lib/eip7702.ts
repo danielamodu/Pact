@@ -98,7 +98,7 @@ export async function upgradeEOAWithEIP7702(
       chainId,
       signature: authSignature.serialized,
       networkKey,
-    }),
+    }, (key, value) => typeof value === "bigint" ? value.toString() : value),
   });
 
   const data = await response.json();
