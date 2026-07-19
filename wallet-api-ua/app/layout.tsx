@@ -1,31 +1,14 @@
 import type { Metadata } from "next";
-import { Playfair_Display, Plus_Jakarta_Sans, DM_Mono } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/contexts/AuthProvider";
 import Script from "next/script";
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin"],
-});
-
-const plusJakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-jakarta",
-  subsets: ["latin"],
-});
-
-const dmMono = DM_Mono({
-  variable: "--font-dm-mono",
-  weight: ["300", "400", "500"],
-  subsets: ["latin"],
-});
-
 export const metadata: Metadata = {
-  title: "Pact: Cross-Chain Subscription Auto-Pay",
+  title: "Pact",
   description: "Secure cross-chain billing subscription registry using EIP-7702 and Universal Accounts",
   icons: {
-    icon: "/logo-square.png",
-    shortcut: "/logo-square.png",
+    icon: "/icon.svg",
+    shortcut: "/icon.svg",
     apple: "/logo-square.png",
   }
 };

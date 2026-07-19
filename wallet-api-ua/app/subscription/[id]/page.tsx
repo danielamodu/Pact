@@ -3,7 +3,6 @@
 import { useState, use } from "react";
 import Link from "next/link";
 import { NavigationBar } from "@/components/NavigationBar";
-import { AppFooter } from "@/components/AppFooter";
 
 export default function SubscriptionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -262,8 +261,6 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
           </div>
         </div>
       )}
-
-      <AppFooter />
     </div>
   );
 }

@@ -184,6 +184,8 @@ export function PactSpikeDashboard() {
                   {plans.map((plan, i) => (
                     <PlanCard
                       key={plan.id || i}
+                      planId={plan.id}
+                      network={plan.network}
                       planName={plan.planName}
                       token={plan.token}
                       status={plan.status}

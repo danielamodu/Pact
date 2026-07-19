@@ -44,17 +44,20 @@ const signTypedDataV4 = async (data: TypedMessage<MessageTypes>) => {
   return await signData(rawDataHash, "ETH");
 };
 
-const signTransaction = async (tx: TransactionRequest) => {
-  const resolvedTx = await resolveProperties(tx);
-  const txForSigning = { ...resolvedTx };
+const signTransaction = async (tx: TransactionRequest & { authorizationList?: unknown[] }) => {
+  const resolvedTx = await resolveProperties(tx as TransactionRequest);
+  const txForSigning: Record<string, unknown> = { ...resolvedTx };
   delete txForSigning.from;
-  
-  console.log("[DEBUG] txForSigning.data:", txForSigning.data);
+
+  // Preserve authorizationList for Type-4 (EIP-7702) transactions — resolveProperties
+  // may not carry it through since it's not a standard TransactionRequest field.
+  if ((tx as any).authorizationList) {
+    txForSigning.authorizationList = (tx as any).authorizationList;
+  }
+
+  console.log("[DEBUG] txForSigning type:", txForSigning.type, "authorizationList:", !!(txForSigning.authorizationList));
 
   const btx = Transaction.from(txForSigning as TransactionLike);
-  
-  console.log("[DEBUG] btx.data after Transaction.from():", btx.data);
-
   const { r, s, v } = await signData(btx.unsignedHash, "ETH");
   btx.signature = Signature.from({ r, s, v });
   return btx.serialized;

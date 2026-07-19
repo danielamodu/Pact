@@ -21,6 +21,7 @@ export default function SetupPage() {
   const [network, setNetwork] = useState<"arbitrum" | "base">("arbitrum");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
 
   useEffect(() => {
     if (publicAddress) {
@@ -32,10 +33,12 @@ export default function SetupPage() {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+    setSuccessTxHash(null);
 
     try {
-      // 1. Calculate price in 6 decimals (standard USDC has 6 decimals)
-      const priceInUnits = ethers.parseUnits(price, 6).toString();
+      // 1. Calculate price in correct decimals (ETH uses 18, USDC/USDT use 6)
+      const decimals = token === "ETH" ? 18 : 6;
+      const priceInUnits = ethers.parseUnits(price, decimals).toString();
 
       // 2. Map billing cycle to seconds
       let intervalSeconds = 2592000; // default 30 days
@@ -45,8 +48,15 @@ export default function SetupPage() {
         intervalSeconds = 7776000;
       }
 
-      // 3. Select standard USDC token address for selected network
-      const tokenAddress = NETWORKS[network].usdcAddress;
+      // 3. Select standard token address for selected network
+      let tokenAddress = NETWORKS[network].usdcAddress; // default USDC
+      if (token === "USDT") {
+        tokenAddress = network === "arbitrum"
+          ? "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+          : "0x50c5725949A6F0c72E6C4a641F240E934e271057";
+      } else if (token === "ETH") {
+        tokenAddress = "0x0000000000000000000000000000000000000000";
+      }
 
       // 4. Submit transaction to registry contract via TEE Universal Account
       const txHash = await createPlanOnchain(
@@ -58,8 +68,7 @@ export default function SetupPage() {
         payoutAddress
       );
 
-      alert(`Plan successfully launched! Tx Hash: ${txHash}`);
-      router.push("/wallet");
+      setSuccessTxHash(txHash);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to launch plan");
@@ -72,6 +81,51 @@ export default function SetupPage() {
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
       <div className="mosaic-bg"></div>
       <NavigationBar mode="app" activeItem="plans" />
+
+      {successTxHash && (
+        <div className="fixed inset-0 bg-[#3A3A38]/40 backdrop-blur-md z-50 flex items-center justify-center p-6">
+          <div className="relative bg-paper border border-[#3A3A38]/30 max-w-lg w-full p-10 flex flex-col items-center text-center">
+            <div className="corner-marker corner-tl"></div>
+            <div className="corner-marker corner-tr"></div>
+            <div className="corner-marker corner-bl"></div>
+            <div className="corner-marker corner-br"></div>
+
+            <div className="w-16 h-16 bg-mint/10 border border-mint flex items-center justify-center text-forest rounded-full mb-6">
+              <svg viewBox="0 0 24 24" className="w-8 h-8 stroke-current stroke-2 fill-none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+
+            <h2 className="font-space text-3xl font-bold uppercase tracking-tight text-forest mb-2">
+              Plan Successfully Launched
+            </h2>
+            <p className="font-sans text-[#3A3A38]/70 text-sm mb-6">
+              Your subscription plan contract is live on-chain and ready to accept subscriber flows.
+            </p>
+
+            <div className="w-full bg-[#F7F7F5] border border-[#3A3A38]/10 p-4 font-mono text-[11px] break-all text-left mb-8">
+              <span className="block opacity-40 uppercase tracking-widest text-[9px] mb-1">Transaction Hash</span>
+              <a 
+                href={network === "arbitrum" ? `https://arbiscan.io/tx/${successTxHash}` : `https://basescan.org/tx/${successTxHash}`} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="text-coral hover:underline font-bold"
+              >
+                {successTxHash}
+              </a>
+            </div>
+
+            <div className="w-full">
+              <button
+                onClick={() => router.push("/wallet")}
+                className="w-full bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest py-4 rounded-sm hover:opacity-90 transition-opacity"
+              >
+                Return to Dashboard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main className="flex-1 pt-24 pb-12 min-h-screen">
         <div className="max-w-7xl mx-auto px-6">
@@ -118,7 +172,7 @@ export default function SetupPage() {
                     02. Payment Token
                   </label>
                   <div className="flex gap-3">
-                    {["USDC", "USDT", "DAI"].map((tok) => (
+                    {["USDC", "USDT", "ETH"].map((tok) => (
                       <div key={tok} className="flex-1">
                         <input
                           type="radio"

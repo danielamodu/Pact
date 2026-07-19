@@ -12,7 +12,7 @@ interface NavigationBarProps {
 }
 
 export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) {
-  const { publicAddress, handleLogout } = useAuth();
+  const { publicAddress, isAuthenticated, handleLogout } = useAuth();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
 
   const formatAddress = (addr: string) => {
@@ -34,7 +34,7 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
             <Link href="/login" id="nav-login-btn" className="text-white text-sm font-bold hover:opacity-80 transition-opacity font-space">
               Log in
             </Link>
-            <Link href="/wallet" id="nav-cta-btn" className="bg-white text-forest px-8 py-3.5 jeton-pill font-bold text-sm hover:scale-105 transition-all shadow-md font-space">
+            <Link href={isAuthenticated ? "/wallet" : "/login"} id="nav-cta-btn" className="bg-white text-forest px-8 py-3.5 jeton-pill font-bold text-sm hover:scale-105 transition-all shadow-md font-space">
               Launch App
             </Link>
           </div>

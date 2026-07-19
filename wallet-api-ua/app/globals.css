@@ -19,7 +19,10 @@
   --sd-hairline: rgba(58, 58, 56, 0.03);
 }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+  overflow-y: overlay;
+}
 
 body {
   background-color: var(--background);
@@ -153,12 +156,6 @@ body {
 }
 .sd-partners-row:hover { opacity: 1; }
 
-/* ── Custom scrollbar ── */
-::-webkit-scrollbar        { width: 6px; }
-::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: rgba(26, 60, 43, 0.12); border-radius: 99px; }
-::-webkit-scrollbar-thumb:hover { background: rgba(26, 60, 43, 0.22); }
-
 /* ── Legacy utils still used by app pages ── */
 .jeton-pill  { border-radius: 9999px; }
 .jeton-card  { border-radius: 24px; }
@@ -201,4 +198,4 @@ body {
   background-position: center;
   background-repeat: no-repeat;
   z-index: 0;
-}
+}@source "../public";

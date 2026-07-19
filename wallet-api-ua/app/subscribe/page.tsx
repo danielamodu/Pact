@@ -3,7 +3,6 @@
 import { useAuth } from "@/contexts/AuthProvider";
 import Link from "next/link";
 import { NavigationBar } from "@/components/NavigationBar";
-import { AppFooter } from "@/components/AppFooter";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { ethers } from "ethers";
@@ -15,30 +14,107 @@ function SubscribeContent() {
   const planId = searchParams.get("planId");
   const network = (searchParams.get("network") as "arbitrum" | "base") || "base";
 
-  const [planData, setPlanData] = useState<{ name: string, price: string, intervalDays: number, merchant: string } | null>(null);
+  const [planData, setPlanData] = useState<{ name: string, price: string, intervalDays: number, merchant: string, payoutAddress: string, token: string } | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (planId) {
+      setLoading(true);
+      setError(null);
       const provider = getProvider(network);
       const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
       
-      Promise.all([
-        contract.getPlan(planId),
-        // we could fetch merchant if added to ABI, but let's just use the name for now, or fetch payoutAddress
-      ]).then(([data]) => {
+      contract.getPlan(planId).then((data) => {
+        if (!data.name || data.payoutAddress === ethers.ZeroAddress) {
+          setError(`Plan #${planId} was not found on ${network === "arbitrum" ? "Arbitrum One" : "Base Network"}.`);
+          setLoading(false);
+          return;
+        }
+
+        let tokenSymbol = "USDC";
+        let tokenDecimals = 6;
+        if (data.token.toLowerCase() === "0x0000000000000000000000000000000000000000" || 
+            data.token.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+          tokenSymbol = "ETH";
+          tokenDecimals = 18;
+        } else if (data.token.toLowerCase() === "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" || 
+                   data.token.toLowerCase() === "0x50c5725949a6f0c72e6c4a641f240e934e271057") {
+          tokenSymbol = "USDT";
+          tokenDecimals = 6;
+        }
+
         setPlanData({
           name: data.name,
-          price: ethers.formatUnits(data.price, 6),
+          price: ethers.formatUnits(data.price, tokenDecimals),
           intervalDays: Math.round(Number(data.intervalSeconds) / 86400),
-          merchant: `${data.payoutAddress.substring(0, 6)}...${data.payoutAddress.substring(38)}`
+          merchant: `${data.payoutAddress.substring(0, 6)}...${data.payoutAddress.substring(38)}`,
+          payoutAddress: data.payoutAddress, // full untruncated address for session key scope
+          token: tokenSymbol
         });
-      }).catch(console.error);
+        setLoading(false);
+      }).catch((err) => {
+        console.error(err);
+        setError(`Failed to retrieve plan #${planId} on ${network === "arbitrum" ? "Arbitrum One" : "Base"}. Ensure you are querying the correct network.`);
+        setLoading(false);
+      });
+    } else {
+      setError("No planId specified in the URL.");
+      setLoading(false);
     }
   }, [planId, network]);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col bg-paper text-forest relative">
+        <div className="mosaic-bg"></div>
+        <NavigationBar />
+        <main className="flex-1 flex items-center justify-center p-6 pt-24">
+          <div className="text-center py-20 font-mono text-sm opacity-60">
+            Querying plan data and resolving secure contracts...
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col bg-paper text-forest relative">
+        <div className="mosaic-bg"></div>
+        <NavigationBar />
+        <main className="flex-1 flex items-center justify-center p-6 pt-24">
+          <div className="relative bg-[#F7F7F5] border border-coral/30 p-10 max-w-md w-full text-center border-l-4 border-l-coral">
+            <div className="corner-marker corner-tl"></div>
+            <div className="corner-marker corner-tr"></div>
+            <div className="corner-marker corner-bl"></div>
+            <div className="corner-marker corner-br"></div>
+
+            <div className="w-12 h-12 bg-coral/10 text-coral flex items-center justify-center rounded-full mx-auto mb-6">
+              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-none stroke-current stroke-2" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            
+            <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-forest mb-3">Plan Not Found</h3>
+            <p className="font-sans text-xs text-[#3A3A38]/70 mb-8 leading-relaxed">
+              {error}
+            </p>
+
+            <Link href="/" className="inline-block bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest px-8 py-4 rounded-sm hover:opacity-95 transition-opacity">
+              Back to Home
+            </Link>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
   return (
-    <main className="flex-1 pt-24">
-      <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
+    <div className="min-h-screen flex flex-col mosaic-bg">
+      <NavigationBar />
+      <main className="flex-1 pt-24">
+        <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
         <div className="grid lg:grid-cols-12 gap-16 items-start">
           
           {/* Left Side: Plan Info */}
@@ -71,7 +147,7 @@ function SubscribeContent() {
                   {planData ? planData.price : "--"}
                 </h2>
                 <span className="font-space text-3xl font-medium">
-                  USDC / {planData ? `${planData.intervalDays} DAYS` : "MO"}
+                  {planData ? planData.token : "USDC"} / {planData ? `${planData.intervalDays} DAYS` : "MO"}
                 </span>
               </div>
             </div>
@@ -79,7 +155,7 @@ function SubscribeContent() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#3A3A38]/10 border border-[#3A3A38]/10 rounded-sm overflow-hidden">
               <div className="bg-white p-6">
                 <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2">Token</span>
-                <span className="font-space text-lg font-bold uppercase">USDC</span>
+                <span className="font-space text-lg font-bold uppercase">{planData ? planData.token : "USDC"}</span>
               </div>
               <div className="bg-white p-6">
                 <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2">Interval</span>
@@ -130,7 +206,7 @@ function SubscribeContent() {
 
                   <div className="pt-8">
                     <Link
-                      href="/permission"
+                      href={planData ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}` : "/permission"}
                       id="cta-subscribe-authorize"
                       className="block w-full text-center bg-forest text-white font-mono text-xs tracking-[0.2em] uppercase py-5 rounded-sm hover:opacity-95 transition-opacity"
                     >
@@ -190,8 +266,14 @@ function SubscribeContent() {
           </div>
         </section>
       </main>
-
-      <AppFooter />
     </div>
+  );
+}
+
+export default function SubscribePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-mono">Loading...</div>}>
+      <SubscribeContent />
+    </Suspense>
   );
 }

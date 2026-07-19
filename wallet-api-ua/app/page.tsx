@@ -297,21 +297,28 @@ export default function Home() {
               <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(26,60,43,0.4)", textTransform: "uppercase", lineHeight: 1.8 }}>Autonomous Recurring Payments Infrastructure.</p>
             </div>
             {[
-              { title: "Network", links: ["Docs", "Privacy", "Terms of Service"] },
-              { title: "Governance", links: ["Whitepaper", "Security Audits", "Github"] },
-              { title: "Status", links: [] },
+              { title: "Network", links: [{ label: "Docs", path: "/docs" }, { label: "Privacy", path: "/privacy" }, { label: "Terms of Service", path: "/terms" }] },
+              { title: "Governance", links: [{ label: "Whitepaper", path: "#" }] },
+              { title: "Socials", links: [] },
             ].map((col, i) => (
               <div key={i} style={{ background: "#F7F7F5", padding: 40 }}>
                 <h5 style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, letterSpacing: "0.3em", fontWeight: 700, textTransform: "uppercase", color: "rgba(26,60,43,0.4)", marginBottom: 32 }}>{col.title}</h5>
-                {col.title === "Status" ? (
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#9EFFBF" }} />
-                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "#1A3C2B" }}>Operational</span>
+                {col.title === "Socials" ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                    <a href="https://github.com/danielamodu" target="_blank" rel="noopener noreferrer" style={{ fontSize: "20px", color: "#1A3C2B", opacity: 0.6 }} className="hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <iconify-icon icon="lucide:github"></iconify-icon>
+                    </a>
+                    <a href="https://x.com/szrxbt" target="_blank" rel="noopener noreferrer" style={{ fontSize: "20px", color: "#1A3C2B", opacity: 0.6 }} className="hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <iconify-icon icon="lucide:twitter"></iconify-icon>
+                    </a>
+                    <a href="https://t.me/fortyxbt" target="_blank" rel="noopener noreferrer" style={{ fontSize: "20px", color: "#1A3C2B", opacity: 0.6 }} className="hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <iconify-icon icon="lucide:send"></iconify-icon>
+                    </a>
                   </div>
                 ) : (
                   <ul style={{ listStyle: "none", padding: 0, margin: 0, display: "flex", flexDirection: "column", gap: 16 }}>
                     {col.links.map((l) => (
-                      <li key={l}><a href="#" style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, textTransform: "uppercase", color: "rgba(26,60,43,0.6)", textDecoration: "none" }} className="hover:text-forest transition-colors">{l}</a></li>
+                      <li key={l.label}><Link href={l.path} style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, textTransform: "uppercase", color: "rgba(26,60,43,0.6)", textDecoration: "none" }} className="hover:text-forest transition-colors">{l.label}</Link></li>
                     ))}
                   </ul>
                 )}
@@ -321,8 +328,8 @@ export default function Home() {
           <div style={{ marginTop: 48, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "rgba(26,60,43,0.4)", textTransform: "uppercase" }}>© 2024 PACT. FOUNDATION</span>
             <div style={{ display: "flex", gap: 32, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "rgba(26,60,43,0.4)", textTransform: "uppercase" }}>
-              <a href="#">Terms</a>
-              <a href="#">Privacy</a>
+              <Link href="/terms">Terms</Link>
+              <Link href="/privacy">Privacy</Link>
             </div>
           </div>
         </div>
