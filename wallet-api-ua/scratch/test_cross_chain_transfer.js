@@ -31,21 +31,27 @@ async function main() {
 
   console.log("EOA Owner Address:", ownerAddress);
 
-  // Initialize UA with default config (name: "UNIVERSAL", version: "1.0.3")
+  // Initialize UA with explicit useEIP7702: false
   const ua = new UniversalAccount({
     projectId,
     projectClientKey,
     projectAppUuid,
-    ownerAddress
+    ownerAddress,
+    smartAccountOptions: {
+      name: "UNIVERSAL",
+      version: "1.0.3",
+      ownerAddress,
+      useEIP7702: false
+    }
   });
 
   const saOptions = await ua.getSmartAccountOptions();
   console.log("Smart Account Address:", saOptions.smartAccountAddress);
 
-  // Create transfer: Sourcing from Base SA (where we have 0.00008 ETH)
-  // Settling on Arbitrum One Mainnet (ID: 42161)
-  // Amount: 0.00001 ETH
-  console.log("Building cross-chain transfer transaction...");
+  // Create transfer: Base -> Base
+  // Target: User's wallet address 0xF821447c6Bd7c54e5FC2Bd92239F4D8eD73C52f0
+  // Amount: 0.001 ETH
+  console.log("Building transfer transaction on Base...");
   
   let transaction;
   try {
@@ -54,8 +60,8 @@ async function main() {
         chainId: 8453, // Base Mainnet
         address: ethers.ZeroAddress // Native ETH
       },
-      amount: "0.00001",
-      receiver: ownerAddress // Send to our EOA
+      amount: "0.001",
+      receiver: "0xF821447c6Bd7c54e5FC2Bd92239F4D8eD73C52f0"
     });
   } catch(e) {
     console.error("Failed to build transaction:", e.message || e);
