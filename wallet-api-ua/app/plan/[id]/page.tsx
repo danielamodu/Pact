@@ -26,6 +26,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
   } | null>(null);
 
   const [insightsData, setInsightsData] = useState<{
+    isDemoData: boolean;
     activeSubscribers: number;
     mrr: number;
     churnRate: string;
@@ -75,8 +76,8 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
         throw new Error(signData.error || "Failed to generate payment signature.");
       }
 
-      // 2. Fetch insights passing the signature header
-      const dataRes = await fetch("/api/insights/plan-health", {
+      // 2. Fetch insights passing the signature header, planId, and network parameters
+      const dataRes = await fetch(`/api/insights/plan-health?planId=${id}&network=${network}`, {
         method: "GET",
         headers: {
           "payment-signature": signData.paymentHeader
@@ -306,8 +307,13 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                       </div>
                     </div>
                     <div className="flex items-center gap-2 pt-4 border-t border-[#3A3A38]/10 justify-between">
-                      <span className="font-mono text-[9px] text-[#1A3C2B] uppercase tracking-widest font-bold">
-                        ✓ x402 Payment Verified Off-Chain
+                      <span className={`font-mono text-[9px] uppercase tracking-widest font-bold ${
+                        insightsData.isDemoData ? "text-[#a8820a]" : "text-[#1A3C2B]"
+                      }`}>
+                        {insightsData.isDemoData 
+                          ? "⚠️ [Demo Data Mode] x402 Payment Verified Off-Chain" 
+                          : "✓ [Real-Time Analytics] x402 Payment Verified Off-Chain"
+                        }
                       </span>
                       <span className="font-mono text-[9px] opacity-40">
                         Unlocked: {new Date(insightsData.unlockedAt).toLocaleTimeString()}
