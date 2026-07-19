@@ -1,0 +1,337 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="view-transition" content="same-origin">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config={theme:{extend:{colors:{forest:'#1A3C2B',coral:'#FF8C69',mint:'#9EFFBF',paper:'#F7F7F5',gold:'#F4D35E','deep-forest':'#0D1F16'}}}}</script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700;800;900&amp;family=JetBrains+Mono:wght@300;400;500;600&amp;family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --forest: #1A3C2B;
+      --coral: #FF8C69;
+      --mint: #9EFFBF;
+      --paper: #F7F7F5;
+      --gold: #F4D35E;
+      --deep-forest: #0D1F16;
+      --grid-border: rgba(58, 58, 56, 0.1);
+    }
+    
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: var(--paper);
+      color: var(--forest);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .font-space { font-family: 'Space Grotesk', sans-serif; }
+    .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+    .mosaic-bg {
+      background-image: 
+        linear-gradient(var(--grid-border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--grid-border) 1px, transparent 1px);
+      background-size: 80px 80px;
+      background-attachment: fixed;
+    }
+
+    .sidebar-link:hover {
+      color: var(--forest);
+      background: rgba(26, 60, 43, 0.03);
+    }
+
+    .sidebar-link.active {
+      color: var(--forest);
+      border-left: 4px solid var(--mint);
+      background: rgba(26, 60, 43, 0.03);
+      font-weight: 700;
+    }
+
+    .accordion-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease-out;
+    }
+
+    .accordion-item.active .accordion-content {
+      max-height: 1000px;
+    }
+
+    .accordion-item.active .accordion-icon {
+      transform: rotate(180deg);
+    }
+
+    .corner-marker {
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      border-color: var(--forest);
+    }
+    .corner-tl { top: 0; left: 0; border-top-width: 2px; border-left-width: 2px; }
+    .corner-tr { top: 0; right: 0; border-top-width: 2px; border-right-width: 2px; }
+    .corner-bl { bottom: 0; left: 0; border-bottom-width: 2px; border-left-width: 2px; }
+    .corner-br { bottom: 0; right: 0; border-bottom-width: 2px; border-right-width: 2px; }
+
+    @view-transition { navigation: auto; }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen flex flex-col mosaic-bg" data-sd-id="1">
+    <!-- Header -->
+    <header class="fixed top-0 w-full bg-white border-b border-grid-border z-50 h-20 flex items-center" data-sd-id="2">
+      <div class="max-w-7xl mx-auto w-full px-8 flex justify-between items-center" data-sd-id="3">
+        <div class="flex items-center gap-4" data-sd-id="4">
+          <div class="w-12 h-12 overflow-hidden relative" data-sd-id="5">
+            <img src="/logo-square.png" alt="Pact Logo" class="absolute w-[166%] h-[166%] max-w-none top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+          </div>
+          <div class="flex flex-col" data-sd-id="7">
+            <span class="font-mono text-[10px] tracking-[0.2em] font-bold uppercase" data-sd-id="8">Pact</span>
+            <span class="font-space text-sm font-bold tracking-tight text-forest/40" data-sd-id="9">Terms of Service</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-8" data-sd-id="10">
+          <a href="/" id="nav-back-link" class="font-mono text-[10px] tracking-widest uppercase hover:text-[#FF8C69] transition-colors flex items-center gap-2" data-sd-id="11">
+            <iconify-icon icon="lucide:arrow-left"></iconify-icon>Back to App
+          </a>
+          <a href="/" id="nav-cta-btn" class="font-mono text-[10px] tracking-widest uppercase bg-[#1A3C2B] text-white px-6 py-3 rounded-sm" data-sd-id="12">Launch App</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="flex pt-20 max-w-7xl mx-auto w-full" data-sd-id="13">
+      <!-- Sidebar TOC -->
+      <aside class="w-80 sticky top-20 h-[calc(100vh-80px)] overflow-y-auto border-r border-grid-border bg-white/50 backdrop-blur-md p-10 hidden lg:block" data-sd-id="14">
+        <nav class="space-y-8" data-sd-id="15">
+          <div class="font-mono text-[9px] tracking-[0.3em] font-bold uppercase text-forest/30 mb-6" data-sd-id="16">Sections</div>
+          <div class="space-y-1" data-sd-id="17">
+            <a href="#acceptance" class="sidebar-link active block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="18">01. ACCEPTANCE</a>
+            <a href="#description" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="19">02. DESCRIPTION</a>
+            <a href="#responsibilities" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="20">03. RESPONSIBILITIES</a>
+            <a href="#liability" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="21">04. LIABILITY</a>
+            <a href="#payments" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="22">05. PAYMENTS</a>
+            <a href="#ip" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="23">06. INTELLECTUAL PROPERTY</a>
+            <a href="#disputes" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="24">07. DISPUTES</a>
+            <a href="#governing" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="25">08. GOVERNING LAW</a>
+            <a href="#changes" class="sidebar-link block py-3 pl-4 text-[11px] font-mono tracking-wider transition-all border-l-4 border-transparent" data-sd-id="26">09. CHANGES</a>
+          </div>
+        </nav>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 p-10 lg:p-20 bg-white/30" data-sd-id="27">
+        <div class="max-w-3xl" data-sd-id="28">
+          <section class="mb-20" data-sd-id="29">
+            <div class="border-l-4 border-mint pl-6 mb-8" data-sd-id="30">
+              <span class="font-mono text-[10px] tracking-[0.3em] text-forest/40 uppercase block mb-2" data-sd-id="31">Last Updated: October 24, 2024</span>
+              <h1 class="font-space text-6xl font-black tracking-tighter text-forest uppercase leading-[0.9]" data-sd-id="32">SERVICE<br>GOVERNANCE</h1>
+            </div>
+            <p class="text-lg text-forest/70 leading-relaxed mb-8" data-sd-id="33">These Terms of Service (‘Terms’) constitute a legally binding agreement between you and Pact (‘the Protocol’, ‘we’, or ‘us’). By accessing our decentralized payment infrastructure, you acknowledge that you have read, understood, and agree to be bound by these requirements.</p>
+          </section>
+
+          <div class="space-y-12" data-sd-id="34">
+            <!-- Section 01: Acceptance -->
+            <section id="acceptance" class="legal-card reveal" data-sd-id="35">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="36">
+                <span class="font-mono text-sm text-mint font-bold uppercase tracking-widest" data-sd-id="37">01</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="38">Agreement Acceptance</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="39">
+                <p data-sd-id="40">By using the Pact web interface, smart contracts, or SDK, you represent that you are of legal age to form a binding contract and are not prohibited from using crypto-assets under applicable laws.</p>
+                <div class="p-6 bg-coral/5 border-l-4 border-coral" data-sd-id="41">
+                  <p class="font-bold text-forest mb-2" data-sd-id="42">ATTENTION: MANDATORY BINDING ARBITRATION</p>
+                  <p class="text-xs" data-sd-id="43">These terms contain a mandatory arbitration provision that requires the use of arbitration on an individual basis to resolve disputes, rather than jury trials or class actions.</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- Section 02: Description -->
+            <section id="description" class="legal-card reveal" data-sd-id="44">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="45">
+                <span class="font-mono text-sm text-coral font-bold uppercase tracking-widest" data-sd-id="46">02</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="47">Service Description</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="48">
+                <p data-sd-id="49">Pact provides a decentralized software layer enabling autonomous recurring payments on EVM-compatible blockchains. Key service components include:</p>
+                <ul class="space-y-3 font-mono text-[11px] tracking-wider" data-sd-id="50">
+                  <li class="flex items-start gap-4" data-sd-id="51"><span class="text-mint" data-sd-id="52">│</span> Smart Contract-based Subscription Logic</li>
+                  <li class="flex items-start gap-4" data-sd-id="53"><span class="text-mint" data-sd-id="54">│</span> Cross-chain Liquidity Scanning Tools</li>
+                  <li class="flex items-start gap-4" data-sd-id="55"><span class="text-mint" data-sd-id="56">│</span> Relayer Mesh Execution Networks</li>
+                  <li class="flex items-start gap-4" data-sd-id="57"><span class="text-mint" data-sd-id="58">│</span> Merchant &amp; Subscriber Management Portals</li>
+                </ul>
+                <p data-sd-id="59">You understand that we do not have custody of your funds at any time. All transactions occur directly between the subscriber and the merchant via immutable smart contracts.</p>
+              </div>
+            </section>
+
+            <!-- Section 03: User Responsibilities -->
+            <section id="responsibilities" class="legal-card reveal" data-sd-id="60">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="61">
+                <span class="font-mono text-sm text-gold font-bold uppercase tracking-widest" data-sd-id="62">03</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="63">User Responsibilities</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="64">
+                <p data-sd-id="65">You are solely responsible for the security of your cryptographic keys and wallet access. You agree not to:</p>
+                <ul class="list-decimal pl-6 space-y-4" data-sd-id="66">
+                  <li data-sd-id="67">Use the Protocol for any illegal activities, including money laundering or terrorist financing.</li>
+                  <li data-sd-id="68">Attempt to exploit the smart contracts or relayer network for unintended financial gain.</li>
+                  <li data-sd-id="69">Provide false information in merchant metadata.</li>
+                </ul>
+                <div class="p-6 bg-forest text-white relative mt-8" data-sd-id="70">
+                  <div class="corner-marker corner-tl !border-mint" data-sd-id="71"></div>
+                  <div class="corner-marker corner-tr !border-mint" data-sd-id="72"></div>
+                  <div class="corner-marker corner-bl !border-mint" data-sd-id="73"></div>
+                  <div class="corner-marker corner-br !border-mint" data-sd-id="74"></div>
+                  <p class="font-mono text-[10px] tracking-widest uppercase mb-2 text-mint" data-sd-id="75">Security Requirement</p>
+                  <p class="text-xs opacity-70" data-sd-id="76">Failure to maintain wallet security resulting in unauthorized subscriptions or fund loss is your sole responsibility.</p>
+                </div>
+              </div>
+            </section>
+
+            <!-- Section 04: Liability -->
+            <section id="liability" class="legal-card reveal" data-sd-id="77">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="78">
+                <span class="font-mono text-sm text-forest font-bold uppercase tracking-widest" data-sd-id="79">04</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="80">Liability Limitations</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="81">
+                <h4 class="font-space text-xl font-bold text-forest" data-sd-id="82">NO WARRANTIES</h4>
+                <p class="italic" data-sd-id="83">The service is provided "AS IS" and "AS AVAILABLE" without any warranties of any kind. We do not warrant that the Protocol will be uninterrupted or error-free.</p>
+                <p data-sd-id="84">In no event shall Pact Foundation or its contributors be liable for any indirect, incidental, special, or consequential damages resulting from your use of the Protocol or the failure of any smart contract logic.</p>
+              </div>
+            </section>
+
+            <!-- Section 05: Payments -->
+            <section id="payments" class="legal-card reveal" data-sd-id="85">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="86">
+                <span class="font-mono text-sm text-mint font-bold uppercase tracking-widest" data-sd-id="87">05</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="88">Payment Processing</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="89">
+                <p data-sd-id="90">All subscription payments are processed on-chain. By signing a pull-permission, you authorize the relayer network to execute a transaction on your behalf at the intervals specified in your chosen plan.</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4" data-sd-id="91">
+                  <div class="p-4 border border-grid-border" data-sd-id="92">
+                    <span class="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2" data-sd-id="93">05.1 Gas Fees</span>
+                    <p class="text-xs" data-sd-id="94">Relayers may deduct a nominal execution fee (Gas) from the transaction amount as specified in the merchant contract.</p>
+                  </div>
+                  <div class="p-4 border border-grid-border" data-sd-id="95">
+                    <span class="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2" data-sd-id="96">05.2 Slippage</span>
+                    <p class="text-xs" data-sd-id="97">For cross-chain settlement, a max slippage of 0.5% is applied to protocol-level swaps.</p>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Section 06: IP -->
+            <section id="ip" class="legal-card reveal" data-sd-id="98">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="99">
+                <span class="font-mono text-sm text-coral font-bold uppercase tracking-widest" data-sd-id="100">06</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="101">Intellectual Property</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="102">
+                <p data-sd-id="103">The Pact source code is released under the MIT License. However, all branding, logos, trademarks, and interface designs are the exclusive property of Pact Foundation.</p>
+                <p data-sd-id="104">You are granted a limited, non-exclusive, non-transferable license to access and use the web interface for its intended purposes.</p>
+              </div>
+            </section>
+
+            <!-- Section 07: Disputes -->
+            <section id="disputes" class="legal-card reveal" data-sd-id="105">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="106">
+                <span class="font-mono text-sm text-gold font-bold uppercase tracking-widest" data-sd-id="107">07</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="108">Dispute Resolution</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="109">
+                <p data-sd-id="110">Any dispute arising out of or related to these Terms will be resolved through final and binding arbitration administered by the International Centre for Dispute Resolution (ICDR) under its International Arbitration Rules.</p>
+                <div class="p-6 bg-paper border border-grid-border font-mono text-[10px] tracking-widest" data-sd-id="111">
+                  [ VENUE: SINGAPORE ]<br>
+                  [ LANGUAGE: ENGLISH ]<br>
+                  [ ARBITRATORS: 1 ]
+                </div>
+              </div>
+            </section>
+
+            <!-- Section 08: Governing Law -->
+            <section id="governing" class="legal-card reveal" data-sd-id="112">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="113">
+                <span class="font-mono text-sm text-forest font-bold uppercase tracking-widest" data-sd-id="114">08</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="115">Governing Law</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="116">
+                <p data-sd-id="117">These Terms and your use of the Protocol shall be governed by and construed in accordance with the laws of the British Virgin Islands, without regard to its conflict of law principles.</p>
+              </div>
+            </section>
+
+            <!-- Section 09: Changes -->
+            <section id="changes" class="legal-card reveal" data-sd-id="118">
+              <div class="flex items-center gap-6 mb-8" data-sd-id="119">
+                <span class="font-mono text-sm text-mint font-bold uppercase tracking-widest" data-sd-id="120">09</span>
+                <h2 class="font-space text-3xl font-black tracking-tight text-forest uppercase" data-sd-id="121">Changes to Terms</h2>
+              </div>
+              <div class="space-y-6 text-sm text-forest/70 leading-relaxed" data-sd-id="122">
+                <p data-sd-id="123">We reserve the right to modify these Terms at any time. Changes will be effective immediately upon posting to the Protocol interface. Your continued use of the service constitutes acceptance of the revised Terms.</p>
+              </div>
+            </section>
+          </div>
+
+          <!-- Help Box -->
+          <div class="mt-20 p-12 bg-forest text-white relative shadow-2xl overflow-hidden" data-sd-id="124">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-mint/10 -mr-16 -mt-16 rounded-full blur-3xl" data-sd-id="125"></div>
+            <div class="relative z-10 flex flex-col md:flex-row justify-between items-center gap-8" data-sd-id="126">
+              <div class="max-w-xs" data-sd-id="127">
+                <h3 class="font-space text-3xl font-bold mb-2" data-sd-id="128">Legal Inquiry?</h3>
+                <p class="text-xs opacity-50 font-mono tracking-wider uppercase" data-sd-id="129">Contact our compliance department</p>
+              </div>
+              <a href="mailto:pactxbt@outlook.com" class="bg-white text-forest px-8 py-4 font-mono text-xs font-bold tracking-widest uppercase hover:bg-mint transition-colors" data-sd-id="130">
+                pactxbt@outlook.com
+              </a>
+          </div>
+        </div>
+          <div class="border-t border-grid-border mt-16 pt-8 flex gap-6 text-xs font-mono tracking-wider">
+            <a href="/docs" class="text-forest/60 hover:text-coral transition-colors uppercase">Documentation</a>
+            <a href="/privacy" class="text-forest/60 hover:text-coral transition-colors uppercase">Privacy Policy</a>
+          </div>
+        </div>
+      </main>
+    </div>
+
+  </div>
+
+  <script>
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        const id = entry.target.getAttribute('id');
+        const link = document.querySelector(`.sidebar-link[href="#${id}"]`);
+        if (entry.isIntersecting) {
+          document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+          if (link) link.classList.add('active');
+        }
+      });
+    }, { threshold: 0.3 });
+
+    document.querySelectorAll('section').forEach((section) => {
+      observer.observe(section);
+    });
+
+    // Reveal effect on scroll
+    const revealObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.reveal').forEach(el => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(20px)';
+      el.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+      revealObserver.observe(el);
+    });
+  </script>
+
+</body></html>
