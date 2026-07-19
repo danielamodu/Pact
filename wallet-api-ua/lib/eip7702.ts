@@ -66,118 +66,59 @@ export async function upgradeEOAWithEIP7702(
   const provider = getProvider(networkKey);
   const { chainId } = NETWORKS[networkKey];
 
-  // 1. Get current nonce of the EOA
+  // 1. Get current nonce of the EOA (actual current nonce, NOT + 1 because relayer is sender)
   const currentNonce = await provider.getTransactionCount(publicAddress);
 
-  // 2. Authorization nonce = currentNonce + 1 (self-sponsored, tx increments nonce first)
-  const authNonce = currentNonce + 1;
-
-  // 3. Compute the EIP-7702 authorization digest
+  // 2. Compute the EIP-7702 authorization digest
   const authHash = hashAuthorization({
     address: executorAddress,
     chainId: BigInt(chainId),
-    nonce: BigInt(authNonce),
+    nonce: BigInt(currentNonce),
   });
 
   console.log("[EIP-7702] Auth hash:", authHash);
-  console.log("[EIP-7702] Auth nonce:", authNonce, "(currentNonce + 1)");
+  console.log("[EIP-7702] Auth nonce (currentNonce):", currentNonce);
 
-  // 4. Sign the authorization hash via TEE wallet
+  // 3. Sign the authorization hash via TEE wallet
   const authSig = await signData(authHash, "ETH");
-  // Ethers v6 AuthorizationLike requires a `signature` SignatureLike field
   const authSignature = Signature.from({ r: authSig.r, s: authSig.s, v: authSig.v });
 
   console.log("[EIP-7702] Authorization signed:", authSignature.serialized);
+  console.log("[EIP-7702] Posting to relayer for gas sponsorship...");
 
-  // 5. Get fee data and compute EIP-1559 gas fees with safety buffer
-  const feeData = await provider.getFeeData();
-  
-  // Use a 30% buffer on priority fee
-  const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas !== null && feeData.maxPriorityFeePerGas !== undefined
-    ? (feeData.maxPriorityFeePerGas * BigInt(130)) / BigInt(100)
-    : BigInt(0);
-
-  // Use a 50% buffer on max fee per gas to absorb transient spikes
-  let maxFeePerGas = feeData.maxFeePerGas !== null && feeData.maxFeePerGas !== undefined
-    ? (feeData.maxFeePerGas * BigInt(150)) / BigInt(100)
-    : (feeData.gasPrice ? (feeData.gasPrice * BigInt(260)) / BigInt(100) : BigInt(2_000_000_000));
-
-  // Ensure maxFeePerGas is at least maxPriorityFeePerGas
-  if (maxFeePerGas < maxPriorityFeePerGas) {
-    maxFeePerGas = maxPriorityFeePerGas;
-  }
-
-  console.log("[EIP-7702] Gas configuration:", {
-    maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
-    maxFeePerGas: maxFeePerGas.toString(),
-    originalMaxFee: feeData.maxFeePerGas?.toString(),
-    originalPriorityFee: feeData.maxPriorityFeePerGas?.toString(),
+  // 4. POST the signed authorization to our new server-side relayer API
+  const response = await fetch("/api/relayer/sponsor-upgrade", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      subscriberAddress: publicAddress,
+      nonce: currentNonce,
+      chainId,
+      signature: authSignature.serialized,
+      networkKey,
+    }),
   });
 
-  // 6. Build the Type-4 tx (authorizationList carries the upgrade)
-  //    Route to null address with 0 value — cleaner than self-call (avoids revert)
-  const NULL_ADDRESS = "0x0000000000000000000000000000000000000000";
-
-  const authorization = {
-    address: executorAddress,
-    nonce: BigInt(authNonce),
-    chainId: BigInt(chainId),
-    signature: authSignature,
-  };
-
-  const txBase: any = {
-    type: 4,
-    to: NULL_ADDRESS,
-    value: BigInt(0),
-    data: "0x",
-    nonce: currentNonce,
-    chainId: BigInt(chainId),
-    maxFeePerGas,
-    maxPriorityFeePerGas,
-    authorizationList: [authorization],
-  };
-
-  // 7. Estimate gas dynamically with safety buffer
-  let gasLimit: bigint;
-  try {
-    const estimated = await provider.estimateGas({
-      from: publicAddress,
-      ...txBase,
-    });
-    gasLimit = (estimated * BigInt(140)) / BigInt(100); // 40% buffer
-    console.log("[EIP-7702] Estimated gas:", estimated.toString(), "→ limit:", gasLimit.toString());
-  } catch (err) {
-    // Fallback: use 600k (safely above the ~440k observed on-chain)
-    gasLimit = BigInt(600_000);
-    console.warn("[EIP-7702] Gas estimation failed, using fallback 600k:", err);
+  const data = await response.json();
+  if (!response.ok || data.error) {
+    throw new Error(data.error || `Relayer request failed with status: ${response.status}`);
   }
 
-  const txRequest: TransactionLike = {
-    ...txBase,
-    gasLimit,
-  };
+  const txHash = data.hash;
+  console.log("[EIP-7702] Relayer transaction broadcasted successfully. Hash:", txHash);
 
-  // 8. Sign the full Type-4 tx via TEE
-  const resolvedTx = { ...txRequest };
-  delete (resolvedTx as any).from;
-
-  const btx = Transaction.from(resolvedTx);
-  const { r, s, v } = await signData(btx.unsignedHash, "ETH");
-  btx.signature = Signature.from({ r, s, v });
-
-  const serialized = btx.serialized;
-  console.log("[EIP-7702] Broadcasting Type-4 tx...");
-
-  // 9. Broadcast
-  const txResponse = await provider.broadcastTransaction(serialized);
-  console.log("[EIP-7702] Tx hash:", txResponse.hash);
-
-  // 10. Wait for confirmation
+  // 5. Wait for confirmation
+  const txResponse = await provider.getTransaction(txHash);
+  if (!txResponse) {
+    throw new Error(`Sponsored transaction not found in provider. Hash: ${txHash}`);
+  }
   const receipt = await txResponse.wait(1);
   if (!receipt || receipt.status !== 1) {
-    throw new Error(`[EIP-7702] Transaction failed or reverted. Hash: ${txResponse.hash}`);
+    throw new Error(`[EIP-7702] Sponsored transaction failed or reverted. Hash: ${txHash}`);
   }
 
-  console.log("[EIP-7702] Upgrade confirmed in block:", receipt.blockNumber);
-  return txResponse.hash;
+  console.log("[EIP-7702] Sponsored upgrade confirmed in block:", receipt.blockNumber);
+  return txHash;
 }
