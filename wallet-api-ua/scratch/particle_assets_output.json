@@ -1,0 +1,317 @@
+{
+  "assets": [
+    {
+      "tokenType": "eth",
+      "price": 1868.92,
+      "amount": 0,
+      "amountInUSD": 0,
+      "chainAggregation": [
+        {
+          "token": {
+            "assetId": "eth",
+            "type": "eth",
+            "chainId": 8453,
+            "address": "0x0000000000000000000000000000000000000000",
+            "decimals": 18,
+            "realDecimals": 18,
+            "isMultiChain": true,
+            "isMultiChainDefault": true
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "eth",
+            "type": "eth",
+            "chainId": 1,
+            "address": "0x0000000000000000000000000000000000000000",
+            "decimals": 18,
+            "realDecimals": 18,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "eth",
+            "type": "eth",
+            "chainId": 42161,
+            "address": "0x0000000000000000000000000000000000000000",
+            "decimals": 18,
+            "realDecimals": 18,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "eth",
+            "type": "eth",
+            "chainId": 56,
+            "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+            "decimals": 18,
+            "realDecimals": 18,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        }
+      ]
+    },
+    {
+      "tokenType": "usdc",
+      "price": 0.99983,
+      "amount": 0,
+      "amountInUSD": 0,
+      "chainAggregation": [
+        {
+          "token": {
+            "assetId": "usdc",
+            "type": "usdc",
+            "chainId": 8453,
+            "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": true
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdc",
+            "type": "usdc",
+            "chainId": 1,
+            "address": "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdc",
+            "type": "usdc",
+            "chainId": 42161,
+            "address": "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdc",
+            "type": "usdc",
+            "chainId": 56,
+            "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+            "decimals": 18,
+            "realDecimals": 18,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdc",
+            "type": "usdc",
+            "chainId": 101,
+            "address": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdc",
+            "type": "usdc",
+            "chainId": 196,
+            "address": "0x74b7F16337b8972027F6196A17a631aC6dE26d22",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        }
+      ]
+    },
+    {
+      "tokenType": "usdt",
+      "price": 0.99919,
+      "amount": 0,
+      "amountInUSD": 0,
+      "chainAggregation": [
+        {
+          "token": {
+            "assetId": "usdt",
+            "type": "usdt",
+            "chainId": 1,
+            "address": "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdt",
+            "type": "usdt",
+            "chainId": 42161,
+            "address": "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": true
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdt",
+            "type": "usdt",
+            "chainId": 56,
+            "address": "0x55d398326f99059fF775485246999027B3197955",
+            "decimals": 18,
+            "realDecimals": 18,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdt",
+            "type": "usdt",
+            "chainId": 101,
+            "address": "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        },
+        {
+          "token": {
+            "assetId": "usdt",
+            "type": "usdt",
+            "chainId": 196,
+            "address": "0x779Ded0c9e1022225f8E0630b35a9b54bE713736",
+            "decimals": 18,
+            "realDecimals": 6,
+            "isMultiChain": true,
+            "isMultiChainDefault": false
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        }
+      ]
+    },
+    {
+      "tokenType": "bnb",
+      "price": 568.73,
+      "amount": 0,
+      "amountInUSD": 0,
+      "chainAggregation": [
+        {
+          "token": {
+            "assetId": "bnb",
+            "type": "bnb",
+            "chainId": 56,
+            "address": "0x0000000000000000000000000000000000000000",
+            "decimals": 18,
+            "realDecimals": 18,
+            "isMultiChain": true,
+            "isMultiChainDefault": true
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        }
+      ]
+    },
+    {
+      "tokenType": "sol",
+      "price": 76.02,
+      "amount": 0,
+      "amountInUSD": 0,
+      "chainAggregation": [
+        {
+          "token": {
+            "assetId": "sol",
+            "type": "sol",
+            "chainId": 101,
+            "address": "0x0000000000000000000000000000000000000000",
+            "decimals": 18,
+            "realDecimals": 9,
+            "isMultiChain": true,
+            "isMultiChainDefault": true
+          },
+          "amount": 0,
+          "amountInUSD": 0,
+          "isTokenAccountExist": false,
+          "rawAmount": 0
+        }
+      ]
+    }
+  ],
+  "totalAmountInUSD": 0
+}

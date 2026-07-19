@@ -16,11 +16,6 @@ const projectClientKey = process.env.NEXT_PUBLIC_CLIENT_KEY;
 const projectAppUuid = process.env.NEXT_PUBLIC_APP_ID;
 const ownerAddress = "0x320d034d76c4c79b12850d288bf68044abe7bf2f"; // dummy address
 
-if (!projectId || !projectClientKey || !projectAppUuid) {
-  console.error("Missing Particle credentials in .env");
-  process.exit(1);
-}
-
 const ua = new UniversalAccount({
   projectId,
   projectClientKey,
@@ -35,9 +30,14 @@ const ua = new UniversalAccount({
 });
 
 ua.getPrimaryAssets().then(assets => {
-  console.log("UNIVERSAL ACCOUNT ASSETS STATUS: SUCCESS");
-  console.log("Total Amount in USD:", assets.totalAmountInUSD);
-  console.log("Primary Assets Count:", assets.primaryAssets?.length);
+  console.log("KEYS of assets:", Object.keys(assets));
+  // Let's print the structure of one of the fields that is an array
+  for (const key of Object.keys(assets)) {
+    if (Array.isArray(assets[key])) {
+      console.log(`Key ${key} is an array with length ${assets[key].length}`);
+      console.log("First element keys:", Object.keys(assets[key][0]));
+    }
+  }
 }).catch(err => {
   console.error("Error calling getPrimaryAssets:", err);
 });

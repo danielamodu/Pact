@@ -16,11 +16,6 @@ const projectClientKey = process.env.NEXT_PUBLIC_CLIENT_KEY;
 const projectAppUuid = process.env.NEXT_PUBLIC_APP_ID;
 const ownerAddress = "0x320d034d76c4c79b12850d288bf68044abe7bf2f"; // dummy address
 
-if (!projectId || !projectClientKey || !projectAppUuid) {
-  console.error("Missing Particle credentials in .env");
-  process.exit(1);
-}
-
 const ua = new UniversalAccount({
   projectId,
   projectClientKey,
@@ -35,9 +30,10 @@ const ua = new UniversalAccount({
 });
 
 ua.getPrimaryAssets().then(assets => {
-  console.log("UNIVERSAL ACCOUNT ASSETS STATUS: SUCCESS");
-  console.log("Total Amount in USD:", assets.totalAmountInUSD);
-  console.log("Primary Assets Count:", assets.primaryAssets?.length);
+  fs.writeFileSync('scratch/particle_assets_output.json', JSON.stringify(assets, null, 2));
+  console.log("Assets written to scratch/particle_assets_output.json");
+  process.exit(0);
 }).catch(err => {
   console.error("Error calling getPrimaryAssets:", err);
+  process.exit(1);
 });

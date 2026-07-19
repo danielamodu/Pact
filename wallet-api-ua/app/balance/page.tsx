@@ -122,9 +122,13 @@ export default function BalanceRevealPage() {
       if (!publicAddress) return;
       try {
         setLoadingUa(true);
-        const projectId = process.env.NEXT_PUBLIC_PROJECT_ID || "8e0b60ba-6c33-4293-bfb8-f33f8d889114";
-        const projectClientKey = process.env.NEXT_PUBLIC_CLIENT_KEY || "c27MqU6j4lNYOhOXUsU29A8met2N9KsJli0Ic55u";
-        const projectAppUuid = process.env.NEXT_PUBLIC_APP_ID || "01bc1045-ed39-44c4-b1f2-ecfa8aff3be4";
+        const projectId = process.env.NEXT_PUBLIC_PROJECT_ID;
+        const projectClientKey = process.env.NEXT_PUBLIC_CLIENT_KEY;
+        const projectAppUuid = process.env.NEXT_PUBLIC_APP_ID;
+
+        if (!projectId || !projectClientKey || !projectAppUuid) {
+          throw new Error("Missing Particle Network credentials in environment configuration.");
+        }
 
         const { UniversalAccount } = await import("@particle-network/universal-account-sdk");
         const ua = new UniversalAccount({
@@ -133,16 +137,17 @@ export default function BalanceRevealPage() {
           projectAppUuid,
           ownerAddress: publicAddress,
           smartAccountOptions: {
-            name: "BICONOMY",
-            version: "2.0.0",
+            name: "UNIVERSAL",
+            version: "1.0.3",
             ownerAddress: publicAddress,
             useEIP7702: true
           }
         });
         const assets = await ua.getPrimaryAssets();
         setUaAssets(assets);
-      } catch (err) {
+      } catch (err: any) {
         console.error("Failed to query Particle assets:", err);
+        setUaAssets(null);
       } finally {
         setLoadingUa(false);
       }
@@ -286,7 +291,7 @@ export default function BalanceRevealPage() {
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
-                  {uaAssets.primaryAssets?.map((asset: any, idx: number) => (
+                  {uaAssets.assets?.map((asset: any, idx: number) => (
                     <div key={idx} className="bg-white/60 p-4 border border-[#3A3A38]/10">
                       <span className="font-mono text-[8px] uppercase tracking-widest opacity-40 block mb-1">
                         {asset.tokenType}
@@ -303,7 +308,7 @@ export default function BalanceRevealPage() {
 
                 <div className="flex items-center gap-1.5 font-mono text-[8px] text-[#0052FF] uppercase font-bold tracking-widest pt-2">
                   <iconify-icon icon="lucide:check-circle" className="text-xs"></iconify-icon>
-                  <span>Real-time indexing compiled across 6 EVM layers</span>
+                  <span>Real-time indexing compiled across all supported chain layers</span>
                 </div>
               </div>
             ) : (
