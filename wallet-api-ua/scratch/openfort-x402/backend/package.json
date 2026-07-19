@@ -1,0 +1,33 @@
+{
+  "name": "openfort-x402-backend",
+  "version": "1.0.0",
+  "description": "Backend server for x402 paywall demo",
+  "main": "dist/server.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "tsc && node --watch dist/server.js"
+  },
+  "dependencies": {
+    "@coinbase/cdp-sdk": "^1.51.0",
+    "@openfort/openfort-node": "^0.10.5",
+    "dotenv": "^16.6.1",
+    "express": "^5.1.0",
+    "express-rate-limit": "^7.5.0",
+    "viem": "^2.52.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.4",
+    "@types/node": "^22.19.20",
+    "typescript": "^5.9.3"
+  },
+  "keywords": [
+    "openfort",
+    "x402",
+    "paywall",
+    "backend"
+  ],
+  "author": "Openfort",
+  "license": "MIT"
+}
