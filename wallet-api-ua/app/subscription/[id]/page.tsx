@@ -42,11 +42,22 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
     loadData();
   }, [id, network]);
 
-  const handleRevoke = () => {
+  const handleRevoke = async () => {
     const planIdNum = parseInt(id);
     clearSessionKeyDelegation(planIdNum);
     setRevoked(true);
     setShowModal(false);
+
+    // Also remove from server-side keeper store so no future pulls are attempted
+    try {
+      await fetch("/api/keeper/store-delegation", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planId: id, subscriberAddress: "self", network }),
+      });
+    } catch {
+      // Non-fatal
+    }
   };
 
   const formatAddr = (addr?: string) => {

@@ -33,44 +33,62 @@ function SubscribeContent() {
 
   useEffect(() => {
     if (planId) {
-      setLoading(true);
-      setError(null);
-      const provider = getProvider(network);
-      const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
-      
-      contract.getPlan(planId).then((data) => {
-        if (!data.name || data.payoutAddress === ethers.ZeroAddress) {
-          setError(`Plan #${planId} was not found on ${network === "arbitrum" ? "Arbitrum One" : "Base Network"}.`);
+      async function loadPlan() {
+        setLoading(true);
+        setError(null);
+
+        let activeNet = network;
+        let provider = getProvider(activeNet);
+        let contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
+
+        try {
+          let data = await contract.getPlan(planId);
+
+          // Smart fallback if plan not found on primary network
+          if (!data.name || data.payoutAddress === ethers.ZeroAddress) {
+            const altNet = activeNet === "arbitrum" ? "base" : "arbitrum";
+            const altProvider = getProvider(altNet);
+            const altContract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, altProvider);
+            const altData = await altContract.getPlan(planId);
+
+            if (altData.name && altData.payoutAddress !== ethers.ZeroAddress) {
+              data = altData;
+              activeNet = altNet;
+            } else {
+              setError(`Failed to retrieve plan #${planId}. Ensure you are querying the correct network.`);
+              setLoading(false);
+              return;
+            }
+          }
+
+          let tokenSymbol = "USDC";
+          let tokenDecimals = 6;
+          if (data.token.toLowerCase() === "0x0000000000000000000000000000000000000000" || 
+              data.token.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+            tokenSymbol = "ETH";
+            tokenDecimals = 18;
+          } else if (data.token.toLowerCase() === "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" || 
+                     data.token.toLowerCase() === "0x50c5725949a6f0c72e6c4a641f240e934e271057") {
+            tokenSymbol = "USDT";
+            tokenDecimals = 6;
+          }
+
+          setPlanData({
+            name: data.name,
+            price: ethers.formatUnits(data.price, tokenDecimals),
+            intervalDays: Math.round(Number(data.intervalSeconds) / 86400),
+            merchant: `${data.payoutAddress.substring(0, 6)}...${data.payoutAddress.substring(38)}`,
+            payoutAddress: data.payoutAddress,
+            token: tokenSymbol
+          });
+        } catch (err) {
+          console.error(err);
+          setError(`Failed to retrieve plan #${planId}. Ensure you are querying the correct network.`);
+        } finally {
           setLoading(false);
-          return;
         }
-
-        let tokenSymbol = "USDC";
-        let tokenDecimals = 6;
-        if (data.token.toLowerCase() === "0x0000000000000000000000000000000000000000" || 
-            data.token.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
-          tokenSymbol = "ETH";
-          tokenDecimals = 18;
-        } else if (data.token.toLowerCase() === "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" || 
-                   data.token.toLowerCase() === "0x50c5725949a6f0c72e6c4a641f240e934e271057") {
-          tokenSymbol = "USDT";
-          tokenDecimals = 6;
-        }
-
-        setPlanData({
-          name: data.name,
-          price: ethers.formatUnits(data.price, tokenDecimals),
-          intervalDays: Math.round(Number(data.intervalSeconds) / 86400),
-          merchant: `${data.payoutAddress.substring(0, 6)}...${data.payoutAddress.substring(38)}`,
-          payoutAddress: data.payoutAddress, // full untruncated address for session key scope
-          token: tokenSymbol
-        });
-        setLoading(false);
-      }).catch((err) => {
-        console.error(err);
-        setError(`Failed to retrieve plan #${planId} on ${network === "arbitrum" ? "Arbitrum One" : "Base"}. Ensure you are querying the correct network.`);
-        setLoading(false);
-      });
+      }
+      loadPlan();
     } else {
       setError("NO_PLAN_SELECTED");
       setLoading(false);

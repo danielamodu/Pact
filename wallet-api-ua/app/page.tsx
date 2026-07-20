@@ -244,6 +244,51 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ── Live Demo Plans ── */}
+        <section className="py-24" style={{ background: "#F7F7F5", borderTop: "1px solid var(--sd-grid-border)" }}>
+          <div className="max-w-7xl mx-auto px-6">
+            <div style={{ marginBottom: 64 }}>
+              <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(26,60,43,0.4)", display: "block", marginBottom: 16 }}>Live on Arbitrum One</span>
+              <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 48, fontWeight: 900, letterSpacing: "-0.04em", color: "#1A3C2B", lineHeight: 1 }}>TRY IT LIVE</h2>
+              <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, color: "rgba(26,60,43,0.5)", marginTop: 16 }}>Real plans deployed on-chain. Subscribe with one signature and watch the protocol work end-to-end.</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {[
+                { planId: 4, name: "How to Cook", price: "0.00001 ETH", interval: "30 days", network: "arbitrum", tag: "Content" },
+                { planId: 5, name: "Learn to Code", price: "0.000001 ETH", interval: "30 days", network: "arbitrum", tag: "Education" },
+              ].map((plan) => (
+                <div key={plan.planId} style={{ background: "white", border: "1px solid rgba(26,60,43,0.12)", padding: 40, position: "relative" }}>
+                  <span style={{ position: "absolute", top: 0, left: 0, width: 10, height: 10, borderTop: "1.5px solid #9EFFBF", borderLeft: "1.5px solid #9EFFBF" }} />
+                  <span style={{ position: "absolute", top: 0, right: 0, width: 10, height: 10, borderTop: "1.5px solid #9EFFBF", borderRight: "1.5px solid #9EFFBF" }} />
+                  <span style={{ position: "absolute", bottom: 0, left: 0, width: 10, height: 10, borderBottom: "1.5px solid #9EFFBF", borderLeft: "1.5px solid #9EFFBF" }} />
+                  <span style={{ position: "absolute", bottom: 0, right: 0, width: 10, height: 10, borderBottom: "1.5px solid #9EFFBF", borderRight: "1.5px solid #9EFFBF" }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", background: "#9EFFBF", color: "#1A3C2B", padding: "4px 10px", fontWeight: 700 }}>{plan.tag}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(26,60,43,0.4)" }}>Plan #{plan.planId}</span>
+                  </div>
+                  <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 28, fontWeight: 800, color: "#1A3C2B", marginBottom: 8 }}>{plan.name}</h3>
+                  <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginBottom: 24 }}>
+                    <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 20, fontWeight: 700, color: "#1A3C2B" }}>{plan.price}</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "rgba(26,60,43,0.4)", textTransform: "uppercase" }}>/ {plan.interval}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 12, marginBottom: 32 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.15em", border: "1px solid rgba(26,60,43,0.15)", padding: "4px 10px", color: "rgba(26,60,43,0.5)" }}>Arbitrum One</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.15em", border: "1px solid rgba(26,60,43,0.15)", padding: "4px 10px", color: "rgba(26,60,43,0.5)" }}>EIP-7702</span>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.15em", border: "1px solid rgba(26,60,43,0.15)", padding: "4px 10px", color: "rgba(26,60,43,0.5)" }}>Session Key</span>
+                  </div>
+                  <Link
+                    href={`/subscribe?planId=${plan.planId}&network=${plan.network}`}
+                    style={{ display: "block", width: "100%", background: "#1A3C2B", color: "white", fontFamily: "'JetBrains Mono', monospace", fontSize: 11, fontWeight: 700, letterSpacing: "0.2em", textTransform: "uppercase", padding: "16px 0", textAlign: "center" }}
+                    className="hover:opacity-90 transition-opacity"
+                  >
+                    Subscribe &rarr;
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* ── FAQ ── */}
         <section id="faq" className="py-24" style={{ background: "white", borderTop: "1px solid var(--sd-grid-border)" }}>
           <div className="max-w-4xl mx-auto px-6">

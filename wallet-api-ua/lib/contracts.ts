@@ -356,11 +356,26 @@ export async function withdrawOnchain(
  * Fetches detailed plan analytics including real subscribers and total revenue
  */
 export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" | "base") {
-  const provider = getProvider(networkKey);
-  const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
+  let activeNet = networkKey;
+  let provider = getProvider(activeNet);
+  let contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
 
   const planId = BigInt(planIdStr);
-  const plan = await contract.getPlan(planId);
+  let plan = await contract.getPlan(planId);
+
+  // Automatic cross-network fallback if plan not found on primary network
+  if (!plan.name || plan.payoutAddress === ethers.ZeroAddress) {
+    const altNet = activeNet === "arbitrum" ? "base" : "arbitrum";
+    const altProvider = getProvider(altNet);
+    const altContract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, altProvider);
+    const altPlan = await altContract.getPlan(planId);
+    if (altPlan.name && altPlan.payoutAddress !== ethers.ZeroAddress) {
+      plan = altPlan;
+      activeNet = altNet;
+      provider = altProvider;
+      contract = altContract;
+    }
+  }
 
   // Determine token details
   let tokenSymbol = "USDC";
@@ -377,7 +392,7 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
 
   // 1. Fetch Subscribed events for planId
   const subFilter = contract.filters.Subscribed(planId, null, null);
-  const subEvents = await queryEvents(contract, subFilter, networkKey);
+  const subEvents = await queryEvents(contract, subFilter, activeNet);
   
   const subscribersSet = new Set<string>();
   const subscribersList: Array<{ address: string; blockNumber: number }> = [];
@@ -399,7 +414,7 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
 
   // 2. Fetch PullExecuted events for planId
   const pullFilter = contract.filters.PullExecuted(planId, null, null, null);
-  const pullEvents = await queryEvents(contract, pullFilter, networkKey);
+  const pullEvents = await queryEvents(contract, pullFilter, activeNet);
   
   let totalRevenueUnits = BigInt(0);
   for (const event of pullEvents) {

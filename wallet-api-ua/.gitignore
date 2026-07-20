@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 .superdesign
+
+# Keeper delegation store (contains session key private keys — never commit)
+keeper-store.json

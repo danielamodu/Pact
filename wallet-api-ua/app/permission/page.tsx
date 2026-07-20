@@ -186,6 +186,34 @@ function PermissionContent() {
 
       saveSessionKeyDelegation(sessionKeyWallet.privateKey, scope, ownerSignature);
 
+      // ── Persist delegation server-side for keeper execution ─────────────
+      try {
+        await fetch("/api/keeper/store-delegation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            privateKey: sessionKeyWallet.privateKey,
+            ownerSignature,
+            subscriberAddress: publicAddress,
+            planId,
+            network: networkKey,
+            scope: {
+              sessionKeyAddress: scope.sessionKeyAddress,
+              recipient: scope.recipient,
+              maxAmount: scope.maxAmount.toString(),
+              token: scope.token,
+              interval: scope.interval,
+              expiry: scope.expiry,
+              planId: scope.planId,
+            },
+          }),
+        });
+        console.log("[Permission] Delegation stored server-side for keeper.");
+      } catch (storeErr) {
+        // Non-fatal: subscription still works, keeper just won't auto-execute
+        console.warn("[Permission] Failed to store delegation server-side:", storeErr);
+      }
+
       // ── Record subscription on-chain ────────────────────────────────────
       setCurrentStep("Recording subscription");
       const subscribeTxHash = await subscribeOnchain(networkKey, parseInt(planId), sessionKeyAddress);
