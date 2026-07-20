@@ -190,10 +190,14 @@ export async function getSubscriptionsForUser(userAddress: string, networkKey: "
     const filter = contract.filters.Subscribed(null, userAddress);
     const events = await queryEvents(contract, filter, networkKey);
 
+    const seenPlanIds = new Set<string>();
     const subsList = [];
     for (const event of events) {
       if ("args" in event && event.args) {
         const { planId } = event.args as any;
+        const pIdStr = planId.toString();
+        if (seenPlanIds.has(pIdStr)) continue;
+        seenPlanIds.add(pIdStr);
         
         try {
           const plan = await contract.getPlan(planId);

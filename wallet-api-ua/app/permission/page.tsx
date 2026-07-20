@@ -50,6 +50,18 @@ function PermissionContent() {
   // Success state for completed subscription
   const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
 
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
+
+  useEffect(() => {
+    if (planId) {
+      const planIdNum = parseInt(planId);
+      const delegation = getSessionKeyDelegation(planIdNum);
+      if (delegation.delegation && delegation.delegation.scope.expiry > Date.now() / 1000) {
+        setAlreadySubscribed(true);
+      }
+    }
+  }, [planId]);
+
   const autoTriggerRef = useRef(false);
 
   const cancelHref = planId
@@ -283,6 +295,29 @@ function PermissionContent() {
             </div>
           </div>
 
+          {/* Already Subscribed Notice */}
+          {alreadySubscribed && (
+            <div className="mb-6 p-6 bg-[#9EFFBF]/20 border border-forest/20 text-forest space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2.5 h-2.5 bg-forest rounded-full"></div>
+                <p className="font-mono text-xs font-bold uppercase tracking-wider">
+                  Active Subscription Already Exists
+                </p>
+              </div>
+              <p className="font-sans text-xs opacity-80 leading-relaxed">
+                You already have an active subscription for <strong className="font-bold">{planName}</strong>. You can view or manage your active subscription session below.
+              </p>
+              <div className="pt-1 flex gap-3">
+                <Link
+                  href={`/subscription/${planId}?network=${network}`}
+                  className="bg-forest text-white font-mono text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity"
+                >
+                  View Active Subscription
+                </Link>
+              </div>
+            </div>
+          )}
+
           {/* Error display with Deposit prompt */}
           {error && (
             <div className="mb-6 p-6 border border-coral bg-coral/5 space-y-4">
@@ -350,7 +385,7 @@ function PermissionContent() {
                   <span>{currentStep || "Processing..."}</span>
                 </>
               ) : (
-                "Confirm Authorization"
+                alreadySubscribed ? "Update Session Permission" : "Confirm Authorization"
               )}
             </button>
 
@@ -415,16 +450,16 @@ function PermissionContent() {
               </div>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Link
                 href={`/subscription/${planId}?network=${network}`}
-                className="flex-1 bg-forest text-white font-mono text-xs font-bold uppercase py-4 text-center hover:bg-forest/90 transition-colors"
+                className="flex-1 bg-forest text-white font-space text-xs font-bold uppercase py-3.5 px-4 text-center hover:bg-forest/90 transition-colors tracking-normal flex items-center justify-center"
               >
-                View Subscribed Plan Details
+                View Plan Details
               </Link>
               <Link
                 href="/wallet"
-                className="flex-1 border border-forest/20 text-forest font-mono text-xs font-bold uppercase py-4 text-center hover:bg-forest/5 transition-colors"
+                className="flex-1 border border-forest/20 text-forest font-space text-xs font-bold uppercase py-3.5 px-4 text-center hover:bg-forest/5 transition-colors tracking-normal flex items-center justify-center"
               >
                 Dashboard
               </Link>
