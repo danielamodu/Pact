@@ -112,7 +112,7 @@ function SubscribeContent() {
                 Create a Plan
               </Link>
               <Link href="/wallet" className="border border-forest/20 text-forest font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm hover:bg-forest/5 transition-colors">
-                Control Center
+                Dashboard
               </Link>
             </div>
           </div>
