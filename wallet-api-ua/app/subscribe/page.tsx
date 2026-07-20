@@ -7,6 +7,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useState, Suspense } from "react";
 import { ethers } from "ethers";
 import { getProvider, PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI } from "@/lib/contracts";
+import { getSessionKeyDelegation } from "@/lib/sessionKey";
 
 function SubscribeContent() {
   const { publicAddress } = useAuth();
@@ -17,6 +18,18 @@ function SubscribeContent() {
   const [planData, setPlanData] = useState<{ name: string, price: string, intervalDays: number, merchant: string, payoutAddress: string, token: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const [alreadySubscribed, setAlreadySubscribed] = useState(false);
+
+  useEffect(() => {
+    if (planId) {
+      const planIdNum = parseInt(planId);
+      const delegation = getSessionKeyDelegation(planIdNum);
+      if (delegation.delegation && delegation.delegation.scope.expiry > Date.now() / 1000) {
+        setAlreadySubscribed(true);
+      }
+    }
+  }, [planId]);
 
   useEffect(() => {
     if (planId) {
@@ -215,20 +228,44 @@ function SubscribeContent() {
                     </div>
                   </div>
 
-                  <div className="pt-8">
-                    <Link
-                      href={planData ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}` : "/permission"}
-                      id="cta-subscribe-authorize"
-                      className="block w-full text-center bg-forest text-white font-mono text-xs tracking-[0.2em] uppercase py-5 rounded-sm hover:opacity-95 transition-opacity"
-                    >
-                      Subscribe &amp; Authorize
-                    </Link>
+                  <div className="pt-8 space-y-3">
+                    {alreadySubscribed ? (
+                      <>
+                        <div className="bg-[#9EFFBF]/20 border border-forest/20 p-4 text-center rounded-sm">
+                          <p className="font-mono text-xs text-forest font-bold uppercase tracking-tight">
+                            ✓ Active Subscription Detected
+                          </p>
+                          <p className="font-sans text-xs text-forest/70 mt-1">
+                            You already have an active session permission for this plan.
+                          </p>
+                        </div>
+                        <Link
+                          href={`/subscription/${planId}?network=${network}`}
+                          className="block w-full text-center bg-forest text-white font-mono text-xs font-bold tracking-[0.15em] uppercase py-4 rounded-sm hover:opacity-90 transition-opacity"
+                        >
+                          View / Manage Subscription
+                        </Link>
+                        <Link
+                          href={planData ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}` : "/permission"}
+                          className="block w-full text-center border border-forest/20 text-forest font-mono text-[10px] font-bold tracking-widest uppercase py-3 rounded-sm hover:bg-forest/5 transition-colors"
+                        >
+                          Re-Authorize Session Key
+                        </Link>
+                      </>
+                    ) : (
+                      <Link
+                        href={planData ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}` : "/permission"}
+                        id="cta-subscribe-authorize"
+                        className="block w-full text-center bg-forest text-white font-mono text-xs tracking-[0.2em] uppercase py-5 rounded-sm hover:opacity-95 transition-opacity"
+                      >
+                        Subscribe &amp; Authorize
+                      </Link>
+                    )}
                     <Link
                       href="/"
-                      id="cta-learn-more"
-                      className="block w-full text-center mt-4 font-mono text-[10px] uppercase tracking-widest opacity-50 hover:opacity-100 transition-opacity"
+                      className="block w-full text-center border border-[#3A3A38]/20 text-[#1A3C2B] font-mono text-xs tracking-[0.2em] uppercase py-4 rounded-sm hover:bg-[#F7F7F5] transition-all"
                     >
-                      Learn More About Pact
+                      Cancel &amp; Exit
                     </Link>
                   </div>
                 </div>
