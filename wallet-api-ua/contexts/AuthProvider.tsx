@@ -58,8 +58,9 @@ function AuthProviderInner({ children }: { children: ReactNode }) {
       setIsAuthenticated(false);
       setIsLoading(false);
       setWallet({ address: null });
-      const publicPaths = ["/", "/login", "/privacy", "/terms", "/docs", "/subscribe", "/permission"];
-      if (!publicPaths.includes(pathname)) {
+      const publicPaths = ["/", "/login", "/privacy", "/terms", "/docs", "/whitepaper", "/subscribe", "/permission"];
+      const isPublic = publicPaths.includes(pathname) || pathname.startsWith("/whitepaper") || pathname.startsWith("/plan");
+      if (!isPublic) {
         router.push("/");
       }
     }
