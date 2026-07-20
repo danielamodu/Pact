@@ -89,7 +89,7 @@ export default function Home() {
                 </p>
                 <div className="flex flex-nowrap gap-4 md:justify-end">
                   <Link href="/login" id="hero-get-started-btn" style={{ background: "white", color: "#1A3C2B", padding: "16px 40px", borderRadius: 9999, fontWeight: 800, fontSize: 13, letterSpacing: "0.1em", textTransform: "uppercase", whiteSpace: "nowrap" }} className="hover:scale-105 transition-all shadow-xl text-center">Get Started</Link>
-                  <a href="#how-it-works" id="hero-docs-link" style={{ border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "16px 40px", borderRadius: 9999, fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }} className="hover:bg-white/10 transition-all text-center">Documentation</a>
+                  <Link href="/docs" id="hero-docs-link" style={{ border: "1px solid rgba(255,255,255,0.2)", color: "white", padding: "16px 40px", borderRadius: 9999, fontWeight: 700, fontSize: 13, whiteSpace: "nowrap" }} className="hover:bg-white/10 transition-all text-center">Documentation</Link>
                 </div>
               </div>
             </div>

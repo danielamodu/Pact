@@ -27,19 +27,19 @@ export function AppFooter() {
             <h5 className="font-bold mb-10 uppercase tracking-widest text-[10px] text-forest/40 font-mono">App</h5>
             <ul className="space-y-6 text-forest/60 text-lg font-medium font-sans">
               <li><Link href="/wallet" className="hover:text-forest transition-colors">Dashboard</Link></li>
-              <li><a href="#" className="hover:text-forest transition-colors">Documentation</a></li>
-              <li><a href="#" className="hover:text-forest transition-colors">Developer SDK</a></li>
-              <li><a href="#" className="hover:text-forest transition-colors">Relayer Status</a></li>
+              <li><Link href="/docs" className="hover:text-forest transition-colors">Documentation</Link></li>
+              <li><Link href="/docs" className="hover:text-forest transition-colors">Developer SDK</Link></li>
+              <li><Link href="/docs" className="hover:text-forest transition-colors">Relayer Status</Link></li>
             </ul>
           </div>
 
           <div>
             <h5 className="font-bold mb-10 uppercase tracking-widest text-[10px] text-forest/40 font-mono">Company</h5>
             <ul className="space-y-6 text-forest/60 text-lg font-medium font-sans">
-              <li><a href="#" className="hover:text-forest transition-colors">About Us</a></li>
-              <li><a href="#" className="hover:text-forest transition-colors">Terms of Service</a></li>
-              <li><a href="#" className="hover:text-forest transition-colors">Privacy Policy</a></li>
-              <li><a href="#" className="hover:text-forest transition-colors">Security Center</a></li>
+              <li><Link href="/docs" className="hover:text-forest transition-colors">About Us</Link></li>
+              <li><Link href="/terms" className="hover:text-forest transition-colors">Terms of Service</Link></li>
+              <li><Link href="/privacy" className="hover:text-forest transition-colors">Privacy Policy</Link></li>
+              <li><Link href="/privacy" className="hover:text-forest transition-colors">Security Center</Link></li>
             </ul>
           </div>
 
