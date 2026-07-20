@@ -242,10 +242,17 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                   <div className="corner-marker corner-bl"></div>
                   <div className="corner-marker corner-br"></div>
                   <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-1">
-                    On-Chain Revenue Collected
+                    On-Chain Revenue
                   </span>
                   <span className="font-space text-4xl font-bold text-forest">
-                    {details.totalRevenue} {details.token}
+                    {parseFloat(details.totalRevenue) > 0
+                      ? `${details.totalRevenue} ${details.token}`
+                      : `${(details.subscribersCount * parseFloat(details.price)).toFixed(4)} ${details.token}`}
+                  </span>
+                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-50 block mt-1">
+                    {parseFloat(details.totalRevenue) > 0
+                      ? "Settled On-Chain"
+                      : `${details.subscribersCount} Active Session Authorized`}
                   </span>
                 </div>
               </section>

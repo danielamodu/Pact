@@ -197,18 +197,38 @@ export async function getSubscriptionsForUser(userAddress: string, networkKey: "
         
         try {
           const plan = await contract.getPlan(planId);
+
+          let tokenSymbol = "USDC";
+          let tokenDecimals = 6;
+          
+          if (plan.token.toLowerCase() === "0x0000000000000000000000000000000000000000" || 
+              plan.token.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee") {
+            tokenSymbol = "ETH";
+            tokenDecimals = 18;
+          } else if (plan.token.toLowerCase() === "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" || 
+                     plan.token.toLowerCase() === "0x50c5725949a6f0c72e6c4a641f240e934e271057") {
+            tokenSymbol = "USDT";
+            tokenDecimals = 6;
+          }
+
+          const formattedPrice = ethers.formatUnits(plan.price, tokenDecimals);
+
           subsList.push({
             id: planId.toString(),
             plan: plan.name,
-            merchant: networkKey === "arbitrum" ? "Arbitrum Service" : "Base Service",
+            merchant: plan.payoutAddress && plan.payoutAddress !== ethers.ZeroAddress
+              ? `${plan.payoutAddress.slice(0, 6)}...${plan.payoutAddress.slice(-4)}`
+              : `${networkKey === "arbitrum" ? "Arbitrum" : "Base"} Merchant`,
             status: plan.active ? ("active" as const) : ("past-due" as const),
-            amount: `${ethers.formatUnits(plan.price, 6)} USDC`,
+            amount: `${formattedPrice} ${tokenSymbol}`,
+            priceNum: parseFloat(formattedPrice),
+            tokenSymbol,
             nextBilling: new Date(Date.now() + Number(plan.intervalSeconds) * 1000).toLocaleDateString("en-US", {
               month: "short",
               day: "numeric",
               year: "numeric"
             }),
-            revokeHref: `/subscription/${planId.toString()}`
+            revokeHref: `/subscription/${planId.toString()}?network=${networkKey}`
           });
         } catch (err) {
           console.error(`Failed to fetch plan info for subscription planId ${planId.toString()}:`, err);

@@ -1,17 +1,57 @@
 "use client";
 
-import { useState, use } from "react";
+import { useState, useEffect, use } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { NavigationBar } from "@/components/NavigationBar";
+import { fetchPlanDetails } from "@/lib/contracts";
+import { getSessionKeyDelegation, clearSessionKeyDelegation } from "@/lib/sessionKey";
+import { ethers } from "ethers";
 
 export default function SubscriptionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const searchParams = useSearchParams();
+  const network = (searchParams.get("network") || "arbitrum") as "arbitrum" | "base";
+
+  const [plan, setPlan] = useState<any>(null);
+  const [delegationInfo, setDelegationInfo] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [revoked, setRevoked] = useState(false);
 
+  useEffect(() => {
+    async function loadData() {
+      setLoading(true);
+      try {
+        const planIdNum = parseInt(id);
+        const fetchedPlan = await fetchPlanDetails(network, planIdNum);
+        setPlan(fetchedPlan);
+
+        const localDelegation = getSessionKeyDelegation(planIdNum);
+        setDelegationInfo(localDelegation);
+
+        if (!localDelegation.delegation && !localDelegation.privateKey) {
+          setRevoked(true);
+        }
+      } catch (err) {
+        console.error("Failed to load subscription details:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, [id, network]);
+
   const handleRevoke = () => {
+    const planIdNum = parseInt(id);
+    clearSessionKeyDelegation(planIdNum);
     setRevoked(true);
     setShowModal(false);
+  };
+
+  const formatAddr = (addr?: string) => {
+    if (!addr || addr === ethers.ZeroAddress) return "—";
+    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
   };
 
   return (
@@ -19,21 +59,19 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
       <div className="mosaic-bg"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 pt-24 pb-12">
+      <main className="flex-1 pt-28 pb-12">
         <div className="max-w-4xl mx-auto px-6 space-y-12">
           {/* Header */}
           <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
             <div className="space-y-2">
-              {/* Back to Dashboard */}
               <Link href="/wallet" className="font-mono text-[9px] uppercase tracking-widest text-[#3A3A38]/50 hover:text-forest flex items-center gap-2">
-                <iconify-icon icon="lucide:arrow-left"></iconify-icon>
-                Back to Dashboard
+                ← Back to Dashboard
               </Link>
-              <h1 className="font-space text-5xl font-bold tracking-tighter leading-none text-forest">
-                LUME FINANCE
+              <h1 className="font-space text-5xl font-bold tracking-tighter leading-none text-forest uppercase">
+                {plan ? plan.name : `Plan #${id}`}
               </h1>
               <p className="font-mono text-[10px] uppercase opacity-40">
-                Pact Subscription Session Detail
+                Pact Subscription Session Detail ({network === "arbitrum" ? "Arbitrum One" : "Base Network"})
               </p>
             </div>
 
@@ -44,192 +82,194 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
             }`}>
               <div className={`w-2 h-2 rounded-full ${revoked ? "bg-coral" : "bg-[#1A3C2B]"}`}></div>
               <span className="font-mono text-[10px] tracking-widest uppercase font-bold">
-                {revoked ? "REVOKED" : "Active"}
+                {revoked ? "REVOKED / INACTIVE" : "Active"}
               </span>
             </div>
           </header>
 
-          {/* Details Card */}
-          <section id="details-card" className="relative bg-white border border-[#3A3A38]/20 p-10">
-            <div className="corner-marker corner-tl"></div>
-            <div className="corner-marker corner-tr"></div>
-            <div className="corner-marker corner-bl"></div>
-            <div className="corner-marker corner-br"></div>
-
-            <div className="grid md:grid-cols-3 gap-8 pb-10 border-b border-[#3A3A38]/10">
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Subscription Level
-                </span>
-                <span className="font-space text-xl font-bold uppercase">
-                  Professional Plan
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Amount per Cycle
-                </span>
-                <span className="font-space text-xl font-bold uppercase text-[#1A3C2B]">
-                  49.99 USDC
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Billing Interval
-                </span>
-                <span className="font-space text-xl font-bold uppercase">
-                  Monthly (30 days)
-                </span>
-              </div>
+          {loading ? (
+            <div className="bg-white border border-[#3A3A38]/20 p-12 text-center font-mono text-sm opacity-60">
+              Loading dynamic session details from chain...
             </div>
+          ) : (
+            <>
+              {/* Details Card */}
+              <section id="details-card" className="relative bg-white border border-[#3A3A38]/20 p-10">
+                <div className="corner-marker corner-tl"></div>
+                <div className="corner-marker corner-tr"></div>
+                <div className="corner-marker corner-bl"></div>
+                <div className="corner-marker corner-br"></div>
 
-            <div className="grid md:grid-cols-3 gap-8 pt-10">
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Authorized Amount Cap
-                </span>
-                <span className="font-mono text-sm font-bold uppercase tracking-tight">
-                  $49.99 USDC
-                </span>
-              </div>
+                <div className="grid md:grid-cols-3 gap-8 pb-10 border-b border-[#3A3A38]/10">
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Subscription Plan
+                    </span>
+                    <span className="font-space text-xl font-bold uppercase">
+                      {plan?.name || `Plan #${id}`}
+                    </span>
+                  </div>
 
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Next Billing Date
-                </span>
-                <span className="font-mono text-sm font-bold uppercase tracking-tight text-[#1A3C2B]">
-                  {revoked ? "N/A" : "Nov 24, 2024"}
-                </span>
-              </div>
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Amount per Cycle
+                    </span>
+                    <span className="font-space text-xl font-bold uppercase text-[#1A3C2B]">
+                      {plan ? `${plan.price} ${plan.token}` : "—"}
+                    </span>
+                  </div>
 
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Subscription Started
-                </span>
-                <span className="font-mono text-sm font-bold uppercase tracking-tight">
-                  Sep 24, 2024
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* Session Details */}
-          <section id="permission-terms" className="bg-white border border-[#3A3A38]/20 p-8 border-l-[4px] border-l-[#1A3C2B]">
-            <h3 className="font-space text-2xl font-bold mb-4">
-              Session Permission Details
-            </h3>
-            <p className="font-sans text-lg text-[#3A3A38]/80 leading-relaxed mb-10">
-              Lume Finance can pull up to $49.99 USDC every 30 days. Nothing else. Revoke anytime.
-            </p>
-
-            <div className="grid md:grid-cols-3 gap-8 border-t border-[#3A3A38]/10 pt-8">
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Session ID
-                </span>
-                <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
-                  0xA7c6f461...902
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Authorized Date
-                </span>
-                <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
-                  Sep 24, 2024
-                </span>
-              </div>
-
-              <div className="space-y-1">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                  Valid Until
-                </span>
-                <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
-                  Jan 15, 2025
-                </span>
-              </div>
-            </div>
-          </section>
-
-          {/* Billing History */}
-          <section id="billing-history" className="bg-white border border-[#3A3A38]/20 p-8">
-            <div className="mb-8">
-              <h3 className="font-space text-2xl font-bold">Billing History</h3>
-              <p className="font-mono text-[10px] uppercase tracking-widest opacity-40 mt-1">
-                All pulls for this subscription
-              </p>
-            </div>
-
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="font-mono text-[9px] uppercase tracking-widest opacity-40 border-b border-[#3A3A38]/20">
-                  <tr>
-                    <th className="pb-4 font-normal">Date</th>
-                    <th className="pb-4 font-normal">Amount</th>
-                    <th className="pb-4 font-normal">Status</th>
-                    <th className="pb-4 font-normal">Transaction</th>
-                  </tr>
-                </thead>
-                <tbody className="font-mono text-xs">
-                  <tr className="hover:bg-[#F7F7F5] transition-colors border-b border-[#3A3A38]/10">
-                    <td className="py-5">Oct 24, 2024</td>
-                    <td className="py-5">49.99 USDC</td>
-                    <td className="py-5">
-                      <span className="bg-[#9EFFBF] text-[#1A3C2B] px-2 py-0.5 font-bold">
-                        ✓ SUCCESS
-                      </span>
-                    </td>
-                    <td className="py-5 text-[#1A3C2B] underline opacity-80">0x7b...3f2</td>
-                  </tr>
-                  <tr className="hover:bg-[#F7F7F5] transition-colors border-b border-[#3A3A38]/10">
-                    <td className="py-5">Sep 24, 2024</td>
-                    <td className="py-5">49.99 USDC</td>
-                    <td className="py-5">
-                      <span className="bg-[#9EFFBF] text-[#1A3C2B] px-2 py-0.5 font-bold">
-                        ✓ SUCCESS
-                      </span>
-                    </td>
-                    <td className="py-5 text-[#1A3C2B] underline opacity-80">0x4a...8e1</td>
-                  </tr>
-                  <tr className="hover:bg-[#F7F7F5] transition-colors border-b border-[#3A3A38]/10">
-                    <td className="py-5">Aug 24, 2024</td>
-                    <td className="py-5">49.99 USDC</td>
-                    <td className="py-5">
-                      <span className="bg-coral text-white px-2 py-0.5 font-bold">
-                        ✗ DECLINED
-                      </span>
-                    </td>
-                    <td className="py-5 opacity-30 tracking-widest">—</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </section>
-
-          {/* Revoke Section */}
-          {!revoked && (
-            <section id="revoke-access" className="bg-[#FF8C69]/5 border border-[#3A3A38]/20 p-8 border-l-[4px] border-l-[#FF8C69]">
-              <div className="max-w-xl space-y-4">
-                <h3 className="font-space text-2xl font-bold text-[#FF8C69]">
-                  Cancel This Subscription
-                </h3>
-                <p className="font-sans text-lg text-[#3A3A38]/80">
-                  Once revoked, Lume Finance will no longer be able to pull funds. This action is immediate and permanent.
-                </p>
-                <div className="pt-4">
-                  <button
-                    onClick={() => setShowModal(true)}
-                    id="revoke-access-btn"
-                    className="w-full max-w-md bg-[#FF8C69] text-white font-mono text-[10px] font-bold tracking-widest uppercase py-5 hover:opacity-90 transition-opacity cursor-pointer"
-                  >
-                    Revoke Access
-                  </button>
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Billing Interval
+                    </span>
+                    <span className="font-space text-xl font-bold uppercase">
+                      {plan ? `${plan.intervalDays} Days` : "30 Days"}
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </section>
+
+                <div className="grid md:grid-cols-3 gap-8 pt-10">
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Authorized Amount Cap
+                    </span>
+                    <span className="font-mono text-sm font-bold uppercase tracking-tight">
+                      {plan ? `${plan.price} ${plan.token}` : "—"}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Merchant Payout Address
+                    </span>
+                    <span className="font-mono text-sm font-bold uppercase tracking-tight text-[#1A3C2B] truncate block">
+                      {formatAddr(plan?.payoutAddress)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      On-Chain Status
+                    </span>
+                    <span className="font-mono text-sm font-bold uppercase tracking-tight">
+                      {plan?.active ? "Active Plan" : "Paused"}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Session Details */}
+              <section id="permission-terms" className="bg-white border border-[#3A3A38]/20 p-8 border-l-[4px] border-l-[#1A3C2B]">
+                <h3 className="font-space text-2xl font-bold mb-4">
+                  Session Permission Details
+                </h3>
+                <p className="font-sans text-lg text-[#3A3A38]/80 leading-relaxed mb-10">
+                  Merchant can pull up to {plan?.price} {plan?.token} every {plan?.intervalDays} days. Nothing else. Revoke access anytime.
+                </p>
+
+                <div className="grid md:grid-cols-3 gap-8 border-t border-[#3A3A38]/10 pt-8">
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Ephemeral Session Key
+                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-tight truncate block">
+                      {formatAddr(delegationInfo?.delegation?.scope?.sessionKeyAddress)}
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Billing Scope
+                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
+                      {plan?.intervalDays} Days Recurring
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
+                      Session Expiry
+                    </span>
+                    <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
+                      {delegationInfo?.delegation?.scope?.expiry 
+                        ? new Date(delegationInfo.delegation.scope.expiry * 1000).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric"
+                          })
+                        : "Active Session"}
+                    </span>
+                  </div>
+                </div>
+              </section>
+
+              {/* Billing History */}
+              <section id="billing-history" className="bg-white border border-[#3A3A38]/20 p-8">
+                <div className="mb-8">
+                  <h3 className="font-space text-2xl font-bold">Billing History</h3>
+                  <p className="font-mono text-[10px] uppercase tracking-widest opacity-40 mt-1">
+                    Automated TEE billing pulls for this subscription
+                  </p>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead className="font-mono text-[9px] uppercase tracking-widest opacity-40 border-b border-[#3A3A38]/20">
+                      <tr>
+                        <th className="pb-4 font-normal">Date</th>
+                        <th className="pb-4 font-normal">Amount</th>
+                        <th className="pb-4 font-normal">Status</th>
+                        <th className="pb-4 font-normal">Network</th>
+                      </tr>
+                    </thead>
+                    <tbody className="font-mono text-xs">
+                      {plan?.subscribers?.length > 0 ? (
+                        <tr className="hover:bg-[#F7F7F5] transition-colors border-b border-[#3A3A38]/10">
+                          <td className="py-5">Initial Subscription</td>
+                          <td className="py-5">{plan.price} {plan.token}</td>
+                          <td className="py-5">
+                            <span className="bg-[#9EFFBF] text-[#1A3C2B] px-2 py-0.5 font-bold">
+                              ✓ AUTHORIZED
+                            </span>
+                          </td>
+                          <td className="py-5 text-[#1A3C2B] font-bold uppercase">{network}</td>
+                        </tr>
+                      ) : (
+                        <tr>
+                          <td colSpan={4} className="py-8 text-center text-[#3A3A38]/40">
+                            Subscription session authorized. Next billing pull scheduled automatically.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+
+              {/* Revoke Section */}
+              {!revoked && (
+                <section id="revoke-access" className="bg-[#FF8C69]/5 border border-[#3A3A38]/20 p-8 border-l-[4px] border-l-[#FF8C69]">
+                  <div className="max-w-xl space-y-4">
+                    <h3 className="font-space text-2xl font-bold text-[#FF8C69]">
+                      Cancel This Subscription
+                    </h3>
+                    <p className="font-sans text-lg text-[#3A3A38]/80">
+                      Once revoked, merchant will no longer be able to pull funds. This action is immediate and fee-free.
+                    </p>
+                    <div className="pt-4">
+                      <button
+                        onClick={() => setShowModal(true)}
+                        id="revoke-access-btn"
+                        className="w-full max-w-md bg-[#FF8C69] text-white font-mono text-[10px] font-bold tracking-widest uppercase py-5 hover:opacity-90 transition-opacity cursor-pointer"
+                      >
+                        Revoke Access
+                      </button>
+                    </div>
+                  </div>
+                </section>
+              )}
+            </>
           )}
         </div>
       </main>
@@ -242,7 +282,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
               Are you sure?
             </h4>
             <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed mb-8">
-              This will permanently delete the on-chain session permission. The merchant will lose access to auto-settlement.
+              This will permanently revoke the session permission. The merchant will lose access to auto-settlement.
             </p>
             <div className="flex gap-4">
               <button

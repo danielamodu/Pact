@@ -88,7 +88,7 @@ export function PactSpikeDashboard() {
                   <iconify-icon icon="lucide:alert-triangle" className="text-2xl text-coral"></iconify-icon>
                   <div>
                     <h5 className="font-space font-bold text-lg leading-tight uppercase tracking-tight">1 Subscription Past Due</h5>
-                    <p className="font-mono text-xs opacity-70 mt-1">Your subscription to Lume Finance failed on OCT 25 — insufficient USDC balance. Add funds or it will be cancelled.</p>
+                    <p className="font-mono text-xs opacity-70 mt-1">One of your active subscriptions requires attention due to insufficient account balance. Deposit funds to maintain active status.</p>
                   </div>
                 </div>
                 <div className="mt-4 md:mt-0 flex gap-4">

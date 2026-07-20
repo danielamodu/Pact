@@ -1,16 +1,16 @@
 "use client";
 
 import { useState, useEffect, useRef, Suspense } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { NavigationBar } from "@/components/NavigationBar";
+import { DepositModal } from "@/components/DepositModal";
 import { useAuth } from "@/contexts/AuthProvider";
 import { getProvider, subscribeOnchain, SESSION_KEY_EXECUTOR_ADDRESS } from "@/lib/contracts";
 import { checkDelegated, upgradeEOAWithEIP7702 } from "@/lib/eip7702";
 import { generateSessionKey, saveSessionKeyDelegation, SessionKeyScope, getEIP712Domain, EIP712_TYPES } from "@/lib/sessionKey";
 import { signData } from "@/lib/express-proxy";
-import { ethereumService } from "@/lib/ethereum";
 import { ethers } from "ethers";
 
 // ─── Step labels shown in the loading state ───────────────────────────────────
@@ -44,8 +44,12 @@ function PermissionContent() {
   const [confirming, setConfirming] = useState(false);
   const [currentStep, setCurrentStep] = useState<Step | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isDepositOpen, setIsDepositOpen] = useState(false);
+  const [isGasError, setIsGasError] = useState(false);
 
-  // After OAuth redirect back to this page, auto-trigger the flow if checkbox was checked
+  // Success state for completed subscription
+  const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
+
   const autoTriggerRef = useRef(false);
 
   const cancelHref = planId
@@ -55,24 +59,19 @@ function PermissionContent() {
   // ── Confirm handler ───────────────────────────────────────────────────────
   const handleConfirm = async () => {
     setError(null);
+    setIsGasError(false);
     setConfirming(true);
 
     try {
-      // ── 1. Auth: trigger Google OAuth if not logged in ──────────────────
       if (!isAuthenticated) {
         setCurrentStep("Connecting wallet");
-        // callbackUrl returns the user to this exact page (with all params) after login
         await signIn("google", { callbackUrl: window.location.href });
-        // signIn triggers a full page redirect — execution stops here for new users.
-        // The useEffect below picks up the flow once they return authenticated.
         autoTriggerRef.current = true;
         return;
       }
 
-      // ── 2. Wait for publicAddress (TEE wallet) to resolve ───────────────
       setCurrentStep("Connecting wallet");
       if (!publicAddress) {
-        // AuthProvider fetches it async after authentication — retry after short delay
         throw new Error("Wallet address not yet available. Please wait a moment and try again.");
       }
 
@@ -81,7 +80,15 @@ function PermissionContent() {
       const provider = getProvider(networkKey);
       const explorerBase = networkKey === "arbitrum" ? "https://arbiscan.io" : "https://basescan.org";
 
-      // ── 3. Check if EOA already upgraded via EIP-7702 ───────────────────
+      // ── Balance check: Ensure user has gas ──────────────────────────────
+      const gasBalance = await provider.getBalance(publicAddress);
+      if (gasBalance === BigInt(0)) {
+        setIsGasError(true);
+        setIsDepositOpen(true);
+        throw new Error("Your Universal Account needs a small gas balance (~0.0001 ETH) on " + (networkKey === "arbitrum" ? "Arbitrum" : "Base") + " to authorize this subscription.");
+      }
+
+      // ── EIP-7702 check ──────────────────────────────────────────────────
       setCurrentStep("Checking account status");
       const delegationStatus = await checkDelegated(publicAddress, networkKey);
       const executorAddress = SESSION_KEY_EXECUTOR_ADDRESS[networkKey];
@@ -95,36 +102,28 @@ function PermissionContent() {
         delegationStatus.delegatee?.toLowerCase() === executorAddress.toLowerCase();
 
       if (!alreadyUpgraded) {
-        // ── 4. EIP-7702 upgrade ─────────────────────────────────────────
         setCurrentStep("Upgrading account (EIP-7702)");
         const upgradeTxHash = await upgradeEOAWithEIP7702(networkKey, publicAddress);
-        console.log(`[Permission] EIP-7702 upgrade tx: ${explorerBase}/tx/${upgradeTxHash}`);
 
-        // Verify delegation was applied
         const postUpgradeStatus = await checkDelegated(publicAddress, networkKey);
         if (
           !postUpgradeStatus.isDelegated ||
           postUpgradeStatus.delegatee?.toLowerCase() !== executorAddress.toLowerCase()
         ) {
           throw new Error(
-            `EIP-7702 upgrade transaction confirmed but delegation not applied. ` +
-            `Check Arbiscan Authorizations tab for tx ${upgradeTxHash}.`
+            `EIP-7702 upgrade transaction confirmed but delegation not applied.`
           );
         }
-        console.log("[Permission] EIP-7702 delegation verified ✅");
-      } else {
-        console.log("[Permission] Account already delegated to SessionKeyExecutor, skipping upgrade.");
       }
 
-      // ── 5. Generate session key and sign scope statement using EIP-712 ───
+      // ── Generate session key & sign EIP-712 ─────────────────────────────
       setCurrentStep("Signing session key");
       const sessionKeyWallet = generateSessionKey();
       const sessionKeyAddress = sessionKeyWallet.address.toLowerCase();
 
       const intervalSeconds = parseInt(intervalDays) * 86400;
-      const expiry = Math.floor(Date.now() / 1000) + intervalSeconds * 12; // 12 billing cycles
+      const expiry = Math.floor(Date.now() / 1000) + intervalSeconds * 12;
 
-      // Resolve token address (Zero Address for ETH, custom address for USDC/USDT)
       let tokenAddress = ethers.ZeroAddress;
       let decimals = 18;
       if (token.toUpperCase() === "USDC") {
@@ -139,7 +138,6 @@ function PermissionContent() {
         decimals = 6;
       }
 
-      // Parse price to token decimals (maxAmount)
       const maxAmountWei = ethers.parseUnits(price, decimals);
 
       const scope: SessionKeyScope = {
@@ -152,14 +150,12 @@ function PermissionContent() {
         planId: parseInt(planId),
       };
 
-      // Fetch the subscriber's current nonce from the SessionKeyExecutor contract on-chain
       const executorContract = new ethers.Contract(executorAddress, [
         "function nonces(address) external view returns (uint256)"
       ], provider);
       const currentNonce = await executorContract.nonces(publicAddress);
 
-      // Compute the EIP-712 scope statement hash
-      const domain = getEIP712Domain(chainId, publicAddress); // verifyingContract is the EOA itself!
+      const domain = getEIP712Domain(chainId, publicAddress);
       const types = { SessionKeyScope: EIP712_TYPES.SessionKeyScope };
       const value = {
         sessionKeyAddress: scope.sessionKeyAddress,
@@ -173,38 +169,35 @@ function PermissionContent() {
       };
 
       const hash = ethers.TypedDataEncoder.hash(domain, types, value);
-      console.log("[Permission] EIP-712 scope hash:", hash);
-
-      // Sign EIP-712 hash via TEE proxy (returns r, s, v signature components)
       const authSig = await signData(hash, "ETH");
       const ownerSignature = ethers.Signature.from({ r: authSig.r, s: authSig.s, v: authSig.v }).serialized;
-      console.log("[Permission] Owner signature:", ownerSignature);
 
-      // Save delegation to localStorage
       saveSessionKeyDelegation(sessionKeyWallet.privateKey, scope, ownerSignature);
 
-      // ── 6. Record subscription on PactRegistry ──────────────────────────
+      // ── Record subscription on-chain ────────────────────────────────────
       setCurrentStep("Recording subscription");
       const subscribeTxHash = await subscribeOnchain(networkKey, parseInt(planId), sessionKeyAddress);
       console.log(`[Permission] Subscribe tx: ${explorerBase}/tx/${subscribeTxHash}`);
 
-      // ── 7. Navigate to balance ──────────────────────────────────────────
       setCurrentStep("Done");
-      router.push("/balance");
-
+      setSuccessTxHash(subscribeTxHash);
     } catch (err: unknown) {
       console.error("[Permission] Confirm failed:", err);
       const msg = err instanceof Error ? err.message : String(err);
-      setError(msg);
+      if (msg.toLowerCase().includes("insufficient funds") || msg.toLowerCase().includes("has 0 want")) {
+        setIsGasError(true);
+        setIsDepositOpen(true);
+        setError(`Universal Account balance is 0 ETH on ${network === "arbitrum" ? "Arbitrum" : "Base"}. Please deposit ETH to complete transaction.`);
+      } else {
+        setError(msg);
+      }
+    } finally {
       setConfirming(false);
-      setCurrentStep(null);
     }
   };
 
-  // After OAuth redirect back — auto-trigger if user is now authenticated
   useEffect(() => {
-    if (isAuthenticated && publicAddress && !authLoading && isChecked && !confirming && !error) {
-      // Only auto-trigger once on the first authenticated mount after OAuth
+    if (isAuthenticated && publicAddress && !authLoading && isChecked && !confirming && !error && !successTxHash) {
       const didReturn = typeof window !== "undefined" &&
         document.referrer.includes("accounts.google.com");
       if (didReturn) {
@@ -215,13 +208,14 @@ function PermissionContent() {
   }, [isAuthenticated, publicAddress, authLoading]);
 
   const stepIndex = currentStep ? STEPS.indexOf(currentStep) : -1;
+  const explorerBase = network === "arbitrum" ? "https://arbiscan.io" : "https://basescan.org";
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
       <div className="mosaic-bg"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 flex items-center justify-center pt-24 pb-12">
+      <main className="flex-1 flex items-center justify-center pt-28 pb-12">
         <div className="w-full max-w-[680px] px-6 py-12">
           {/* Header */}
           <div className="text-center mb-10">
@@ -289,115 +283,166 @@ function PermissionContent() {
             </div>
           </div>
 
-          {/* Error display */}
+          {/* Error display with Deposit prompt */}
           {error && (
-            <div className="mb-6 p-5 border border-coral bg-coral/5">
-              <p className="font-mono text-[11px] text-forest font-bold uppercase tracking-wide mb-1">
-                Authorization Failed
-              </p>
-              <p className="font-mono text-[11px] text-[#3A3A38] break-all">{error}</p>
+            <div className="mb-6 p-6 border border-coral bg-coral/5 space-y-4">
+              <div>
+                <p className="font-mono text-xs text-forest font-bold uppercase tracking-wide mb-1">
+                  {isGasError ? "FUNDING REQUIRED" : "Authorization Error"}
+                </p>
+                <p className="font-mono text-xs text-[#3A3A38]">{error}</p>
+              </div>
+
+              {isGasError && publicAddress && (
+                <div className="pt-2 border-t border-coral/20 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                  <span className="font-mono text-[10px] uppercase opacity-70">
+                    Wallet: {publicAddress.slice(0, 6)}...{publicAddress.slice(-4)}
+                  </span>
+                  <button
+                    onClick={() => setIsDepositOpen(true)}
+                    className="bg-forest text-white px-5 py-2 font-mono text-xs font-bold uppercase hover:bg-forest/90 transition-colors cursor-pointer w-full sm:w-auto"
+                  >
+                    Deposit Gas Funds
+                  </button>
+                </div>
+              )}
+
               <button
                 onClick={() => setError(null)}
-                className="mt-3 font-mono text-[10px] uppercase tracking-widest opacity-50 hover:opacity-80 transition-opacity"
+                className="font-mono text-[10px] uppercase tracking-widest text-coral/70 hover:text-coral underline block"
               >
                 Dismiss
               </button>
             </div>
           )}
 
-          {/* Signing progress */}
-          {confirming && currentStep && (
-            <div className="mb-6 p-5 border border-[#1A3C2B]/20 bg-[#F7F7F5]">
-              <p className="font-mono text-[10px] uppercase tracking-widest opacity-50 mb-3">
-                Authorizing...
-              </p>
-              <div className="space-y-2">
-                {STEPS.map((step, i) => (
-                  <div key={step} className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      i < stepIndex
-                        ? "bg-[#9EFFBF]"
-                        : i === stepIndex
-                          ? "bg-[#1A3C2B] animate-pulse"
-                          : "bg-[#3A3A38]/20"
-                    }`} />
-                    <span className={`font-mono text-[11px] ${
-                      i === stepIndex ? "text-[#1A3C2B] font-bold" : "opacity-40"
-                    }`}>
-                      {step}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+          {/* Checkbox */}
+          <div className="flex items-start gap-3 mb-8">
+            <input
+              type="checkbox"
+              id="confirm-terms"
+              checked={isChecked}
+              onChange={(e) => setIsChecked(e.target.checked)}
+              className="mt-1 w-4 h-4 accent-[#1A3C2B] cursor-pointer"
+            />
+            <label htmlFor="confirm-terms" className="font-mono text-xs uppercase tracking-tight text-[#1A3C2B] cursor-pointer select-none">
+              I understand and agree to this authorization
+              <span className="block text-[10px] text-[#3A3A38]/50 normal-case mt-0.5">
+                I confirm I have reviewed the session parameters and know that I can revoke access directly from the Pact dashboard at any time.
+              </span>
+            </label>
+          </div>
 
-          {/* Consent Section */}
-          {!confirming && (
-            <div className="space-y-6 mb-10 px-2">
-              <div className="flex items-start gap-4">
-                <input
-                  type="checkbox"
-                  id="consent-check"
-                  className="custom-checkbox mt-1"
-                  checked={isChecked}
-                  onChange={(e) => setIsChecked(e.target.checked)}
-                />
-                <label htmlFor="consent-check" className="cursor-pointer">
-                  <span className="block font-mono text-[12px] uppercase tracking-widest text-[#1A3C2B] mb-1">
-                    I understand and agree to this authorization
-                  </span>
-                  <span className="block font-sans text-sm text-[#3A3A38]/60">
-                    I confirm I have reviewed the session parameters and know that I can revoke access directly from the Pact dashboard at any time.
-                  </span>
-                </label>
-              </div>
-              <p className="font-mono text-[10px] text-[#3A3A38]/40 uppercase tracking-tight">
-                Notice: You will not be charged until the first billing cycle begins. Gas costs for the account upgrade are covered by Pact. You'll only pay when your subscription actually bills.
-              </p>
-            </div>
-          )}
-
-          {/* Buttons */}
-          <div className="flex flex-col gap-3">
+          {/* Action Buttons */}
+          <div className="space-y-3">
             <button
-              id="cta-confirm-permission"
               onClick={handleConfirm}
               disabled={!isChecked || confirming}
-              className={`w-full text-center font-mono text-xs tracking-[0.2em] uppercase py-5 rounded-sm transition-all ${
+              className={`w-full font-mono text-xs tracking-[0.2em] uppercase py-5 transition-all flex items-center justify-center gap-2 ${
                 isChecked && !confirming
-                  ? "bg-[#1A3C2B] text-white hover:opacity-95 cursor-pointer"
-                  : "bg-forest/20 text-forest/40 cursor-not-allowed"
+                  ? "bg-[#1A3C2B] text-white hover:opacity-95 cursor-pointer shadow-md"
+                  : "bg-[#3A3A38]/20 text-[#3A3A38]/40 cursor-not-allowed"
               }`}
             >
-              {confirming
-                ? currentStep === "Done"
-                  ? "Redirecting..."
-                  : "Authorizing..."
-                : isAuthenticated
-                  ? "Confirm Authorization"
-                  : "Sign in & Authorize"}
+              {confirming ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>{currentStep || "Processing..."}</span>
+                </>
+              ) : (
+                "Confirm Authorization"
+              )}
             </button>
 
-            {!confirming && (
-              <a
-                href={cancelHref}
-                id="cta-cancel-permission"
-                className="w-full border border-[#3A3A38]/20 text-[#1A3C2B] font-mono text-xs tracking-[0.2em] uppercase py-5 rounded-sm text-center hover:bg-white transition-all"
-              >
-                Cancel &amp; Exit
-              </a>
-            )}
+            <Link
+              href={cancelHref}
+              className="block w-full text-center border border-[#3A3A38]/20 text-[#1A3C2B] font-mono text-xs tracking-[0.2em] uppercase py-5 hover:bg-white transition-all"
+            >
+              Cancel &amp; Exit
+            </Link>
           </div>
         </div>
       </main>
+
+      {/* Deposit Modal */}
+      {publicAddress && (
+        <DepositModal
+          isOpen={isDepositOpen}
+          onClose={() => setIsDepositOpen(false)}
+          address={publicAddress}
+        />
+      )}
+
+      {/* Success Modal with Redirect to Subscribed Plan */}
+      {successTxHash && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-6">
+          <div className="relative w-full max-w-lg bg-white border border-forest p-10 shadow-2xl space-y-6">
+            <div className="text-center space-y-2">
+              <div className="w-12 h-12 bg-[#9EFFBF] text-forest rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
+                ✓
+              </div>
+              <h3 className="font-space text-3xl font-bold text-forest uppercase tracking-tight">
+                Subscription Authorized!
+              </h3>
+              <p className="font-sans text-sm text-[#3A3A38]/70">
+                Your session permission has been recorded on-chain via EIP-7702.
+              </p>
+            </div>
+
+            <div className="bg-[#F7F7F5] border border-forest/10 p-6 space-y-3 font-mono text-xs">
+              <div className="flex justify-between border-b border-[#3A3A38]/10 pb-2">
+                <span className="opacity-50">Plan</span>
+                <span className="font-bold text-forest">{planName}</span>
+              </div>
+              <div className="flex justify-between border-b border-[#3A3A38]/10 pb-2">
+                <span className="opacity-50">Rate</span>
+                <span className="font-bold">{price} {token} / {intervalDays} Days</span>
+              </div>
+              <div className="flex justify-between border-b border-[#3A3A38]/10 pb-2">
+                <span className="opacity-50">Network</span>
+                <span className="font-bold uppercase">{network}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="opacity-50">Transaction</span>
+                <a
+                  href={`${explorerBase}/tx/${successTxHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-forest underline font-bold"
+                >
+                  {successTxHash.slice(0, 8)}...{successTxHash.slice(-6)} ↗
+                </a>
+              </div>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Link
+                href={`/subscription/${planId}?network=${network}`}
+                className="flex-1 bg-forest text-white font-mono text-xs font-bold uppercase py-4 text-center hover:bg-forest/90 transition-colors"
+              >
+                View Subscribed Plan Details
+              </Link>
+              <Link
+                href="/wallet"
+                className="flex-1 border border-forest/20 text-forest font-mono text-xs font-bold uppercase py-4 text-center hover:bg-forest/5 transition-colors"
+              >
+                Dashboard
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
 export default function PermissionPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen flex items-center justify-center font-mono text-sm opacity-60">Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-paper flex items-center justify-center text-forest font-mono text-sm">
+        Loading permission parameters...
+      </div>
+    }>
       <PermissionContent />
     </Suspense>
   );
