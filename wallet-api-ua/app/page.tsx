@@ -195,10 +195,11 @@ export default function Home() {
                 </div>
                 <h3 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 30, fontWeight: 700, marginBottom: 24, color: "white" }}>Cross-Chain Native</h3>
                 <p style={{ color: "rgba(255,255,255,0.8)", fontSize: 15, lineHeight: 1.7, marginBottom: 40 }}>Fund your subscriptions with capital on any supported L2. Fragmented balances are a thing of the past.</p>
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
                   {["ARBITRUM", "BASE"].map((n) => (
                     <div key={n} style={{ padding: "4px 12px", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "rgba(255,255,255,0.9)" }}>{n}</div>
                   ))}
+                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, color: "#9EFFBF", letterSpacing: "0.05em" }}>+ More L2s coming soon</span>
                 </div>
               </div>
             </div>
@@ -328,7 +329,7 @@ export default function Home() {
             ))}
           </div>
           <div style={{ marginTop: 48, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "rgba(26,60,43,0.4)", textTransform: "uppercase" }}>© 2024 PACT. FOUNDATION</span>
+            <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "rgba(26,60,43,0.4)", textTransform: "uppercase" }}>© 2026 PACT. FOUNDATION</span>
             <div style={{ display: "flex", gap: 32, fontFamily: "'JetBrains Mono', monospace", fontSize: 9, color: "rgba(26,60,43,0.4)", textTransform: "uppercase" }}>
               <Link href="/terms">Terms</Link>
               <Link href="/privacy">Privacy</Link>

@@ -55,7 +55,7 @@ export function AppFooter() {
 
         <div className="pt-16 border-t border-forest/10 flex flex-col md:flex-row justify-between items-center gap-10">
           <p className="text-forest/30 text-[11px] font-mono uppercase tracking-[0.2em] font-bold">
-            © 2024 PACT FOUNDATION. ALL RIGHTS RESERVED.
+            © 2026 PACT FOUNDATION. ALL RIGHTS RESERVED.
           </p>
           <div className="flex items-center gap-6 bg-forest/[0.03] px-6 py-3 jeton-pill border border-forest/5 shadow-sm">
             <div className="flex items-center gap-2">
