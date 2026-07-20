@@ -100,17 +100,19 @@ export default function Home() {
         <section className="max-w-7xl mx-auto px-6 -mt-12 relative z-20">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-px" style={{ background: "rgba(26,60,43,0.1)", border: "1px solid rgba(26,60,43,0.1)", overflow: "hidden" }}>
             {[
-              { num: "01", label: "NETWORK", color: "#9EFFBF", value: "2", sub: "Supported Chains (Arbitrum, Base)" },
+              { num: "01", label: "NETWORKS", color: "#9EFFBF", value: "2 Mainnets", sub: "Arbitrum One & Base" },
               { num: "02", label: "TECHNOLOGY", color: "#FF8C69", value: "EIP-7702", sub: "Account Delegation" },
-              { num: "03", label: "SECURITY", color: "#F4D35E", value: "Verified", sub: "On-Chain Deployment" },
-              { num: "04", label: "AUTHORIZATION", color: "#1A3C2B", value: "Session Keys", sub: "Scoped Execution" },
+              { num: "03", label: "SECURITY", color: "#F4D35E", value: "Verified", sub: "On-Chain Smart Contracts" },
+              { num: "04", label: "PERMISSIONS", color: "#1A3C2B", value: "Session Keys", sub: "Scoped Recurring Execution" },
             ].map((s, i) => (
-              <div key={i} className="sd-grid-cell reveal" style={{ animationDelay: `${i * 100}ms` }}>
-                <div style={{ borderLeft: `4px solid ${s.color}`, paddingLeft: 16, marginBottom: 24 }}>
-                  <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, letterSpacing: "0.2em", color: "rgba(26,60,43,0.6)", textTransform: "uppercase", fontWeight: 700 }}>{s.num}. {s.label}</span>
+              <div key={i} className="sd-grid-cell reveal flex flex-col justify-between p-8 bg-white" style={{ animationDelay: `${i * 100}ms`, minHeight: "200px" }}>
+                <div>
+                  <div style={{ borderLeft: `3px solid ${s.color}`, paddingLeft: 12, marginBottom: 20 }}>
+                    <span style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 11, letterSpacing: "0.15em", color: "rgba(26,60,43,0.6)", textTransform: "uppercase", fontWeight: 700, whiteSpace: "nowrap" }}>{s.num}. {s.label}</span>
+                  </div>
+                  <h4 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: "1.75rem", fontWeight: 800, letterSpacing: "-0.02em", color: "#1A3C2B", lineHeight: 1.2, margin: 0, whiteSpace: "nowrap" }}>{s.value}</h4>
                 </div>
-                <h4 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 48, fontWeight: 700, marginBottom: 8, color: "#1A3C2B" }}>{s.value}</h4>
-                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 9, textTransform: "uppercase", letterSpacing: "0.2em", color: "rgba(26,60,43,0.4)" }}>{s.sub}</p>
+                <p style={{ fontFamily: "'JetBrains Mono', monospace", fontSize: 10, textTransform: "uppercase", letterSpacing: "0.15em", color: "rgba(26,60,43,0.5)", marginTop: 24, marginBottom: 0 }}>{s.sub}</p>
               </div>
             ))}
           </div>
