@@ -236,24 +236,31 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                 </div>
 
                 {/* Metric 2 */}
-                <div className="bg-white border border-[#3A3A38]/20 p-8 relative">
+                <div className="bg-[#F7F7F5] border border-[#3A3A38]/20 p-8 relative">
                   <div className="corner-marker corner-tl"></div>
                   <div className="corner-marker corner-tr"></div>
                   <div className="corner-marker corner-bl"></div>
                   <div className="corner-marker corner-br"></div>
                   <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-1">
-                    On-Chain Revenue
+                    On-Chain Revenue (USDC)
                   </span>
-                  <span className="font-space text-4xl font-bold text-forest">
-                    {parseFloat(details.totalRevenue) > 0
-                      ? `${details.totalRevenue} ${details.token}`
-                      : `${(details.subscribersCount * parseFloat(details.price)).toFixed(4)} ${details.token}`}
-                  </span>
-                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-50 block mt-1">
-                    {parseFloat(details.totalRevenue) > 0
-                      ? "Settled On-Chain"
-                      : `${details.subscribersCount} Active Session Authorized`}
-                  </span>
+                  {(() => {
+                    const ethPrice = 3200; // ETH USD price reference
+                    const settled = parseFloat(details.totalRevenue);
+                    const rawVal = settled > 0 ? settled : details.subscribersCount * parseFloat(details.price);
+                    const usdcVal = details.token === "ETH" ? (rawVal * ethPrice).toFixed(2) : rawVal.toFixed(2);
+                    
+                    return (
+                      <>
+                        <span className="font-space text-4xl font-bold text-forest block">
+                          ${usdcVal} USDC
+                        </span>
+                        <span className="font-mono text-[9px] uppercase tracking-widest opacity-50 block mt-1">
+                          {rawVal} {details.token} · {settled > 0 ? "Settled On-Chain" : `${details.subscribersCount} Active Session Authorized`}
+                        </span>
+                      </>
+                    );
+                  })()}
                 </div>
               </section>
 
