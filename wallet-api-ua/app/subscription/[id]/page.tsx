@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { NavigationBar } from "@/components/NavigationBar";
-import { fetchPlanDetails } from "@/lib/contracts";
+import { getPlanDetails } from "@/lib/contracts";
 import { getSessionKeyDelegation, clearSessionKeyDelegation } from "@/lib/sessionKey";
 import { ethers } from "ethers";
 
@@ -24,7 +24,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
       setLoading(true);
       try {
         const planIdNum = parseInt(id);
-        const fetchedPlan = await fetchPlanDetails(network, planIdNum);
+        const fetchedPlan = await getPlanDetails(id, network);
         setPlan(fetchedPlan);
 
         const localDelegation = getSessionKeyDelegation(planIdNum);
