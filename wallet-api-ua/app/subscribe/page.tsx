@@ -57,6 +57,7 @@ function SubscribeContent() {
         console.error(err);
         setError(`Failed to retrieve plan #${planId} on ${network === "arbitrum" ? "Arbitrum One" : "Base"}. Ensure you are querying the correct network.`);
         setLoading(false);
+      });
     } else {
       setError("NO_PLAN_SELECTED");
       setLoading(false);
