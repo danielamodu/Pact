@@ -43,15 +43,15 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
     );
   }
 
-  // App Page navigation mode - Floating Glassmorphic Pill Header
+  // App Page navigation mode - Floating Glassmorphic Header
   return (
     <div className="fixed top-5 left-1/2 -translate-x-1/2 w-[94%] max-w-7xl z-50">
-      <header className="w-full bg-white/75 backdrop-blur-xl border border-forest/10 rounded-full px-6 py-2.5 shadow-[0_8px_32px_rgba(26,60,43,0.08)] flex items-center justify-between transition-all">
+      <header className="w-full bg-white/40 backdrop-blur-2xl border border-white/60 rounded-full px-6 py-2.5 shadow-[0_8px_32px_rgba(26,60,43,0.06)] flex items-center justify-between transition-all">
         <Link href="/" className="flex items-center gap-3 group cursor-pointer">
           <PactLogo className="w-9 h-9 shadow-sm transition-transform group-hover:scale-105" />
         </Link>
 
-        <nav className="hidden sm:flex items-center bg-forest/[0.04] p-1 rounded-full border border-forest/5">
+        <nav className="hidden sm:flex items-center gap-8 px-4">
           {[
             { href: "/wallet", id: "dashboard", label: "Dashboard" },
             { href: "/setup", id: "plans", label: "Create Plan" },
@@ -61,13 +61,16 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
             <Link
               key={item.id}
               href={item.href}
-              className={`font-space text-xs font-bold px-4 py-1.5 rounded-full transition-all ${
+              className={`font-space text-xs tracking-tight transition-all relative py-1 ${
                 activeItem === item.id
-                  ? "bg-forest text-white shadow-sm"
-                  : "text-forest/70 hover:text-forest hover:bg-forest/5"
+                  ? "text-forest font-bold"
+                  : "text-forest/60 hover:text-forest font-medium"
               }`}
             >
               {item.label}
+              {activeItem === item.id && (
+                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-forest rounded-full"></span>
+              )}
             </Link>
           ))}
         </nav>
