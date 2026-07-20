@@ -57,9 +57,8 @@ function SubscribeContent() {
         console.error(err);
         setError(`Failed to retrieve plan #${planId} on ${network === "arbitrum" ? "Arbitrum One" : "Base"}. Ensure you are querying the correct network.`);
         setLoading(false);
-      });
     } else {
-      setError("No planId specified in the URL.");
+      setError("NO_PLAN_SELECTED");
       setLoading(false);
     }
   }, [planId, network]);
@@ -79,31 +78,42 @@ function SubscribeContent() {
   }
 
   if (error) {
+    const isNoPlanSelected = error === "NO_PLAN_SELECTED";
+
     return (
       <div className="min-h-screen flex flex-col bg-paper text-forest relative">
         <div className="mosaic-bg"></div>
         <NavigationBar />
         <main className="flex-1 flex items-center justify-center p-6 pt-24">
-          <div className="relative bg-[#F7F7F5] border border-coral/30 p-10 max-w-md w-full text-center border-l-4 border-l-coral">
+          <div className="relative bg-[#F7F7F5] border border-forest/15 p-10 max-w-lg w-full text-center border-l-4 border-l-forest shadow-lg">
             <div className="corner-marker corner-tl"></div>
             <div className="corner-marker corner-tr"></div>
             <div className="corner-marker corner-bl"></div>
             <div className="corner-marker corner-br"></div>
 
-            <div className="w-12 h-12 bg-coral/10 text-coral flex items-center justify-center rounded-full mx-auto mb-6">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 fill-none stroke-current stroke-2" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" strokeLinecap="round" strokeLinejoin="round"/>
+            <div className="w-14 h-14 bg-mint/20 text-forest flex items-center justify-center rounded-full mx-auto mb-6">
+              <svg viewBox="0 0 24 24" className="w-7 h-7 fill-none stroke-current stroke-2" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
             
-            <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-forest mb-3">Plan Not Found</h3>
-            <p className="font-sans text-xs text-[#3A3A38]/70 mb-8 leading-relaxed">
-              {error}
+            <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-forest mb-3">
+              {isNoPlanSelected ? "No Plan Selected Yet" : "Plan Not Found"}
+            </h3>
+            <p className="font-sans text-sm text-[#3A3A38]/70 mb-8 leading-relaxed">
+              {isNoPlanSelected 
+                ? "To subscribe to an enterprise service, use a merchant checkout link or create your first recurring plan." 
+                : error}
             </p>
 
-            <Link href="/" className="inline-block bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest px-8 py-4 rounded-sm hover:opacity-95 transition-opacity">
-              Back to Home
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <Link href="/setup" className="bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm hover:opacity-90 transition-opacity">
+                Create a Plan
+              </Link>
+              <Link href="/wallet" className="border border-forest/20 text-forest font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm hover:bg-forest/5 transition-colors">
+                Control Center
+              </Link>
+            </div>
           </div>
         </main>
       </div>
