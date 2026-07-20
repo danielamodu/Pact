@@ -40,6 +40,24 @@ export function LanguageSelector({ inverted = false }: LanguageSelectorProps) {
     setCurrentLang(code);
     localStorage.setItem("pact_lang", code);
     setIsOpen(false);
+
+    if (typeof window !== "undefined") {
+      const targetLang =
+        code === "ES"
+          ? "es"
+          : code === "FR"
+          ? "fr"
+          : code === "ZH"
+          ? "zh-CN"
+          : code === "DE"
+          ? "de"
+          : "en";
+
+      const domain = window.location.hostname;
+      document.cookie = `googtrans=/en/${targetLang}; path=/; domain=${domain}`;
+      document.cookie = `googtrans=/en/${targetLang}; path=/;`;
+      window.location.reload();
+    }
   };
 
   return (

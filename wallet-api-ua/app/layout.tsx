@@ -25,6 +25,15 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <AuthProvider>{children}</AuthProvider>
+        <div id="google_translate_element" style={{ display: "none" }} />
+        <Script id="google-translate-init" strategy="afterInteractive">
+          {`
+            function googleTranslateElementInit() {
+              new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+            }
+          `}
+        </Script>
+        <Script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" strategy="afterInteractive" />
         <Script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js" strategy="afterInteractive" />
       </body>
     </html>
