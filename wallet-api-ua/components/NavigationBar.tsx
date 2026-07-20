@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/contexts/AuthProvider";
 import { PactLogo } from "@/components/PactLogo";
+import { LanguageSelector } from "@/components/LanguageSelector";
 import { DepositModal } from "@/components/DepositModal";
 
 interface NavigationBarProps {
@@ -27,12 +28,11 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
             <PactLogo inverted className="w-12 h-12 shadow-sm transition-transform group-hover:scale-105" />
           </Link>
           <div className="flex items-center gap-8">
-            <div className="hidden md:flex items-center gap-2 text-white/80">
-              <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
-              <span className="text-sm font-bold uppercase font-mono">EN</span>
+            <div className="hidden md:block">
+              <LanguageSelector inverted />
             </div>
-            <Link href="/login" id="nav-login-btn" className="text-white text-sm font-bold hover:opacity-80 transition-opacity font-space">
-              Log in
+            <Link href="/privacy" id="nav-privacy-btn" className="text-white text-sm font-bold hover:opacity-80 transition-opacity font-space">
+              Privacy
             </Link>
             <Link href={isAuthenticated ? "/wallet" : "/login"} id="nav-cta-btn" className="bg-white text-forest px-8 py-3.5 jeton-pill font-bold text-sm hover:scale-105 transition-all shadow-md font-space">
               Launch App
