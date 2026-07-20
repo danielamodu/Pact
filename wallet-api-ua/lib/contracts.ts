@@ -298,15 +298,39 @@ export async function withdrawOnchain(
 ): Promise<string> {
   const provider = getProvider(networkKey);
   const config = NETWORKS[networkKey];
+
+  // 1. Try browser wallet first if connected
+  if (typeof window !== "undefined" && (window as any).ethereum) {
+    try {
+      const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
+      const signer = await browserProvider.getSigner();
+
+      let tx;
+      if (asset === "ETH") {
+        tx = await signer.sendTransaction({
+          to: recipientAddress,
+          value: amountInUnits,
+          gasLimit: BigInt(250000)
+        });
+      } else {
+        const erc20Contract = new ethers.Contract(config.usdcAddress, ERC20_ABI, signer);
+        tx = await erc20Contract.transfer(recipientAddress, amountInUnits, {
+          gasLimit: BigInt(250000)
+        });
+      }
+      console.log("[Withdraw] Sent via browser wallet:", tx.hash);
+      return tx.hash;
+    } catch (browserErr) {
+      console.warn("[Withdraw] Browser wallet transaction failed/skipped, falling back to TEE backend:", browserErr);
+    }
+  }
   
-  // 1. Fetch TEE wallet address
+  // 2. Fetch TEE wallet address
   const walletData = await getOrCreateWallet("ETH");
   const fromAddress = walletData.public_address;
   const nonce = await provider.getTransactionCount(fromAddress);
   const feeData = await provider.getFeeData();
 
-  // Multiply the estimated gas price by 1.5 (50% safety buffer) to prevent
-  // the "max fee per gas less than block base fee" error due to minor fee fluctuations.
   const gasPrice = feeData.gasPrice
     ? (feeData.gasPrice * BigInt(150)) / BigInt(100)
     : BigInt(1000000000); // 1 Gwei default
@@ -322,7 +346,7 @@ export async function withdrawOnchain(
     txRequest.to = recipientAddress;
     txRequest.value = amountInUnits;
     txRequest.data = "0x";
-    txRequest.gasLimit = BigInt(21000);
+    txRequest.gasLimit = BigInt(250000); // Increased from 21000 for Arbitrum/Base L1 calldata overhead
   } else {
     const erc20Contract = new ethers.Contract(config.usdcAddress, ERC20_ABI, provider);
     const data = erc20Contract.interface.encodeFunctionData("transfer", [
@@ -331,7 +355,7 @@ export async function withdrawOnchain(
     ]);
     txRequest.to = config.usdcAddress;
     txRequest.data = data;
-    txRequest.gasLimit = BigInt(80000); // Standard transfer takes ~60-65k gas
+    txRequest.gasLimit = BigInt(250000);
   }
 
   // Sign transaction via TEE service
