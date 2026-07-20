@@ -219,9 +219,3 @@ Cron (every minute):
 - **Revocation** — Subscribers can revoke a session key at any time from the dashboard, instantly stopping future pulls.
 - **Nonce protection** — Both the scope signature and execution signature include nonces to prevent replay attacks.
 
----
-
-## Built For
-
-**UXmaxx Hackathon — Particle Network EIP-7702 Track**  
-July 2025
