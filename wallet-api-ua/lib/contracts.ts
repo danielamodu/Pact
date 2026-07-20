@@ -236,7 +236,7 @@ export async function createPlanOnchain(
   const provider = getProvider(networkKey);
   const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
 
-  // 1. Encode createPlan data
+  // 1. Encode createPlan function call data
   const data = contract.interface.encodeFunctionData("createPlan", [
     name,
     tokenAddress,
@@ -245,19 +245,33 @@ export async function createPlanOnchain(
     payoutAddress
   ]);
 
-  // 2. Fetch current nonce, gas details, and TEE wallet public address
+  // 2. Try injected browser wallet first if connected
+  if (typeof window !== "undefined" && (window as any).ethereum) {
+    try {
+      const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
+      const signer = await browserProvider.getSigner();
+      const tx = await signer.sendTransaction({
+        to: PACT_REGISTRY_ADDRESS,
+        data,
+        gasLimit: BigInt(300000)
+      });
+      console.log("[CreatePlan] Sent via browser wallet:", tx.hash);
+      return tx.hash;
+    } catch (browserErr) {
+      console.warn("[CreatePlan] Browser wallet transaction failed/skipped, falling back to TEE backend:", browserErr);
+    }
+  }
+
+  // 3. Fallback: Submit via TEE Universal Account
   const walletData = await getOrCreateWallet("ETH");
   const fromAddress = walletData.public_address;
   const nonce = await provider.getTransactionCount(fromAddress);
   const feeData = await provider.getFeeData();
 
-  // Multiply the estimated gas price by 1.5 (50% safety buffer) to prevent
-  // the "max fee per gas less than block base fee" error due to minor fee fluctuations.
   const gasPrice = feeData.gasPrice
     ? (feeData.gasPrice * BigInt(150)) / BigInt(100)
-    : BigInt(1000000000); // 1 Gwei default
+    : BigInt(1000000000);
 
-  // 3. Construct raw transaction payload
   const txRequest = {
     to: PACT_REGISTRY_ADDRESS,
     from: fromAddress,
@@ -268,10 +282,7 @@ export async function createPlanOnchain(
     chainId: NETWORKS[networkKey].chainId
   };
 
-  // 4. Sign transaction via TEE service
   const signedTx = await ethereumService.signTransaction(txRequest);
-
-  // 5. Broadcast signed transaction to network provider
   const txResponse = await provider.broadcastTransaction(signedTx);
   return txResponse.hash;
 }
