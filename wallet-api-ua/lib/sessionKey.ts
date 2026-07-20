@@ -148,12 +148,22 @@ export function verifySessionKeyDelegation(
 }
 
 /**
- * Clears the session key delegation for a specific plan from localStorage.
+ * Clears and marks the session key delegation as revoked for a specific plan.
  */
 export function clearSessionKeyDelegation(planId: number) {
   if (typeof window === "undefined") return;
   const key = `pact_session_key_plan_${planId}`;
   localStorage.removeItem(`${key}_pk`);
   localStorage.removeItem(`${key}_delegation`);
-  console.log("[SessionKey] Cleared session key delegation for plan:", planId);
+  localStorage.setItem(`${key}_revoked`, "true");
+  console.log("[SessionKey] Revoked session key delegation for plan:", planId);
+}
+
+/**
+ * Checks if a session key delegation has been explicitly revoked for a plan.
+ */
+export function isRevokedSessionKey(planId: number): boolean {
+  if (typeof window === "undefined") return false;
+  const key = `pact_session_key_plan_${planId}`;
+  return localStorage.getItem(`${key}_revoked`) === "true";
 }

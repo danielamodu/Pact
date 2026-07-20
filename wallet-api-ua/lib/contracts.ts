@@ -1,6 +1,7 @@
 import { ethers } from "ethers";
 import { getOrCreateWallet } from "./express-proxy";
 import { ethereumService } from "./ethereum";
+import { getSessionKeyDelegation, isRevokedSessionKey } from "./sessionKey";
 
 // PactRegistry ABI
 export const PACT_REGISTRY_ABI = [
@@ -217,13 +218,16 @@ export async function getSubscriptionsForUser(userAddress: string, networkKey: "
 
           const formattedPrice = ethers.formatUnits(plan.price, tokenDecimals);
 
+          const isRevoked = isRevokedSessionKey(Number(planId));
+          const statusVal = isRevoked ? ("revoked" as const) : plan.active ? ("active" as const) : ("past-due" as const);
+
           subsList.push({
             id: planId.toString(),
             plan: plan.name,
             merchant: plan.payoutAddress && plan.payoutAddress !== ethers.ZeroAddress
               ? `${plan.payoutAddress.slice(0, 6)}...${plan.payoutAddress.slice(-4)}`
               : `${networkKey === "arbitrum" ? "Arbitrum" : "Base"} Merchant`,
-            status: plan.active ? ("active" as const) : ("past-due" as const),
+            status: statusVal,
             amount: `${formattedPrice} ${tokenSymbol}`,
             priceNum: parseFloat(formattedPrice),
             tokenSymbol,
@@ -380,7 +384,8 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
   for (const event of subEvents) {
     if ("args" in event && event.args) {
       const subscriber = event.args[1] as string;
-      if (!subscribersSet.has(subscriber.toLowerCase())) {
+      const revoked = isRevokedSessionKey(Number(planId));
+      if (!revoked && !subscribersSet.has(subscriber.toLowerCase())) {
         subscribersSet.add(subscriber.toLowerCase());
         subscribersList.push({
           address: subscriber,

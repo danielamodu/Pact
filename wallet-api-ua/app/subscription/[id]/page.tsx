@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { NavigationBar } from "@/components/NavigationBar";
 import { getPlanDetails } from "@/lib/contracts";
-import { getSessionKeyDelegation, clearSessionKeyDelegation } from "@/lib/sessionKey";
+import { getSessionKeyDelegation, clearSessionKeyDelegation, isRevokedSessionKey } from "@/lib/sessionKey";
 import { ethers } from "ethers";
 
 export default function SubscriptionDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -30,7 +30,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
         const localDelegation = getSessionKeyDelegation(planIdNum);
         setDelegationInfo(localDelegation);
 
-        if (!localDelegation.delegation && !localDelegation.privateKey) {
+        if (isRevokedSessionKey(planIdNum) || (!localDelegation.delegation && !localDelegation.privateKey)) {
           setRevoked(true);
         }
       } catch (err) {
@@ -192,13 +192,15 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
                       Session Expiry
                     </span>
                     <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
-                      {delegationInfo?.delegation?.scope?.expiry 
-                        ? new Date(delegationInfo.delegation.scope.expiry * 1000).toLocaleDateString("en-US", {
-                            month: "short",
-                            day: "numeric",
-                            year: "numeric"
-                          })
-                        : "Active Session"}
+                      {revoked
+                        ? "REVOKED / INACTIVE"
+                        : delegationInfo?.delegation?.scope?.expiry 
+                          ? new Date(delegationInfo.delegation.scope.expiry * 1000).toLocaleDateString("en-US", {
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric"
+                            })
+                          : "No Active Session"}
                     </span>
                   </div>
                 </div>
