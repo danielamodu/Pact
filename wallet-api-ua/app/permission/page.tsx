@@ -9,7 +9,7 @@ import { DepositModal } from "@/components/DepositModal";
 import { useAuth } from "@/contexts/AuthProvider";
 import { getProvider, subscribeOnchain, SESSION_KEY_EXECUTOR_ADDRESS } from "@/lib/contracts";
 import { checkDelegated, upgradeEOAWithEIP7702 } from "@/lib/eip7702";
-import { generateSessionKey, saveSessionKeyDelegation, SessionKeyScope, getEIP712Domain, EIP712_TYPES } from "@/lib/sessionKey";
+import { generateSessionKey, saveSessionKeyDelegation, getSessionKeyDelegation, SessionKeyScope, getEIP712Domain, EIP712_TYPES } from "@/lib/sessionKey";
 import { signData } from "@/lib/express-proxy";
 import { ethers } from "ethers";
 
