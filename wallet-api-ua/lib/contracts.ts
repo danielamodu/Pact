@@ -218,7 +218,8 @@ export async function getSubscriptionsForUser(userAddress: string, networkKey: "
 
           const formattedPrice = ethers.formatUnits(plan.price, tokenDecimals);
 
-          const isRevoked = isRevokedSessionKey(Number(planId));
+          const localDelegation = getSessionKeyDelegation(Number(planId));
+          const isRevoked = isRevokedSessionKey(Number(planId)) || (!localDelegation.delegation && !localDelegation.privateKey);
           const statusVal = isRevoked ? ("revoked" as const) : plan.active ? ("active" as const) : ("past-due" as const);
 
           subsList.push({
@@ -384,7 +385,8 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
   for (const event of subEvents) {
     if ("args" in event && event.args) {
       const subscriber = event.args[1] as string;
-      const revoked = isRevokedSessionKey(Number(planId));
+      const localDelegation = getSessionKeyDelegation(Number(planId));
+      const revoked = isRevokedSessionKey(Number(planId)) || (!localDelegation.delegation && !localDelegation.privateKey);
       if (!revoked && !subscribersSet.has(subscriber.toLowerCase())) {
         subscribersSet.add(subscriber.toLowerCase());
         subscribersList.push({
