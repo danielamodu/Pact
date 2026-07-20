@@ -122,7 +122,7 @@ export default function WhitepaperPage() {
             {/* Section 1: The Problem */}
             <section id="problem" className="mb-20 space-y-6">
               <div className="flex items-center gap-4 border-b border-[#3A3A38]/10 pb-4">
-                <span class font-mono text-sm text-[#FF8C69] font-bold uppercase>01</span>
+                <span className="font-mono text-sm text-[#FF8C69] font-bold uppercase">01</span>
                 <h2 className="font-space text-3xl font-bold uppercase tracking-tight text-[#1A3C2B]">
                   The Web3 Subscription Bottleneck
                 </h2>
@@ -202,7 +202,7 @@ export default function WhitepaperPage() {
             </section>
 
             {/* Section 5: Economics */}
-            <section id="economics" class="mb-20 space-y-6">
+            <section id="economics" className="mb-20 space-y-6">
               <div className="flex items-center gap-4 border-b border-[#3A3A38]/10 pb-4">
                 <span className="font-mono text-sm text-[#FF8C69] font-bold uppercase">05</span>
                 <h2 className="font-space text-3xl font-bold uppercase tracking-tight text-[#1A3C2B]">
