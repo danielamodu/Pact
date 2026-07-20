@@ -38,8 +38,8 @@ function SubscribeContent() {
         setError(null);
 
         let activeNet = network;
-        let provider = getProvider(activeNet);
-        let contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
+        const provider = getProvider(activeNet);
+        const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
 
         try {
           let data = await contract.getPlan(planId);
