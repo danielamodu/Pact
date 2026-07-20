@@ -133,7 +133,7 @@ export function PactSpikeDashboard() {
           <section id="subscriptions" className="space-y-8 pb-12 border-b border-[#3A3A38]/10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div className="border-l-4 border-forest pl-4">
-                <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">My Subscriptions</h2>
+                <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">My Active Subscriptions</h2>
                 <p className="font-mono text-[10px] tracking-widest uppercase opacity-50">Active recurring payments authorized via Pact</p>
               </div>
               <Link href="/subscribe" id="new-sub-link" className="font-mono text-[10px] tracking-widest uppercase bg-forest/5 border border-forest/10 px-6 py-3 hover:bg-white transition-colors">
@@ -146,24 +146,51 @@ export function PactSpikeDashboard() {
                 <div className="col-span-full py-8 text-center font-mono text-xs opacity-50 uppercase tracking-widest">
                   Scanning contract logs...
                 </div>
-              ) : subscriptions.length === 0 ? (
+              ) : subscriptions.filter(s => s.status === "active").length === 0 ? (
                 <div className="col-span-full py-8 text-center font-mono text-xs opacity-50 uppercase tracking-widest">
                   No active subscriptions found
                 </div>
               ) : (
-                subscriptions.map((sub, i) => (
-                  <SubscriptionCard
-                    key={i}
-                    plan={sub.plan}
-                    merchant={sub.merchant}
-                    status={sub.status}
-                    amount={sub.amount}
-                    nextBilling={sub.nextBilling}
-                    revokeHref={sub.revokeHref}
-                  />
-                ))
+                subscriptions
+                  .filter(s => s.status === "active")
+                  .map((sub, i) => (
+                    <SubscriptionCard
+                      key={i}
+                      plan={sub.plan}
+                      merchant={sub.merchant}
+                      status={sub.status}
+                      amount={sub.amount}
+                      nextBilling={sub.nextBilling}
+                      revokeHref={sub.revokeHref}
+                    />
+                  ))
               )}
             </div>
+
+            {/* Revoked & Past Subscriptions section */}
+            {!loading && subscriptions.filter(s => s.status !== "active").length > 0 && (
+              <div className="pt-8 space-y-6 border-t border-[#3A3A38]/10">
+                <div className="border-l-4 border-coral/50 pl-4">
+                  <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-[#3A3A38]/70">Revoked &amp; Past Subscriptions</h3>
+                  <p className="font-mono text-[10px] tracking-widest uppercase opacity-40">Session permissions previously authorized and revoked</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-80">
+                  {subscriptions
+                    .filter(s => s.status !== "active")
+                    .map((sub, i) => (
+                      <SubscriptionCard
+                        key={i}
+                        plan={sub.plan}
+                        merchant={sub.merchant}
+                        status={sub.status}
+                        amount={sub.amount}
+                        nextBilling={sub.nextBilling}
+                        revokeHref={sub.revokeHref}
+                      />
+                    ))}
+                </div>
+              </div>
+            )}
           </section>
 
           {/* Merchant Plans List */}
