@@ -399,13 +399,13 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
 
   for (const event of subEvents) {
     if ("args" in event && event.args) {
-      const subscriber = event.args[1] as string;
-      const localDelegation = getSessionKeyDelegation(Number(planId));
-      const revoked = isRevokedSessionKey(Number(planId)) || (!localDelegation.delegation && !localDelegation.privateKey);
-      if (!revoked && !subscribersSet.has(subscriber.toLowerCase())) {
-        subscribersSet.add(subscriber.toLowerCase());
+      const subscriber = (event.args[1] as string).toLowerCase();
+      // De-duplicate: keep only the most recent Subscribed event per subscriber
+      // (a subscriber can re-subscribe after revoking, so take the last one)
+      if (!subscribersSet.has(subscriber)) {
+        subscribersSet.add(subscriber);
         subscribersList.push({
-          address: subscriber,
+          address: event.args[1] as string,
           blockNumber: event.blockNumber
         });
       }
