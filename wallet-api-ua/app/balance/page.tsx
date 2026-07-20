@@ -162,7 +162,7 @@ export default function BalanceRevealPage() {
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
       <div className="mosaic-bg"></div>
-      <NavigationBar mode="app" activeItem="dashboard" />
+      <NavigationBar mode="app" activeItem="balance" />
 
       <main className="flex-1 pt-24 pb-12">
         <section className="max-w-7xl mx-auto px-6 py-12">
