@@ -30,17 +30,35 @@ export default function SetupPage() {
   }, [publicAddress]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
+    if (isSubmitting) return;
+
     setIsSubmitting(true);
     setError(null);
     setSuccessTxHash(null);
 
     try {
-      // 1. Calculate price in correct decimals (ETH uses 18, USDC/USDT use 6)
+      if (!planName || !planName.trim()) {
+        throw new Error("Please enter a plan name.");
+      }
+      const numPrice = parseFloat(price);
+      if (!price || isNaN(numPrice) || numPrice <= 0) {
+        throw new Error("Please enter a valid plan price greater than 0.");
+      }
+
+      // 1. Fallback payout address to current wallet address if blank or invalid
+      const effectivePayout =
+        payoutAddress && ethers.isAddress(payoutAddress)
+          ? payoutAddress
+          : publicAddress && ethers.isAddress(publicAddress)
+          ? publicAddress
+          : "0x0000000000000000000000000000000000000000";
+
+      // 2. Calculate price in correct decimals (ETH uses 18, USDC/USDT use 6)
       const decimals = token === "ETH" ? 18 : 6;
       const priceInUnits = ethers.parseUnits(price, decimals).toString();
 
-      // 2. Map billing cycle to seconds
+      // 3. Map billing cycle to seconds
       let intervalSeconds = 2592000; // default 30 days
       if (cycle === "Weekly") {
         intervalSeconds = 604800;
@@ -48,24 +66,25 @@ export default function SetupPage() {
         intervalSeconds = 7776000;
       }
 
-      // 3. Select standard token address for selected network
+      // 4. Select standard token address for selected network
       let tokenAddress = NETWORKS[network].usdcAddress; // default USDC
       if (token === "USDT") {
-        tokenAddress = network === "arbitrum"
-          ? "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
-          : "0x50c5725949A6F0c72E6C4a641F240E934e271057";
+        tokenAddress =
+          network === "arbitrum"
+            ? "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+            : "0x50c5725949A6F0c72E6C4a641F240E934e271057";
       } else if (token === "ETH") {
         tokenAddress = "0x0000000000000000000000000000000000000000";
       }
 
-      // 4. Submit transaction to registry contract via TEE Universal Account
+      // 5. Submit transaction to registry contract via TEE Universal Account
       const txHash = await createPlanOnchain(
         network,
         planName,
         tokenAddress,
         priceInUnits,
         intervalSeconds,
-        payoutAddress
+        effectivePayout
       );
 
       setSuccessTxHash(txHash);
@@ -350,6 +369,7 @@ export default function SetupPage() {
                 <div className="pt-10 flex flex-col md:flex-row gap-4 justify-center">
                   <button
                     type="submit"
+                    onClick={handleSubmit}
                     disabled={isSubmitting}
                     className="flex-1 bg-[#1A3C2B] text-white font-mono text-xs tracking-[0.2em] uppercase px-12 py-5 rounded-sm hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
