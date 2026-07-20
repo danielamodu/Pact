@@ -301,7 +301,7 @@ export default function Home() {
             </div>
             {[
               { title: "Network", links: [{ label: "Docs", path: "/docs" }, { label: "Privacy", path: "/privacy" }, { label: "Terms of Service", path: "/terms" }] },
-              { title: "Governance", links: [{ label: "Whitepaper", path: "#" }] },
+              { title: "Governance", links: [{ label: "Whitepaper", path: "/whitepaper" }] },
               { title: "Socials", links: [] },
             ].map((col, i) => (
               <div key={i} style={{ background: "#F7F7F5", padding: 40 }}>
