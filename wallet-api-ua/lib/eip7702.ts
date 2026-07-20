@@ -5,8 +5,8 @@ import { getProvider, NETWORKS } from "./contracts";
 // ─── Deployed SessionKeyExecutor addresses per network ────────────────────────
 // Populated after deploy — fill in after running scratch/deploy_session_key_executor.js
 export const SESSION_KEY_EXECUTOR_ADDRESS: Record<"arbitrum" | "base", string> = {
-  arbitrum: "0x70cD033936Ae7AA52E788A16A275FF437528911D",
-  base: "0x70cD033936Ae7AA52E788A16A275FF437528911D",
+  arbitrum: "0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f",
+  base: "0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f",
 };
 
 // ─── Delegation check ─────────────────────────────────────────────────────────

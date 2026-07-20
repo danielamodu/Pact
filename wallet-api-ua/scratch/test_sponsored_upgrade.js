@@ -1,6 +1,6 @@
 const { ethers } = require('ethers');
 
-const EXECUTOR_ADDRESS = '0x70cD033936Ae7AA52E788A16A275FF437528911D';
+const EXECUTOR_ADDRESS = '0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f';
 const ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc';
 
 async function main() {

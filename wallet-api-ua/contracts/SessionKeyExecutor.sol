@@ -8,19 +8,37 @@ contract SessionKeyExecutor {
     // Mapping to track revoked session keys
     mapping(address => bool) public revokedSessionKeys;
 
+    // Mapping to track owner nonces (for scope signature)
+    mapping(address => uint256) public nonces;
+
+    // Mapping to track session key execution nonces (for execution signature)
+    mapping(address => uint256) public executionNonces;
+
     uint256 public constant FEE_BPS = 100;
     address public constant TREASURY = 0x6a7438A16D907f7f43044384335D9E347a04a68C; // Placeholder address
 
     struct SessionKeyScope {
         address sessionKeyAddress;
         address recipient;
-        uint256 maxAmount;    // in wei
-        uint256 interval;     // in seconds
-        uint256 expiry;       // timestamp in seconds
-        uint256 planId;       // plan identifier
-        string maxAmountStr;  // e.g., "0.01"
-        string expiryISO;     // e.g., "2026-08-16T12:00:00.000Z"
+        uint256 maxAmount;
+        address token;
+        uint256 interval;
+        uint256 expiry;
+        uint256 planId;
     }
+
+    // EIP-712 Type Hashes
+    bytes32 public constant DOMAIN_TYPEHASH = keccak256(
+        "EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)"
+    );
+
+    bytes32 public constant SESSION_KEY_SCOPE_TYPEHASH = keccak256(
+        "SessionKeyScope(address sessionKeyAddress,address recipient,uint256 maxAmount,address token,uint256 interval,uint256 expiry,uint256 planId,uint256 nonce)"
+    );
+
+    bytes32 public constant PULL_EXECUTION_TYPEHASH = keccak256(
+        "PullExecution(uint256 amount,address recipient,uint256 nonce)"
+    );
 
     event PullExecuted(address indexed sessionKey, address indexed recipient, uint256 amount, uint256 feeAmount);
     event SessionKeyRevoked(address indexed sessionKey);
@@ -35,10 +53,11 @@ contract SessionKeyExecutor {
     fallback() external payable {}
 
     /**
-     * Revokes a session key. Callable only by the owner (the EOA itself).
+     * Revokes a session key and increments owner nonce to invalidate pending delegation scope signatures.
      */
     function revoke(address sessionKey) external onlyOwner {
         revokedSessionKeys[sessionKey] = true;
+        nonces[address(this)]++;
         emit SessionKeyRevoked(sessionKey);
     }
 
@@ -68,67 +87,98 @@ contract SessionKeyExecutor {
             "Interval not elapsed"
         );
 
-        // 5. Verify Owner Signature over the scope statement
-        bytes32 scopeHash = getScopeHash(scope);
+        // 5. Verify Owner Signature over the EIP-712 scope typed data
+        bytes32 scopeHash = getScopeHash(scope, nonces[address(this)]);
         address recoveredOwner = recoverSigner(scopeHash, ownerSig);
         require(recoveredOwner == address(this), "Invalid owner signature");
 
-        // 6. Verify Session Key Signature over the execution parameters
-        bytes32 executionHash = getExecutionHash(amount, scope.recipient);
+        // 6. Verify Session Key Signature over the EIP-712 execution parameters
+        bytes32 executionHash = getExecutionHash(amount, scope.recipient, executionNonces[scope.sessionKeyAddress]);
         address recoveredSessionKey = recoverSigner(executionHash, sessionKeySig);
         require(recoveredSessionKey == scope.sessionKeyAddress, "Invalid session key signature");
 
-        // 7. Update state BEFORE external call (Checks-effects-interactions)
+        // 7. Update state BEFORE external calls (Checks-effects-interactions)
         lastPullTimestamp[scope.sessionKeyAddress] = block.timestamp;
+        executionNonces[scope.sessionKeyAddress]++;
 
         // 8. Execute external call with fee split
         uint256 feeAmount = (amount * FEE_BPS) / 10000;
         uint256 merchantAmount = amount - feeAmount;
 
-        if (feeAmount > 0) {
-            (bool feeSuccess, ) = TREASURY.call{value: feeAmount}("");
-            require(feeSuccess, "Fee transfer failed");
+        if (scope.token == address(0)) {
+            // Native ETH Transfer
+            if (feeAmount > 0) {
+                (bool feeSuccess, ) = TREASURY.call{value: feeAmount}("");
+                require(feeSuccess, "Fee transfer failed");
+            }
+            (bool success, ) = scope.recipient.call{value: merchantAmount}("");
+            require(success, "ETH transfer failed");
+        } else {
+            // ERC-20 Token Transfer (SafeERC20 low-level pattern)
+            if (feeAmount > 0) {
+                safeTransfer(scope.token, TREASURY, feeAmount);
+            }
+            safeTransfer(scope.token, scope.recipient, merchantAmount);
         }
-
-        (bool success, ) = scope.recipient.call{value: merchantAmount}("");
-        require(success, "ETH transfer failed");
 
         emit PullExecuted(scope.sessionKeyAddress, scope.recipient, amount, feeAmount);
     }
 
     /**
-     * Formats the scope hash matching the message formatted by the frontend.
+     * Custom robust safeTransfer implementation to support non-standard tokens (like USDT)
      */
-    function getScopeHash(SessionKeyScope calldata scope) public view returns (bytes32) {
-        string memory statement = formatScopeStatement(scope);
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n", uint2str(bytes(statement).length), statement));
+    function safeTransfer(address token, address to, uint256 value) internal {
+        (bool success, bytes memory data) = token.call(abi.encodeWithSelector(0xa9059cbb, to, value));
+        require(success && (data.length == 0 || abi.decode(data, (bool))), "PactSafeERC20: transfer failed");
     }
 
     /**
-     * Formats the execution hash for session key signature.
+     * EIP-712 Domain Separator calculation
      */
-    function getExecutionHash(uint256 amount, address recipient) public pure returns (bytes32) {
-        string memory message = string(abi.encodePacked("Execute Pull: ", uint2str(amount), " to ", addressToAsciiString(recipient)));
-        return keccak256(abi.encodePacked("\x19Ethereum Signed Message:\n", uint2str(bytes(message).length), message));
-    }
-
-    /**
-     * Reconstructs the exact plain text scope statement formatted in JS.
-     */
-    function formatScopeStatement(SessionKeyScope calldata scope) public pure returns (string memory) {
-        return string(abi.encodePacked(
-            "Pact Session Key Delegation:\n",
-            "Session Key: ", addressToAsciiString(scope.sessionKeyAddress), "\n",
-            "Recipient Merchant: ", addressToAsciiString(scope.recipient), "\n",
-            "Max Amount: ", scope.maxAmountStr, " ETH\n",
-            "Interval: ", uint2str(scope.interval), " seconds\n",
-            "Expires At: ", scope.expiryISO, "\n",
-            "Pact Protocol Security Code: 7702-SESS"
+    function getDomainSeparator() public view returns (bytes32) {
+        return keccak256(abi.encode(
+            DOMAIN_TYPEHASH,
+            keccak256(bytes("Pact Protocol")),
+            keccak256(bytes("1")),
+            block.chainid,
+            address(this)
         ));
     }
 
-    // --- Cryptographic and Formatting Helpers ---
+    /**
+     * Formats the EIP-712 scope statement hash.
+     */
+    function getScopeHash(SessionKeyScope calldata scope, uint256 nonce) public view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(
+            SESSION_KEY_SCOPE_TYPEHASH,
+            scope.sessionKeyAddress,
+            scope.recipient,
+            scope.maxAmount,
+            scope.token,
+            scope.interval,
+            scope.expiry,
+            scope.planId,
+            nonce
+        ));
+        return keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
+    }
 
+    /**
+     * Formats the EIP-712 execution hash.
+     */
+    function getExecutionHash(uint256 amount, address recipient, uint256 nonce) public view returns (bytes32) {
+        bytes32 structHash = keccak256(abi.encode(
+            PULL_EXECUTION_TYPEHASH,
+            amount,
+            recipient,
+            nonce
+        ));
+        return keccak256(abi.encodePacked("\x19\x01", getDomainSeparator(), structHash));
+    }
+
+    /**
+     * Signature signer recovery helper
+     */
     function recoverSigner(bytes32 messageHash, bytes memory signature) internal pure returns (address) {
         if (signature.length != 65) {
             return address(0);
@@ -142,46 +192,5 @@ contract SessionKeyExecutor {
             v := byte(0, mload(add(signature, 96)))
         }
         return ecrecover(messageHash, v, r, s);
-    }
-
-    function addressToAsciiString(address x) internal pure returns (string memory) {
-        bytes memory s = new bytes(42);
-        s[0] = "0";
-        s[1] = "x";
-        for (uint i = 0; i < 20; i++) {
-            bytes1 b = bytes1(uint8(uint256(uint160(x)) / (2**(8*(19 - i)))));
-            bytes1 hi = bytes1(uint8(b) / 16);
-            bytes1 lo = bytes1(uint8(b) - 16 * uint8(hi));
-            s[2+2*i] = char(hi);
-            s[3+2*i] = char(lo);
-        }
-        return string(s);
-    }
-
-    function char(bytes1 b) internal pure returns (bytes1) {
-        if (uint8(b) < 10) return bytes1(uint8(b) + 0x30);
-        else return bytes1(uint8(b) + 0x57);
-    }
-
-    function uint2str(uint256 _i) internal pure returns (string memory _uintAsString) {
-        if (_i == 0) {
-            return "0";
-        }
-        uint256 j = _i;
-        uint256 len;
-        while (j != 0) {
-            len++;
-            j /= 10;
-        }
-        bytes memory bstr = new bytes(len);
-        uint256 k = len;
-        while (_i != 0) {
-            k = k - 1;
-            uint8 temp = (uint8)(48 + (_i - (_i / 10) * 10));
-            bytes1 b1 = bytes1(temp);
-            bstr[k] = b1;
-            _i /= 10;
-        }
-        return string(bstr);
     }
 }

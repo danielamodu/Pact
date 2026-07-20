@@ -3,10 +3,10 @@ const fs = require('fs');
 const path = require('path');
 
 const EXECUTOR_ADDRESS = '0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f';
-const ARBITRUM_RPC = 'https://arb1.arbitrum.io/rpc';
+const BASE_RPC = 'https://mainnet.base.org';
 
 async function main() {
-  console.log("=== Testing EIP-7702 Upgrade Logic ===");
+  console.log("=== Testing EIP-7702 Upgrade Logic on Base ===");
 
   const keyPath = path.join(__dirname, '..', 'deployer.key');
   if (!fs.existsSync(keyPath)) {
@@ -15,7 +15,7 @@ async function main() {
   }
   const privateKey = fs.readFileSync(keyPath, 'utf8').trim();
 
-  const provider = new ethers.JsonRpcProvider(ARBITRUM_RPC);
+  const provider = new ethers.JsonRpcProvider(BASE_RPC);
   const wallet = new ethers.Wallet(privateKey, provider);
   console.log(`EOA Address: ${wallet.address}`);
 
@@ -117,7 +117,7 @@ async function main() {
   console.log("Broadcasting transaction...");
   const txResponse = await provider.broadcastTransaction(signedTx);
   console.log(`Transaction Hash: ${txResponse.hash}`);
-  console.log(`Explorer Link: https://arbiscan.io/tx/${txResponse.hash}`);
+  console.log(`Explorer Link: https://basescan.org/tx/${txResponse.hash}`);
 
   console.log("Waiting for block confirmation...");
   const receipt = await txResponse.wait(1);

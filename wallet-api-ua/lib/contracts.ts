@@ -24,12 +24,12 @@ export const ERC20_ABI = [
 ];
 
 // Deployed PactRegistry address (same address on both Arbitrum and Base)
-export const PACT_REGISTRY_ADDRESS = "0xF2cDBAcdcE2D7961C2dE969E28F623ffac617CF5";
+export const PACT_REGISTRY_ADDRESS = "0x9Db4207Da96c5ee738F19B54aa4D49Bc0FA64F56";
 
 // Deployed SessionKeyExecutor address per network
 export const SESSION_KEY_EXECUTOR_ADDRESS: Record<"arbitrum" | "base", string> = {
-  arbitrum: "0x70cD033936Ae7AA52E788A16A275FF437528911D",
-  base: "0x70cD033936Ae7AA52E788A16A275FF437528911D",
+  arbitrum: "0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f",
+  base: "0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f",
 };
 
 // Network Configurations

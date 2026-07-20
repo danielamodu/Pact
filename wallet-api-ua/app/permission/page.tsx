@@ -8,7 +8,8 @@ import { NavigationBar } from "@/components/NavigationBar";
 import { useAuth } from "@/contexts/AuthProvider";
 import { getProvider, subscribeOnchain, SESSION_KEY_EXECUTOR_ADDRESS } from "@/lib/contracts";
 import { checkDelegated, upgradeEOAWithEIP7702 } from "@/lib/eip7702";
-import { generateSessionKey, formatScopeStatement, saveSessionKeyDelegation, SessionKeyScope } from "@/lib/sessionKey";
+import { generateSessionKey, saveSessionKeyDelegation, SessionKeyScope, getEIP712Domain, EIP712_TYPES } from "@/lib/sessionKey";
+import { signData } from "@/lib/express-proxy";
 import { ethereumService } from "@/lib/ethereum";
 import { ethers } from "ethers";
 
@@ -115,36 +116,68 @@ function PermissionContent() {
         console.log("[Permission] Account already delegated to SessionKeyExecutor, skipping upgrade.");
       }
 
-      // ── 5. Generate session key and sign scope statement ────────────────
+      // ── 5. Generate session key and sign scope statement using EIP-712 ───
       setCurrentStep("Signing session key");
       const sessionKeyWallet = generateSessionKey();
       const sessionKeyAddress = sessionKeyWallet.address.toLowerCase();
 
       const intervalSeconds = parseInt(intervalDays) * 86400;
       const expiry = Math.floor(Date.now() / 1000) + intervalSeconds * 12; // 12 billing cycles
-      const expiryISO = new Date(expiry * 1000).toISOString();
 
-      // Parse price to wei (maxAmount). Token is ETH so use parseEther.
-      // maxAmountStr must match how the contract's formatScopeStatement reconstructs it.
-      const maxAmountStr = price; // e.g. "0.01"
-      const maxAmountWei = ethers.parseEther(maxAmountStr);
+      // Resolve token address (Zero Address for ETH, custom address for USDC/USDT)
+      let tokenAddress = ethers.ZeroAddress;
+      let decimals = 18;
+      if (token.toUpperCase() === "USDC") {
+        tokenAddress = networkKey === "arbitrum"
+          ? "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
+          : "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913";
+        decimals = 6;
+      } else if (token.toUpperCase() === "USDT") {
+        tokenAddress = networkKey === "arbitrum"
+          ? "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
+          : "0x50c5725949a6f0c72e6c4a641f240e934e271057";
+        decimals = 6;
+      }
+
+      // Parse price to token decimals (maxAmount)
+      const maxAmountWei = ethers.parseUnits(price, decimals);
 
       const scope: SessionKeyScope = {
         sessionKeyAddress,
         recipient: payoutAddress.toLowerCase(),
         maxAmount: maxAmountWei,
+        token: tokenAddress.toLowerCase(),
         interval: intervalSeconds,
         expiry,
         planId: parseInt(planId),
-        maxAmountStr,
-        expiryISO,
       };
 
-      const statement = formatScopeStatement(scope);
-      console.log("[Permission] Scope statement:\n", statement);
+      // Fetch the subscriber's current nonce from the SessionKeyExecutor contract on-chain
+      const executorContract = new ethers.Contract(executorAddress, [
+        "function nonces(address) external view returns (uint256)"
+      ], provider);
+      const currentNonce = await executorContract.nonces(publicAddress);
 
-      // Sign via TEE wallet (personalSign = eth_sign with Ethereum prefix)
-      const ownerSignature = await ethereumService.personalSign(statement);
+      // Compute the EIP-712 scope statement hash
+      const domain = getEIP712Domain(chainId, publicAddress); // verifyingContract is the EOA itself!
+      const types = { SessionKeyScope: EIP712_TYPES.SessionKeyScope };
+      const value = {
+        sessionKeyAddress: scope.sessionKeyAddress,
+        recipient: scope.recipient,
+        maxAmount: scope.maxAmount,
+        token: scope.token,
+        interval: scope.interval,
+        expiry: scope.expiry,
+        planId: scope.planId,
+        nonce: currentNonce,
+      };
+
+      const hash = ethers.TypedDataEncoder.hash(domain, types, value);
+      console.log("[Permission] EIP-712 scope hash:", hash);
+
+      // Sign EIP-712 hash via TEE proxy (returns r, s, v signature components)
+      const authSig = await signData(hash, "ETH");
+      const ownerSignature = ethers.Signature.from({ r: authSig.r, s: authSig.s, v: authSig.v }).serialized;
       console.log("[Permission] Owner signature:", ownerSignature);
 
       // Save delegation to localStorage

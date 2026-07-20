@@ -21,6 +21,7 @@ contract PactRegistry {
     // mappings
     mapping(uint256 => Plan) public plans;
     mapping(uint256 => address) public planMerchants;
+    mapping(uint256 => mapping(address => bool)) public isActiveSubscriber;
 
     // Events
     event PlanCreated(uint256 indexed planId, address indexed merchant, string name, address token, uint256 price, uint256 intervalSeconds, address payoutAddress);
@@ -83,6 +84,7 @@ contract PactRegistry {
 
     function subscribe(uint256 planId, address executorContract) external {
         require(plans[planId].active, "Plan not active");
+        isActiveSubscriber[planId][msg.sender] = true;
         emit Subscribed(planId, msg.sender, executorContract);
     }
 
@@ -91,6 +93,7 @@ contract PactRegistry {
     }
 
     function logRevoke(uint256 planId, address subscriber) external onlyAuthorized {
+        isActiveSubscriber[planId][subscriber] = false;
         emit SubscriptionRevoked(planId, subscriber);
     }
 }
