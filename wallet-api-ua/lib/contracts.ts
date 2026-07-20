@@ -245,24 +245,7 @@ export async function createPlanOnchain(
     payoutAddress
   ]);
 
-  // 2. Try injected browser wallet first if connected
-  if (typeof window !== "undefined" && (window as any).ethereum) {
-    try {
-      const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-      const signer = await browserProvider.getSigner();
-      const tx = await signer.sendTransaction({
-        to: PACT_REGISTRY_ADDRESS,
-        data,
-        gasLimit: BigInt(300000)
-      });
-      console.log("[CreatePlan] Sent via browser wallet:", tx.hash);
-      return tx.hash;
-    } catch (browserErr) {
-      console.warn("[CreatePlan] Browser wallet transaction failed/skipped, falling back to TEE backend:", browserErr);
-    }
-  }
-
-  // 3. Fallback: Submit via TEE Universal Account
+  // 2. Submit via TEE Universal Account
   const walletData = await getOrCreateWallet("ETH");
   const fromAddress = walletData.public_address;
   const nonce = await provider.getTransactionCount(fromAddress);
@@ -299,33 +282,7 @@ export async function withdrawOnchain(
   const provider = getProvider(networkKey);
   const config = NETWORKS[networkKey];
 
-  // 1. Try browser wallet first if connected
-  if (typeof window !== "undefined" && (window as any).ethereum) {
-    try {
-      const browserProvider = new ethers.BrowserProvider((window as any).ethereum);
-      const signer = await browserProvider.getSigner();
-
-      let tx;
-      if (asset === "ETH") {
-        tx = await signer.sendTransaction({
-          to: recipientAddress,
-          value: amountInUnits,
-          gasLimit: BigInt(250000)
-        });
-      } else {
-        const erc20Contract = new ethers.Contract(config.usdcAddress, ERC20_ABI, signer);
-        tx = await erc20Contract.transfer(recipientAddress, amountInUnits, {
-          gasLimit: BigInt(250000)
-        });
-      }
-      console.log("[Withdraw] Sent via browser wallet:", tx.hash);
-      return tx.hash;
-    } catch (browserErr) {
-      console.warn("[Withdraw] Browser wallet transaction failed/skipped, falling back to TEE backend:", browserErr);
-    }
-  }
-  
-  // 2. Fetch TEE wallet address
+  // 1. Fetch TEE wallet address directly
   const walletData = await getOrCreateWallet("ETH");
   const fromAddress = walletData.public_address;
   const nonce = await provider.getTransactionCount(fromAddress);
@@ -346,7 +303,7 @@ export async function withdrawOnchain(
     txRequest.to = recipientAddress;
     txRequest.value = amountInUnits;
     txRequest.data = "0x";
-    txRequest.gasLimit = BigInt(250000); // Increased from 21000 for Arbitrum/Base L1 calldata overhead
+    txRequest.gasLimit = BigInt(250000); // 250k gas to handle L2 Arbitrum/Base data overhead
   } else {
     const erc20Contract = new ethers.Contract(config.usdcAddress, ERC20_ABI, provider);
     const data = erc20Contract.interface.encodeFunctionData("transfer", [
