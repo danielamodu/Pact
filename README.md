@@ -1,286 +1,227 @@
-# Magic API Wallet + Particle Universal Accounts Demo
+# Pact Protocol
 
-A demo showing how to implement Magic's TEE (Trusted Execution Environment) API Wallet with OAuth authentication, and enhance it with Particle Network's Universal Account for chain abstraction and cross-chain capabilities.
+**Autonomous recurring payments on Web3 — powered by EIP-7702 account delegation and Particle Network Universal Accounts.**
 
-## What This Demo Shows
+Live app: [pactxbt.vercel.app](https://pactxbt.vercel.app)  
+Source: [github.com/danielamodu/Pact](https://github.com/danielamodu/Pact)
 
-- **Magic Wallet API Implementation** - Server-side EOA wallet creation and management
-- **Universal Account Integration** - Adding Universal Accounts on top of Magic's EOA
-- **OAuth-based Authentication** - Using Google ID tokens for wallet derivation
-- **Unified Balance** - Unified balance tracking across multiple chains and assets
-- **Cross-Chain NFT Minting** - Mint an NFT on Avalanche using funds from any supported chain—no manual bridging required
+---
 
-> Docs:
->
-> [Magic TEE Express API Documentation](https://docs.magic.link/api-wallets/introduction)
->
-> [Particle Network Universal Account](https://developers.particle.network/universal-accounts/cha/overview)
+## What is Pact?
 
-## Key Concepts
+Pact is a trustless, on-chain subscription protocol for Ethereum L2 networks. It solves the core problem with Web3 recurring payments: every billing cycle has historically required a manual wallet signature.
 
-### Magic Wallet API (TEE Express)
-Magic's TEE API creates and manages **EOA (Externally Owned Account)** wallets server-side. The private key is derived from the user's OAuth ID token and stored securely in Magic's Trusted Execution Environment. Your application never has access to the private key.
+With Pact, a subscriber signs **once** to authorize a scoped session key. A relayer then executes recurring pulls autonomously — within hard cryptographic limits — without the user ever needing to sign again.
 
-### Universal Accounts: One Account, One Balance, Any Chain
+> "Set it. Forget it. On-chain."
 
-**The Problem Universal Accounts Solve:**
-Traditional blockchain wallets require users to manage separate addresses, balances, and gas tokens on each chain. If for example, you want to interact with a dApp on Avalanche but only have funds on Solana, you need to manually bridge assets and acquire AVAX for gas—a complex, multi-step process.
-
-**How Universal Accounts Work:**
-Universal Accounts provide **chain abstraction** by creating a single smart account that:
-
-1. **Unified Balance Across Chains** - Your assets on Ethereum, Base, Solana, Avalanche, and [15+ other chains](https://developers.particle.network/universal-accounts/cha/chains) are treated as one collective balance
-2. **Automatic Cross-Chain Operations** - When you submit a transaction on any chain, the system automatically bridges funds from wherever you have them to fulfill your intent
-3. **Gas Abstraction** - Pay gas fees using any [primary token](https://developers.particle.network/universal-accounts/cha/chains#primary-assets) you hold, not just the native chain token (e.g., use USDC to pay for Ethereum gas)
-4. **Single Account** - One Universal Account that works across all supported EVM chains + Solana
-
-**In This Demo:**
-- The **Magic EOA** acts as the "owner" (signer) of the Universal Account
-- The **Universal Account** is a smart contract wallet (ERC-4337) deployed across multiple chains
-- Users interact with one account, but can access funds and perform operations on any supported chain seamlessly
-
-**Example Flow:**
-```
-User has $100 USDC on Solana
-User wants to mint NFT on Avalanche (costs $5)
-→ Universal Account automatically:
-  1. Sources the required funds from Solana
-  2. Bridges them to Avalanche
-  3. Executes the mint transaction
-→ User sees it as one simple action
-```
-
-### Supported Assets & Chains
-
-Universal Accounts work with [**primary assets**](https://developers.particle.network/universal-accounts/cha/chains#primary-assets) across [**15+ chains**](https://developers.particle.network/universal-accounts/cha/chains).
-
-You can deposit any primary asset on any supported chain, and it will be available for use across all chains through your Universal Account.
-
-## Prerequisites
-
-Before running this demo, you need:
-
-1. **Google OAuth Credentials**
-   - Go to [Google Cloud Console](https://console.cloud.google.com/)
-   - Create OAuth 2.0 credentials
-   - Add authorized redirect URI: `http://localhost:3000/api/auth/callback/google`
-
-2. **Magic API Keys**
-   - Sign up at [Magic Dashboard](https://dashboard.magic.link/)
-   - Get your API key and OIDC Provider ID
-
-3. **Particle Network Credentials**
-   - Sign up at [Particle Network Dashboard](https://dashboard.particle.network/)
-   - Create a project and get your credentials
-
-## Setup
-
-1. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-2. **Create environment file:**
-   ```bash
-   cp env.example .env.local
-   ```
-
-3. **Configure environment variables in `.env.local`:**
-   ```env
-   # Google OAuth
-   GOOGLE_CLIENT_ID=your_google_client_id
-   GOOGLE_CLIENT_SECRET=your_google_client_secret
-
-   # Magic TEE API
-   MAGIC_API_KEY=your_magic_api_key
-   OIDC_PROVIDER_ID=your_oidc_provider_id
-
-   # Particle Network Universal Account
-   NEXT_PUBLIC_PROJECT_ID=your_particle_project_id
-   NEXT_PUBLIC_CLIENT_KEY=your_particle_client_key
-   NEXT_PUBLIC_APP_ID=your_particle_app_id
-
-   # NextAuth
-   NEXTAUTH_URL=http://localhost:3000
-   NEXTAUTH_SECRET=generate_with_openssl_rand_base64_32
-   ```
-
-4. **Generate NextAuth secret:**
-   ```bash
-   openssl rand -base64 32
-   ```
-
-## Running the Demo
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+---
 
 ## How It Works
 
-### 1. Magic Wallet API Implementation
+### For Merchants
+1. Create a subscription plan on `PactRegistry` (name, token, price, interval, payout address)
+2. Share a subscribe link: `/subscribe?planId=X&network=arbitrum`
+3. Receive recurring payments automatically — no action required per billing cycle
 
-#### Authentication & Wallet Creation
+### For Subscribers
+1. Log in with Google (Magic TEE wallet created server-side, keys never exposed)
+2. Click subscribe — Pact checks if your EOA needs an EIP-7702 upgrade
+3. If needed, the gas-sponsored relayer submits the Type-4 upgrade transaction for free
+4. Sign a scoped `SessionKeyScope` via EIP-712 — the only signature you'll ever need
+5. Done. The keeper handles all future billing pulls within the bounds you authorized
+
+---
+
+## Architecture
+
+### EIP-7702 Account Delegation
+
+Pact uses [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) (live since Ethereum Pectra, May 2025) to set an EOA's bytecode to point to `SessionKeyExecutor.sol`. This gives a standard wallet smart-contract execution capabilities without requiring full ERC-4337 migration or a new wallet address.
+
+The Type-4 upgrade transaction is sponsored by a server-side relayer — subscribers never pay gas for this step.
+
+### Session Keys (EIP-712)
+
+After the EIP-7702 upgrade, a subscriber signs a `SessionKeyScope` struct:
+
 ```
-User Login (Google OAuth)
-    ↓
-NextAuth generates ID token
-    ↓
-Client calls /api/tee/wallet
-    ↓
-Server forwards ID token to Magic TEE API
-    ↓
-Magic derives private key from ID token
-    ↓
-Returns EOA public address
-```
-
-**Key Implementation Details:**
-
-- **ID Token as User Identifier**: Magic uses the Google ID token to deterministically derive the same wallet for a user across sessions
-- **Server-side Proxy**: All Magic API calls go through Next.js API routes (`/app/api/tee/*`) to keep the Magic API key secure
-- **No Private Key Exposure**: The private key never leaves Magic's TEE infrastructure
-
-**Code Flow:**
-1. `contexts/AuthProvider.tsx` - Manages authentication and calls `getOrCreateWallet()` from express-proxy
-2. `lib/express-proxy.ts` - Client-side proxy functions that call your API routes
-3. `app/api/tee/wallet/route.ts` - Server-side route that validates session and forwards to Magic
-4. `lib/express.ts` - Server-side client that adds Magic API credentials and makes TEE requests
-
-### 2. Universal Account Integration
-
-#### Adding Universal Account Layer
-Once the Magic EOA is created, the Universal Account SDK wraps it:
-
-```javascript
-const ua = new UniversalAccount({
-  projectId: PARTICLE_PROJECT_ID,
-  projectClientKey: PARTICLE_CLIENT_KEY,
-  projectAppUuid: PARTICLE_APP_ID,
-  ownerAddress: magicEOAAddress,  // Magic wallet as owner
-});
+SessionKeyScope {
+  sessionKeyAddress  // ephemeral EOA generated client-side
+  recipient          // merchant payout address — hard-locked
+  maxAmount          // spend cap per cycle
+  token              // USDC, USDT, or ETH
+  interval           // minimum seconds between pulls
+  expiry             // auto-expires after N billing cycles
+  planId             // which plan this scope is for
+  nonce              // replay protection
+}
 ```
 
-**What This Provides:**
-- **Universal Account Address** - Contract wallet on EVM chains
-- **Unified Balance** - Aggregated balance across all chains in USD
-- **Cross-chain Operations** - Future: swaps, bridges, gasless transactions
+The session key is cryptographically bound to these limits. The keeper can never pull more than `maxAmount`, pay anyone other than the registered merchant, or pull faster than `interval` seconds — all enforced on-chain by `SessionKeyExecutor.sol`.
 
-**Code Location:** `app/wallet/page.tsx` - Initializes UA when Magic wallet address is available
+### Autonomous Execution (Keeper)
 
-### 3. Cross-Chain NFT Minting Demo
+`scripts/keeper.mjs` is a lightweight Node.js process that:
 
-This demo showcases the power of Universal Accounts through a practical example: minting an NFT on Avalanche using funds from any chain.
+1. Reads all stored session key delegations from `keeper-store.json`
+2. Checks revocation, expiry, and interval elapsed for each
+3. Verifies subscriber token balance before attempting
+4. Builds and submits `executePull` transactions to `SessionKeyExecutor`
+5. Logs each pull on-chain via `PactRegistry` for verifiable receipts
 
-#### How to Use the Demo
+Run continuously or as a cron job:
 
-1. **Deposit Funds**: Send any [primary asset](https://developers.particle.network/universal-accounts/cha/chains#primary-assets) (USDC, USDT, ETH, etc.) to your Universal Account address on any [supported chain](https://developers.particle.network/universal-accounts/cha/chains)
-   - Your Universal Addresses are displayed in the wallet dashboard
-   - You can deposit on Ethereum, Base, Polygon, Solana, or any other supported chain
-
-2. **View Unified Balance**: Your dashboard shows the total USD value of all assets across all chains
-
-3. **Mint NFT**: Click "Mint Cross-Chain NFT" to mint an NFT on Avalanche
-   - The system automatically sources funds from wherever you have them
-   - Bridges the required amount to Avalanche
-   - Executes the mint transaction
-   - All in one seamless operation!
-
-#### Transaction Flow
-
-```typescript
-// 1. Create a universal transaction targeting Avalanche
-const transaction = await universalAccount.createUniversalTransaction({
-  chainId: CHAIN_ID.AVALANCHE_MAINNET,
-  expectTokens: [],  // Let UA auto-source funds
-  transactions: [
-    {
-      to: NFT_CONTRACT_ADDRESS,
-      data: contractInterface.encodeFunctionData("mint"),
-    },
-  ],
-});
-
-// 2. Sign with Magic EOA (via personal_sign)
-const signature = await ethereumService.personalSign(transaction.rootHash);
-
-// 3. Send transaction - UA handles cross-chain bridging automatically
-const result = await universalAccount.sendTransaction(
-  transaction,
-  signature.signature
-);
+```bash
+node scripts/keeper.mjs
 ```
+
+Or trigger a single cycle via the API:
+
+```
+POST /api/keeper/execute-pulls
+Authorization: Bearer <KEEPER_API_SECRET>
+```
+
+### Magic TEE Wallet
+
+Each user gets a server-side EOA derived from their Google OAuth ID token inside Magic's Trusted Execution Environment. The private key is never exposed to the application — all signing happens in the TEE via the Magic API.
+
+This means subscribers can authorize subscriptions without installing MetaMask or any external wallet. Login with Google → you have a self-custodied on-chain wallet.
+
+### Particle Network Universal Accounts
+
+The Magic TEE EOA is the owner of a [Particle Network Universal Account](https://developers.particle.network/universal-accounts/cha/overview), enabling:
+
+- Unified balance display across Arbitrum, Base, and 15+ other chains
+- Gas abstraction via primary assets (USDC, ETH, etc.)
+- Foundation for cross-chain subscription funding in future versions
+
+### x402 Pay-Per-Call Analytics
+
+`/api/insights/plan-health` is gated behind HTTP 402 micropayments using [Openfort](https://www.openfort.io/). Merchants pay 0.05 USDC per analytics request via an EIP-3009 payment signed automatically by an Openfort backend wallet — dogfooding the protocol's own payment primitive.
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | Next.js 15, TypeScript, Tailwind CSS |
+| Auth | NextAuth v5 + Google OAuth |
+| TEE Wallet | Magic TEE API (server-side EOA, keys never exposed) |
+| Universal Account | Particle Network UA SDK |
+| Smart Contracts | Solidity 0.8.20, Arbitrum One + Base Mainnet |
+| Account Delegation | EIP-7702 (Type-4 transactions) |
+| Session Permissions | EIP-712 typed data signatures |
+| Gas Sponsorship | Custom server-side relayer (Next.js API route) |
+| Analytics Paywall | x402 + Openfort backend wallet |
+| Networks | Arbitrum One (42161), Base Mainnet (8453) |
+
+---
+
+## Smart Contracts
+
+Both contracts are deployed at the same deterministic address on Arbitrum One and Base Mainnet:
+
+| Contract | Address |
+|---|---|
+| `PactRegistry` | [`0x9Db4207Da96c5ee738F19B54aa4D49Bc0FA64F56`](https://arbiscan.io/address/0x9Db4207Da96c5ee738F19B54aa4D49Bc0FA64F56) |
+| `SessionKeyExecutor` | [`0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f`](https://arbiscan.io/address/0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f) |
+
+Verified on Basescan:
+- [PactRegistry on Base](https://basescan.org/address/0x9Db4207Da96c5ee738F19B54aa4D49Bc0FA64F56)
+- [SessionKeyExecutor on Base](https://basescan.org/address/0xb804Fe2A839FD11aaAFc24258498e8Ef8476d74f)
+
+---
+
+## Live Demo Plans
+
+Two subscription plans are live on Arbitrum One for testing:
+
+| Plan | ID | Price | Network |
+|---|---|---|---|
+| How to Cook | `4` | 0.00001 ETH / 30 days | Arbitrum One |
+| Learn to Code | `5` | 0.000001 ETH / 30 days | Arbitrum One |
+
+Subscribe directly: `/subscribe?planId=4&network=arbitrum`
+
+---
+
+## Setup
+
+### Prerequisites
+- Node.js 18+
+- Google OAuth credentials
+- Magic TEE API key
+- Particle Network project credentials
+- Funded relayer wallet (for gas sponsorship)
+
+### Environment Variables
+
+```env
+# Google OAuth
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Magic TEE API
+MAGIC_API_KEY=
+OIDC_PROVIDER_ID=
+
+# Particle Network
+NEXT_PUBLIC_PROJECT_ID=
+NEXT_PUBLIC_CLIENT_KEY=
+NEXT_PUBLIC_APP_ID=
+
+# NextAuth
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET=
+
+# Relayer (gas sponsor wallet)
+RELAYER_PRIVATE_KEY=
+
+# Keeper (autonomous pull execution)
+KEEPER_RELAYER_PRIVATE_KEY=
+KEEPER_API_SECRET=
+
+# Openfort (x402 analytics paywall)
+OPENFORT_SECRET_KEY=
+OPENFORT_BACKEND_WALLET_ID=
+OPENFORT_BACKEND_WALLET_ADDRESS=
+```
+
+### Install & Run
+
+```bash
+cd wallet-api-ua
+npm install
+npm run dev
+```
+
+### Run the Keeper
+
+```bash
+node scripts/keeper.mjs
+```
+
+Cron (every minute):
+```
+* * * * * cd /path/to/wallet-api-ua && node scripts/keeper.mjs >> keeper.log 2>&1
+```
+
+---
 
 ## Security Model
 
-### Magic TEE Security
-- **Private keys never exposed** - Keys are generated and stored exclusively in Magic's Trusted Execution Environment
-- **Deterministic derivation** - Same OAuth ID token always produces the same wallet
-- **Server-side signing** - All cryptographic operations happen in the TEE, not in your application
-- **API key protection** - Magic API credentials only used in Next.js API routes (server-side)
+- **Private keys never exposed** — Magic TEE derives wallet keys from OAuth tokens inside a Trusted Execution Environment. Your app never sees the key.
+- **Session key scoping** — Each session key is cryptographically bound to a specific recipient, amount cap, interval, and expiry. The keeper cannot exceed these bounds.
+- **On-chain interval enforcement** — `SessionKeyExecutor.sol` enforces minimum elapsed time between pulls independently of the keeper.
+- **Revocation** — Subscribers can revoke a session key at any time from the dashboard, instantly stopping future pulls.
+- **Nonce protection** — Both the scope signature and execution signature include nonces to prevent replay attacks.
 
-### Session Security
-- **JWT-based sessions** - NextAuth manages encrypted session tokens
-- **Automatic token refresh** - Google OAuth tokens refreshed before expiration
-- **Session validation** - All API routes verify authentication before forwarding to Magic
-- **Re-auth on error** - Users are signed out if token refresh fails
+---
 
-## API Reference
+## Built For
 
-### Magic TEE Endpoints (via proxy)
-
-**Create/Get Wallet**
-```typescript
-POST /api/tee/wallet
-Body: { chain: "ETH" }
-Response: { public_address: "0x..." }
-```
-
-**Sign Message**
-```typescript
-POST /api/tee/wallet/sign/message
-Body: { message_base64: "...", chain: "ETH" }
-Response: { signature: "0x..." }
-```
-
-**Sign Data (Typed Data / Transaction)**
-```typescript
-POST /api/tee/wallet/sign/data
-Body: { raw_data_hash: "0x...", chain: "ETH" }
-Response: { r: "0x...", s: "0x...", v: 27 }
-```
-
-### Universal Account SDK
-
-**Initialize**
-```typescript
-const ua = new UniversalAccount({
-  projectId: string,
-  projectClientKey: string,
-  projectAppUuid: string,
-  ownerAddress: string,  // Magic EOA address
-});
-```
-
-**Get Account Info**
-```typescript
-const options = await ua.getSmartAccountOptions();
-// Returns: { ownerAddress, smartAccountAddress, solanaSmartAccountAddress }
-```
-
-**Get Unified Balance**
-```typescript
-const assets = await ua.getPrimaryAssets();
-// Returns: { totalAmountInUSD, assets: [...] }
-```
-
-## Learn More
-
-- [Magic TEE Express API Documentation](https://docs.magic.link/api-wallets/introduction)
-- [Particle Network Universal Account](https://developers.particle.network/universal-accounts/cha/overview)
-
-## License
-
-MIT
+**UXmaxx Hackathon — Particle Network EIP-7702 Track**  
+July 2025
