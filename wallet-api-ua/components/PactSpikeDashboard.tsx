@@ -6,7 +6,7 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { NavigationBar } from "@/components/NavigationBar";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { PlanCard } from "@/components/PlanCard";
-import { getPlansForMerchant, getSubscriptionsForUser, getUSDCBalance, getETHBalance } from "@/lib/contracts";
+import { getPlansForMerchant, getSubscriptionsForUser, getUSDCBalance, getETHBalance, getRecentProtocolActivity, ProtocolEvent } from "@/lib/contracts";
 
 export function PactSpikeDashboard() {
   const { publicAddress } = useAuth();
@@ -17,6 +17,8 @@ export function PactSpikeDashboard() {
   const [balance, setBalance] = useState<string>("0.00 USDC");
   const [loading, setLoading] = useState<boolean>(true);
   const [alertVisible, setAlertVisible] = useState(true);
+  const [activity, setActivity] = useState<ProtocolEvent[]>([]);
+  const [activityLoading, setActivityLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
@@ -48,6 +50,13 @@ export function PactSpikeDashboard() {
       }
     }
     loadData();
+
+    // Load protocol activity feed independently so it doesn't block the main dashboard
+    setActivityLoading(true);
+    getRecentProtocolActivity(15)
+      .then(setActivity)
+      .catch(() => setActivity([]))
+      .finally(() => setActivityLoading(false));
   }, [publicAddress]);
 
   const handleTogglePlan = (id: string) => {
@@ -191,6 +200,67 @@ export function PactSpikeDashboard() {
                 </div>
               </div>
             )}
+          </section>
+
+          {/* Protocol Activity Feed */}
+          <section id="protocol-feed" className="space-y-8 py-12 border-t border-[#3A3A38]/10">
+            <div className="border-l-4 border-[#9EFFBF] pl-4">
+              <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">Live Protocol Feed</h2>
+              <p className="font-mono text-[10px] tracking-widest uppercase opacity-50">Real-time on-chain subscriptions and autonomous pull executions</p>
+            </div>
+
+            <div className="border border-[#3A3A38]/20 bg-white/50 overflow-hidden">
+              <div className="border-b border-[#3A3A38]/10 px-6 py-3 grid grid-cols-4 gap-4">
+                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Event</span>
+                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Plan / Address</span>
+                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Network</span>
+                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Tx</span>
+              </div>
+
+              {activityLoading ? (
+                <div className="px-6 py-12 text-center font-mono text-xs opacity-40 uppercase tracking-widest">
+                  Scanning chain for recent activity...
+                </div>
+              ) : activity.length === 0 ? (
+                <div className="px-6 py-12 text-center font-mono text-xs opacity-40 uppercase tracking-widest">
+                  No recent activity found on-chain
+                </div>
+              ) : (
+                activity.map((event, i) => (
+                  <div
+                    key={event.txHash + i}
+                    className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[#3A3A38]/10 hover:bg-[#F7F7F5] transition-colors items-center"
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${event.type === "pull" ? "bg-[#9EFFBF]" : "bg-[#FF8C69]"}`} />
+                      <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
+                        {event.type === "pull" ? "Pull" : "Subscribe"}
+                      </span>
+                      {event.type === "pull" && event.amount && (
+                        <span className="font-mono text-[10px] text-[#1A3C2B] font-bold">{parseFloat(event.amount).toFixed(2)}</span>
+                      )}
+                    </div>
+                    <div className="font-mono text-[10px] opacity-60">
+                      <span className="block">Plan #{event.planId}</span>
+                      <span>{event.address.slice(0, 6)}...{event.address.slice(-4)}</span>
+                    </div>
+                    <span className={`font-mono text-[9px] font-bold uppercase px-2 py-0.5 w-fit ${
+                      event.network === "arbitrum" ? "bg-[#1A3C2B]/10 text-[#1A3C2B]" : "bg-[#0052FF]/10 text-[#0052FF]"
+                    }`}>
+                      {event.network === "arbitrum" ? "Arbitrum" : "Base"}
+                    </span>
+                    <a
+                      href={event.explorerUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-mono text-[10px] text-[#1A3C2B] underline underline-offset-2 hover:opacity-60 transition-opacity truncate"
+                    >
+                      {event.txHash.slice(0, 8)}...{event.txHash.slice(-6)}
+                    </a>
+                  </div>
+                ))
+              )}
+            </div>
           </section>
 
           {/* Merchant Plans List */}

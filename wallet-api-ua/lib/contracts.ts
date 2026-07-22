@@ -66,11 +66,12 @@ export function getProvider(networkKey: "arbitrum" | "base") {
 async function queryEvents(
   contract: ethers.Contract,
   filter: any,
-  networkKey: "arbitrum" | "base"
+  networkKey: "arbitrum" | "base",
+  fromBlock?: number
 ) {
   const provider = contract.runner as ethers.JsonRpcProvider;
   const config = NETWORKS[networkKey];
-  const startBlock = config.deployBlock;
+  const startBlock = fromBlock ?? config.deployBlock;
   
   if (networkKey === "arbitrum") {
     // Arbitrum has no range limit on public RPCs, query directly
@@ -134,11 +135,29 @@ export async function getPlansForMerchant(merchantAddress: string, networkKey: "
     const filter = contract.filters.PlanCreated(null, merchantAddress);
     const events = await queryEvents(contract, filter, networkKey);
     
+    // Collect all merchant plan IDs, then bulk-query Subscribed events once
+    const merchantPlanIds = new Set(
+      events.filter(e => "args" in e && e.args).map(e => (e as any).args.planId.toString())
+    );
+    const subCountByPlan: Record<string, number> = {};
+    if (merchantPlanIds.size > 0) {
+      try {
+        const allSubEvents = await queryEvents(contract, contract.filters.Subscribed(null, null, null), networkKey);
+        for (const e of allSubEvents) {
+          if (!("args" in e && e.args)) continue;
+          const pId = (e as any).args[0].toString();
+          if (merchantPlanIds.has(pId)) {
+            subCountByPlan[pId] = (subCountByPlan[pId] || 0) + 1;
+          }
+        }
+      } catch { /* non-fatal */ }
+    }
+
     const plansList = [];
     for (const event of events) {
       if ("args" in event && event.args) {
         const { planId, name, token, price, intervalSeconds, payoutAddress } = event.args as any;
-        
+
         // Fetch current active state
         let active = true;
         try {
@@ -167,7 +186,7 @@ export async function getPlansForMerchant(merchantAddress: string, networkKey: "
           token: tokenSymbol,
           status: active ? ("active" as const) : ("paused" as const),
           price: `${ethers.formatUnits(price, tokenDecimals)} ${tokenSymbol}`,
-          subscribers: 0, // dynamic subscriber parsing can be done by filtering Subscribed events
+          subscribers: subCountByPlan[planId.toString()] ?? 0,
           revenue: "$0.00",
           network: networkKey
         });
@@ -494,4 +513,134 @@ export async function subscribeOnchain(
   const signedTx = await ethereumService.signTransaction(txRequest);
   const txResponse = await provider.broadcastTransaction(signedTx);
   return txResponse.hash;
+}
+
+// ─── Pull History ─────────────────────────────────────────────────────────────
+
+export interface PullHistoryEntry {
+  txHash: string;
+  date: string;
+  amount: string;
+  token: string;
+  blockNumber: number;
+  explorerUrl: string;
+}
+
+export async function getPullHistory(
+  planId: string | number,
+  subscriberAddress: string,
+  networkKey: "arbitrum" | "base"
+): Promise<PullHistoryEntry[]> {
+  try {
+    const provider = getProvider(networkKey);
+    const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
+
+    const plan = await contract.getPlan(BigInt(planId));
+    let tokenSymbol = "USDC";
+    let tokenDecimals = 6;
+    if (
+      plan.token.toLowerCase() === "0x0000000000000000000000000000000000000000" ||
+      plan.token.toLowerCase() === "0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
+    ) {
+      tokenSymbol = "ETH";
+      tokenDecimals = 18;
+    } else if (
+      plan.token.toLowerCase() === "0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9" ||
+      plan.token.toLowerCase() === "0x50c5725949a6f0c72e6c4a641f240e934e271057"
+    ) {
+      tokenSymbol = "USDT";
+      tokenDecimals = 6;
+    }
+
+    const explorerBase = networkKey === "arbitrum" ? "https://arbiscan.io/tx" : "https://basescan.org/tx";
+    const filter = contract.filters.PullExecuted(BigInt(planId), subscriberAddress, null, null);
+    const events = await queryEvents(contract, filter, networkKey);
+
+    return events
+      .filter(e => "args" in e && e.args)
+      .map(e => {
+        const args = (e as any).args;
+        return {
+          txHash: (e as any).transactionHash as string,
+          date: new Date(Number(args[3]) * 1000).toLocaleDateString("en-US", {
+            month: "short", day: "numeric", year: "numeric",
+          }),
+          amount: ethers.formatUnits(args[2] as bigint, tokenDecimals),
+          token: tokenSymbol,
+          blockNumber: (e as any).blockNumber as number,
+          explorerUrl: `${explorerBase}/${(e as any).transactionHash}`,
+        };
+      })
+      .reverse();
+  } catch (error) {
+    console.error(`Error fetching pull history for plan ${planId}:`, error);
+    return [];
+  }
+}
+
+// ─── Protocol Activity Feed ───────────────────────────────────────────────────
+
+export interface ProtocolEvent {
+  type: "pull" | "subscribe";
+  planId: string;
+  address: string;
+  amount?: string;
+  txHash: string;
+  blockNumber: number;
+  network: "arbitrum" | "base";
+  explorerUrl: string;
+}
+
+export async function getRecentProtocolActivity(limit = 20): Promise<ProtocolEvent[]> {
+  const results: ProtocolEvent[] = [];
+
+  await Promise.all(
+    (["arbitrum", "base"] as const).map(async (networkKey) => {
+      try {
+        const provider = getProvider(networkKey);
+        const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
+        const latestBlock = await provider.getBlockNumber();
+        const recentFrom = Math.max(NETWORKS[networkKey].deployBlock, latestBlock - 500_000);
+        const explorerBase = networkKey === "arbitrum" ? "https://arbiscan.io/tx" : "https://basescan.org/tx";
+
+        const [pullEvents, subEvents] = await Promise.all([
+          queryEvents(contract, contract.filters.PullExecuted(null, null, null, null), networkKey, recentFrom),
+          queryEvents(contract, contract.filters.Subscribed(null, null, null), networkKey, recentFrom),
+        ]);
+
+        for (const e of pullEvents) {
+          if (!("args" in e && e.args)) continue;
+          const args = (e as any).args;
+          results.push({
+            type: "pull",
+            planId: (args[0] as bigint).toString(),
+            address: args[1] as string,
+            amount: ethers.formatUnits(args[2] as bigint, 6),
+            txHash: (e as any).transactionHash,
+            blockNumber: (e as any).blockNumber,
+            network: networkKey,
+            explorerUrl: `${explorerBase}/${(e as any).transactionHash}`,
+          });
+        }
+
+        for (const e of subEvents) {
+          if (!("args" in e && e.args)) continue;
+          const args = (e as any).args;
+          results.push({
+            type: "subscribe",
+            planId: (args[0] as bigint).toString(),
+            address: args[1] as string,
+            txHash: (e as any).transactionHash,
+            blockNumber: (e as any).blockNumber,
+            network: networkKey,
+            explorerUrl: `${explorerBase}/${(e as any).transactionHash}`,
+          });
+        }
+      } catch (err) {
+        console.error(`Error fetching protocol activity on ${networkKey}:`, err);
+      }
+    })
+  );
+
+  return results.sort((a, b) => b.blockNumber - a.blockNumber).slice(0, limit);
 }

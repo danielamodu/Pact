@@ -4,17 +4,20 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { NavigationBar } from "@/components/NavigationBar";
-import { getPlanDetails } from "@/lib/contracts";
+import { getPlanDetails, getPullHistory, PullHistoryEntry } from "@/lib/contracts";
 import { getSessionKeyDelegation, clearSessionKeyDelegation, isRevokedSessionKey } from "@/lib/sessionKey";
+import { useAuth } from "@/contexts/AuthProvider";
 import { ethers } from "ethers";
 
 export default function SubscriptionDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const network = (searchParams.get("network") || "arbitrum") as "arbitrum" | "base";
+  const { publicAddress } = useAuth();
 
   const [plan, setPlan] = useState<any>(null);
   const [delegationInfo, setDelegationInfo] = useState<any>(null);
+  const [pullHistory, setPullHistory] = useState<PullHistoryEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [revoked, setRevoked] = useState(false);
@@ -33,6 +36,11 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
         if (isRevokedSessionKey(planIdNum) || (!localDelegation.delegation && !localDelegation.privateKey)) {
           setRevoked(true);
         }
+
+        if (publicAddress) {
+          const history = await getPullHistory(id, publicAddress, network);
+          setPullHistory(history);
+        }
       } catch (err) {
         console.error("Failed to load subscription details:", err);
       } finally {
@@ -40,7 +48,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
       }
     }
     loadData();
-  }, [id, network]);
+  }, [id, network, publicAddress]);
 
   const handleRevoke = async () => {
     const planIdNum = parseInt(id);
@@ -222,7 +230,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
                 <div className="mb-8">
                   <h3 className="font-space text-2xl font-bold">Billing History</h3>
                   <p className="font-mono text-[10px] uppercase tracking-widest opacity-40 mt-1">
-                    Automated TEE billing pulls for this subscription
+                    On-chain pull receipts — verified on {network === "arbitrum" ? "Arbitrum One" : "Base"}
                   </p>
                 </div>
 
@@ -233,25 +241,36 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
                         <th className="pb-4 font-normal">Date</th>
                         <th className="pb-4 font-normal">Amount</th>
                         <th className="pb-4 font-normal">Status</th>
-                        <th className="pb-4 font-normal">Network</th>
+                        <th className="pb-4 font-normal">Tx Hash</th>
                       </tr>
                     </thead>
                     <tbody className="font-mono text-xs">
-                      {plan?.subscribers?.length > 0 ? (
-                        <tr className="hover:bg-[#F7F7F5] transition-colors border-b border-[#3A3A38]/10">
-                          <td className="py-5">Initial Subscription</td>
-                          <td className="py-5">{plan.price} {plan.token}</td>
-                          <td className="py-5">
-                            <span className="bg-[#9EFFBF] text-[#1A3C2B] px-2 py-0.5 font-bold">
-                              ✓ AUTHORIZED
-                            </span>
-                          </td>
-                          <td className="py-5 text-[#1A3C2B] font-bold uppercase">{network}</td>
-                        </tr>
+                      {pullHistory.length > 0 ? (
+                        pullHistory.map((entry) => (
+                          <tr key={entry.txHash} className="hover:bg-[#F7F7F5] transition-colors border-b border-[#3A3A38]/10">
+                            <td className="py-5">{entry.date}</td>
+                            <td className="py-5 font-bold">{entry.amount} {entry.token}</td>
+                            <td className="py-5">
+                              <span className="bg-[#9EFFBF] text-[#1A3C2B] px-2 py-0.5 font-bold text-[9px]">
+                                ✓ SETTLED
+                              </span>
+                            </td>
+                            <td className="py-5">
+                              <a
+                                href={entry.explorerUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[#1A3C2B] underline underline-offset-2 hover:opacity-70 transition-opacity"
+                              >
+                                {entry.txHash.slice(0, 8)}...{entry.txHash.slice(-6)}
+                              </a>
+                            </td>
+                          </tr>
+                        ))
                       ) : (
                         <tr>
                           <td colSpan={4} className="py-8 text-center text-[#3A3A38]/40">
-                            Subscription session authorized. Next billing pull scheduled automatically.
+                            {loading ? "Loading on-chain history..." : "No pulls recorded yet — subscription is active and will execute automatically."}
                           </td>
                         </tr>
                       )}
