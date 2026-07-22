@@ -60,16 +60,17 @@ export async function GET(req: Request) {
     }
 
     let analyticsData = {
-      isDemoData: true,
-      activeSubscribers: 142,
-      mrr: 7100,
-      churnRate: "2.4%",
-      averageLtv: 820,
-      dailyPaymentsSucceeded: 48,
+      isDemoData: false,
+      activeSubscribers: 0,
+      mrr: 0,
+      churnRate: "0.0%",
+      averageLtv: 0,
+      dailyPaymentsSucceeded: 0,
       dailyPaymentsFailed: 0,
       totalRevenue: "0.00",
-      token: "USDC",
-      unlockedAt: new Date().toISOString()
+      token: "ETH",
+      unlockedAt: new Date().toISOString(),
+      fetchError: null as string | null,
     };
 
     if (planId) {
@@ -82,20 +83,22 @@ export async function GET(req: Request) {
           analyticsData = {
             isDemoData: false,
             activeSubscribers: details.subscribersCount,
-            mrr: Math.round(priceNum * details.subscribersCount * 100) / 100,
+            mrr: Math.round(priceNum * details.subscribersCount * 100000) / 100000,
             churnRate: "0.0%",
             averageLtv: details.subscribersCount > 0
-              ? Math.round((totalRevenueNum / details.subscribersCount) * 100) / 100
+              ? Math.round((totalRevenueNum / details.subscribersCount) * 100000) / 100000
               : priceNum,
             dailyPaymentsSucceeded: details.subscribersCount,
             dailyPaymentsFailed: 0,
             totalRevenue: details.totalRevenue,
             token: details.token,
-            unlockedAt: new Date().toISOString()
+            unlockedAt: new Date().toISOString(),
+            fetchError: null,
           };
         }
-      } catch (contractErr) {
-        console.warn("[x402] Failed to fetch real-time plan details, falling back to demo data:", contractErr);
+      } catch (contractErr: any) {
+        console.warn("[x402] Failed to fetch real-time plan details:", contractErr);
+        analyticsData.fetchError = "Could not reach chain — showing empty state.";
       }
     }
 

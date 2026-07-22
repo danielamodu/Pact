@@ -37,6 +37,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
     totalRevenue: string;
     token: string;
     unlockedAt: string;
+    fetchError?: string | null;
   } | null>(null);
   const [insightsPayer, setInsightsPayer] = useState("");
   const [loadingInsights, setLoadingInsights] = useState(false);
@@ -270,9 +271,12 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                       <div className="space-y-1"><span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Payments Succeeded</span><span className="font-space text-2xl font-bold text-green-600">{insightsData.dailyPaymentsSucceeded}</span></div>
                       <div className="space-y-1 col-span-2"><span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Payer Wallet (Openfort)</span><span className="font-mono text-[10px] font-bold break-all opacity-80">{insightsPayer}</span></div>
                     </div>
+                    {insightsData.fetchError && (
+                      <p className="font-mono text-[9px] text-amber-700 bg-amber-50 border border-amber-200/50 p-2 uppercase tracking-wider">⚠ {insightsData.fetchError}</p>
+                    )}
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 pt-4 border-t border-[#3A3A38]/10 justify-between">
-                      <span className={`font-mono text-[9px] uppercase tracking-widest font-bold ${insightsData.isDemoData ? "text-[#a8820a]" : "text-[#1A3C2B]"}`}>
-                        {insightsData.isDemoData ? "⚠️ [Demo Data] x402 Payment Verified Off-Chain" : "✓ [Real-Time] x402 Payment Verified Off-Chain"}
+                      <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B]">
+                        ✓ x402 Payment Verified Off-Chain
                       </span>
                       <span className="font-mono text-[9px] opacity-40">Unlocked: {new Date(insightsData.unlockedAt).toLocaleTimeString()}</span>
                     </div>
