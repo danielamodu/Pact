@@ -1,25 +1,11 @@
-/**
- * Pact Protocol — Store Delegation API Route
- *
- * Called by the permission page after a successful subscription to persist
- * the session key delegation server-side so the keeper can execute pulls.
- *
- * POST /api/keeper/store-delegation
- * Body: { privateKey, ownerSignature, subscriberAddress, planId, network, scope }
- *
- * In production, replace the flat JSON file with a proper encrypted database.
- */
-
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { existsSync, readFileSync, writeFileSync } from "fs";
-import path from "path";
+import { sql, initDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  // Must be authenticated
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -37,40 +23,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid network" }, { status: 400 });
     }
 
-    // Read existing store
-    const storePath = path.join(process.cwd(), "keeper-store.json");
-    let store: Record<string, unknown> = {};
-    if (existsSync(storePath)) {
-      try {
-        store = JSON.parse(readFileSync(storePath, "utf8"));
-      } catch { /* start fresh */ }
-    }
+    await initDb();
 
-    // Key: planId_subscriberAddress_network — one entry per subscriber per plan per network
     const storeKey = `${planId}_${subscriberAddress.toLowerCase()}_${network}`;
-
-    store[storeKey] = {
-      privateKey,
-      ownerSignature,
-      subscriberAddress: subscriberAddress.toLowerCase(),
-      planId: planId.toString(),
-      network,
-      scope: {
-        sessionKeyAddress: scope.sessionKeyAddress,
-        recipient: scope.recipient,
-        maxAmount: scope.maxAmount.toString(),
-        token: scope.token,
-        interval: scope.interval.toString(),
-        expiry: scope.expiry.toString(),
-        planId: scope.planId.toString(),
-      },
-      storedAt: new Date().toISOString(),
-      storedBy: session.user.email,
+    const scopeJson = {
+      sessionKeyAddress: scope.sessionKeyAddress,
+      recipient: scope.recipient,
+      maxAmount: scope.maxAmount.toString(),
+      token: scope.token,
+      interval: scope.interval.toString(),
+      expiry: scope.expiry.toString(),
+      planId: scope.planId.toString(),
     };
 
-    writeFileSync(storePath, JSON.stringify(store, null, 2), "utf8");
+    await sql`
+      INSERT INTO keeper_delegations
+        (store_key, private_key, owner_signature, subscriber_address, plan_id, network, scope, stored_by)
+      VALUES
+        (${storeKey}, ${privateKey}, ${ownerSignature}, ${subscriberAddress.toLowerCase()},
+         ${planId.toString()}, ${network}, ${JSON.stringify(scopeJson)}, ${session.user.email})
+      ON CONFLICT (store_key) DO UPDATE SET
+        private_key       = EXCLUDED.private_key,
+        owner_signature   = EXCLUDED.owner_signature,
+        scope             = EXCLUDED.scope,
+        stored_at         = NOW(),
+        stored_by         = EXCLUDED.stored_by
+    `;
 
-    console.log(`[KeeperStore] Stored delegation for ${storeKey}`);
+    console.log(`[KeeperStore] Upserted delegation for ${storeKey}`);
     return NextResponse.json({ success: true, storeKey });
   } catch (err: any) {
     console.error("[KeeperStore] Error:", err);
@@ -90,15 +70,10 @@ export async function DELETE(req: Request) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
-    const storePath = path.join(process.cwd(), "keeper-store.json");
-    if (!existsSync(storePath)) {
-      return NextResponse.json({ success: true, message: "Nothing to remove" });
-    }
+    await initDb();
 
-    const store = JSON.parse(readFileSync(storePath, "utf8"));
     const storeKey = `${planId}_${subscriberAddress.toLowerCase()}_${network}`;
-    delete store[storeKey];
-    writeFileSync(storePath, JSON.stringify(store, null, 2), "utf8");
+    await sql`DELETE FROM keeper_delegations WHERE store_key = ${storeKey}`;
 
     console.log(`[KeeperStore] Removed delegation for ${storeKey}`);
     return NextResponse.json({ success: true });

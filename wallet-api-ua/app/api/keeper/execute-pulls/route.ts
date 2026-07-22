@@ -13,8 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { existsSync, readFileSync } from "fs";
-import path from "path";
+import { sql, initDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min timeout for Vercel
@@ -230,27 +229,24 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Load delegation store
-  const storePath = path.join(process.cwd(), "keeper-store.json");
-  if (!existsSync(storePath)) {
-    return NextResponse.json({
-      success: true,
-      message: "No keeper-store.json found — no subscriptions to process yet.",
-      results: [],
-    });
-  }
-
-  let store: Record<string, DelegationEntry>;
-  try {
-    store = JSON.parse(readFileSync(storePath, "utf8"));
-  } catch (err: any) {
-    return NextResponse.json({ error: `Failed to parse keeper-store.json: ${err.message}` }, { status: 500 });
-  }
-
-  const entries = Object.entries(store);
-  if (entries.length === 0) {
+  // Load delegations from Neon
+  await initDb();
+  const rows = await sql`SELECT * FROM keeper_delegations`;
+  if (rows.length === 0) {
     return NextResponse.json({ success: true, message: "No delegations stored.", results: [] });
   }
+
+  const entries: [string, DelegationEntry][] = rows.map((row: any) => [
+    row.store_key,
+    {
+      privateKey: row.private_key,
+      ownerSignature: row.owner_signature,
+      subscriberAddress: row.subscriber_address,
+      planId: row.plan_id,
+      network: row.network,
+      scope: row.scope,
+    } as DelegationEntry,
+  ]);
 
   // Process all entries
   const results: PullResult[] = await Promise.all(
@@ -277,20 +273,17 @@ export async function POST(req: Request) {
 
 // Also support GET for quick health check
 export async function GET() {
-  const storePath = path.join(process.cwd(), "keeper-store.json");
-  const hasStore = existsSync(storePath);
-  let count = 0;
-  if (hasStore) {
-    try {
-      const store = JSON.parse(readFileSync(storePath, "utf8"));
-      count = Object.keys(store).length;
-    } catch { /* ignore */ }
+  try {
+    await initDb();
+    const rows = await sql`SELECT COUNT(*) as count FROM keeper_delegations`;
+    const count = Number(rows[0]?.count ?? 0);
+    return NextResponse.json({
+      status: "ok",
+      message: "Pact keeper is ready",
+      delegationsStored: count,
+      keeperConfigured: !!process.env.KEEPER_RELAYER_PRIVATE_KEY,
+    });
+  } catch {
+    return NextResponse.json({ status: "ok", message: "Pact keeper is ready", delegationsStored: 0, keeperConfigured: !!process.env.KEEPER_RELAYER_PRIVATE_KEY });
   }
-
-  return NextResponse.json({
-    status: "ok",
-    message: "Pact keeper is ready",
-    delegationsStored: count,
-    keeperConfigured: !!process.env.KEEPER_RELAYER_PRIVATE_KEY,
-  });
 }
