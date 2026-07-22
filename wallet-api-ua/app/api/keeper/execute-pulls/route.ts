@@ -14,6 +14,7 @@
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
 import { sql, initDb, initWebhooksTable } from "@/lib/db";
+import { decrypt, isEncrypted, signWebhook } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min timeout for Vercel
@@ -216,20 +217,26 @@ async function processEntry(
     // Fire webhook if configured (best-effort, non-blocking)
     try {
       await initWebhooksTable();
-      const wh = await sql`SELECT webhook_url FROM plan_webhooks WHERE plan_id = ${entry.planId} AND network = ${networkKey}`;
+      const wh = await sql`SELECT webhook_url, webhook_secret FROM plan_webhooks WHERE plan_id = ${entry.planId} AND network = ${networkKey}`;
       if (wh[0]?.webhook_url) {
+        const timestamp = new Date().toISOString();
+        const payload = JSON.stringify({
+          event: "pull.executed",
+          planId: entry.planId,
+          network: networkKey,
+          subscriber: entry.subscriberAddress,
+          amount: amount.toString(),
+          txHash: tx.hash,
+          timestamp,
+        });
+        const signature = wh[0].webhook_secret ? signWebhook(payload, wh[0].webhook_secret) : "";
         await fetch(wh[0].webhook_url, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            event: "pull.executed",
-            planId: entry.planId,
-            network: networkKey,
-            subscriber: entry.subscriberAddress,
-            amount: amount.toString(),
-            txHash: tx.hash,
-            timestamp: new Date().toISOString(),
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            ...(signature && { "X-Pact-Signature": signature, "X-Pact-Timestamp": timestamp }),
+          },
+          body: payload,
           signal: AbortSignal.timeout(5000),
         });
       }
@@ -261,7 +268,7 @@ export async function POST(req: Request) {
   const entries: [string, DelegationEntry][] = rows.map((row: any) => [
     row.store_key,
     {
-      privateKey: row.private_key,
+      privateKey: isEncrypted(row.private_key) ? decrypt(row.private_key) : row.private_key,
       ownerSignature: row.owner_signature,
       subscriberAddress: row.subscriber_address,
       planId: row.plan_id,

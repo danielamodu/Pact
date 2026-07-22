@@ -25,11 +25,16 @@ export async function initDb() {
 export async function initWebhooksTable() {
   await sql`
     CREATE TABLE IF NOT EXISTS plan_webhooks (
-      plan_id     TEXT NOT NULL,
-      network     TEXT NOT NULL,
-      webhook_url TEXT NOT NULL,
-      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      plan_id        TEXT NOT NULL,
+      network        TEXT NOT NULL,
+      webhook_url    TEXT NOT NULL,
+      webhook_secret TEXT NOT NULL,
+      created_at     TIMESTAMPTZ DEFAULT NOW(),
       PRIMARY KEY (plan_id, network)
     )
+  `;
+  // Add webhook_secret column to existing tables that predate this migration
+  await sql`
+    ALTER TABLE plan_webhooks ADD COLUMN IF NOT EXISTS webhook_secret TEXT NOT NULL DEFAULT ''
   `;
 }

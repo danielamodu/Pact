@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql, initWebhooksTable } from "@/lib/db";
+import { randomBytes } from "crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -33,14 +34,21 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Invalid webhook URL" }, { status: 400 });
   }
 
+  // Generate a per-merchant signing secret — returned once, never again
+  const webhookSecret = `whsec_${randomBytes(24).toString("hex")}`;
+
   await initWebhooksTable();
   await sql`
-    INSERT INTO plan_webhooks (plan_id, network, webhook_url)
-    VALUES (${planId}, ${network}, ${webhookUrl})
-    ON CONFLICT (plan_id, network) DO UPDATE SET webhook_url = EXCLUDED.webhook_url, created_at = NOW()
+    INSERT INTO plan_webhooks (plan_id, network, webhook_url, webhook_secret)
+    VALUES (${planId}, ${network}, ${webhookUrl}, ${webhookSecret})
+    ON CONFLICT (plan_id, network) DO UPDATE SET
+      webhook_url    = EXCLUDED.webhook_url,
+      webhook_secret = EXCLUDED.webhook_secret,
+      created_at     = NOW()
   `;
 
-  return NextResponse.json({ success: true });
+  // Return the secret once — merchant must save it, we won't show it again
+  return NextResponse.json({ success: true, webhookSecret });
 }
 
 export async function DELETE(req: Request) {

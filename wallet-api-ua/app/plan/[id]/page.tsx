@@ -47,6 +47,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
   const [savedWebhookUrl, setSavedWebhookUrl] = useState("");
   const [savingWebhook, setSavingWebhook] = useState(false);
   const [webhookSaved, setWebhookSaved] = useState(false);
+  const [webhookSecret, setWebhookSecret] = useState<string | null>(null);
 
   const handleUnlockInsights = async () => {
     setLoadingInsights(true);
@@ -117,9 +118,11 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ planId: id, network, webhookUrl }),
       });
+      const json = await res.json();
       if (res.ok) {
         setSavedWebhookUrl(webhookUrl);
         setWebhookSaved(true);
+        if (json.webhookSecret) setWebhookSecret(json.webhookSecret);
         setTimeout(() => setWebhookSaved(false), 3000);
       }
     } finally {
@@ -323,9 +326,17 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                     {savingWebhook ? "Saving..." : webhookSaved ? "Saved!" : "Save Webhook"}
                   </button>
                 </div>
+                {webhookSecret && (
+                  <div className="bg-amber-50 border border-amber-200 p-4 space-y-2">
+                    <p className="font-mono text-[9px] uppercase tracking-widest text-amber-700 font-bold">Save this secret now — it won't be shown again</p>
+                    <code className="font-mono text-[11px] text-amber-900 break-all block select-all">{webhookSecret}</code>
+                    <p className="font-mono text-[9px] opacity-60">Use it to verify <code>X-Pact-Signature</code> headers on incoming webhook payloads.</p>
+                  </div>
+                )}
                 <div className="bg-[#F7F7F5] border border-[#3A3A38]/10 p-4 space-y-1">
                   <p className="font-mono text-[9px] uppercase tracking-widest opacity-40">Payload shape</p>
                   <code className="font-mono text-[10px] opacity-60 block whitespace-pre">{`{ event: "pull.executed", planId, network, subscriber, amount, txHash, timestamp }`}</code>
+                  <p className="font-mono text-[9px] opacity-40 mt-2">Verify: <code>X-Pact-Signature: sha256=HMAC(payload, webhookSecret)</code></p>
                 </div>
               </section>
 

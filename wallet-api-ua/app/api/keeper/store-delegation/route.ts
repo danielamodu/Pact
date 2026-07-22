@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { sql, initDb } from "@/lib/db";
+import { encrypt } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -40,7 +41,7 @@ export async function POST(req: Request) {
       INSERT INTO keeper_delegations
         (store_key, private_key, owner_signature, subscriber_address, plan_id, network, scope, stored_by)
       VALUES
-        (${storeKey}, ${privateKey}, ${ownerSignature}, ${subscriberAddress.toLowerCase()},
+        (${storeKey}, ${encrypt(privateKey)}, ${ownerSignature}, ${subscriberAddress.toLowerCase()},
          ${planId.toString()}, ${network}, ${JSON.stringify(scopeJson)}, ${session.user.email})
       ON CONFLICT (store_key) DO UPDATE SET
         private_key       = EXCLUDED.private_key,
