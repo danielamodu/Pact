@@ -155,7 +155,6 @@ async function processNetwork(networkKey) {
   const keeperWallet = new ethers.Wallet(KEEPER_PRIVATE_KEY, provider);
 
   const registry = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
-  const executor = new ethers.Contract(SESSION_KEY_EXECUTOR_ADDRESS, SESSION_KEY_EXECUTOR_ABI, keeperWallet);
 
   console.log(`\n[Keeper] Processing ${config.name}...`);
   console.log(`[Keeper] Keeper address: ${keeperWallet.address}`);
@@ -199,12 +198,18 @@ async function processNetwork(networkKey) {
       planId: BigInt(scope.planId),
     };
 
-    const sessionKeyWallet = new ethers.Wallet(privateKey);
+    // Connect session key wallet to provider so it can sign and send txs
+    const sessionKeyWallet = new ethers.Wallet(privateKey, provider);
     const sessionKeyAddress = sessionKeyWallet.address.toLowerCase();
+
+    // All state reads target the subscriber's EIP-7702-delegated EOA (not the deployed executor).
+    // When the subscriber's EOA is called, address(this) = subscriberAddress, which matches
+    // the verifying contract used when the owner signed the scope.
+    const subscriberContract = new ethers.Contract(subscriberAddress, SESSION_KEY_EXECUTOR_ABI, provider);
 
     try {
       // 1. Check revocation
-      const isRevoked = await executor.revokedSessionKeys(scope.sessionKeyAddress);
+      const isRevoked = await subscriberContract.revokedSessionKeys(scope.sessionKeyAddress);
       if (isRevoked) {
         console.log(`[Keeper] [${storeKey}] Session key revoked — skipping.`);
         skipped++;
@@ -220,7 +225,7 @@ async function processNetwork(networkKey) {
       }
 
       // 3. Check interval
-      const lastPull = await executor.lastPullTimestamp(scope.sessionKeyAddress);
+      const lastPull = await subscriberContract.lastPullTimestamp(scope.sessionKeyAddress);
       const nextAllowed = Number(lastPull) + Number(scope.interval);
       if (now < nextAllowed) {
         const waitSecs = nextAllowed - now;
@@ -238,7 +243,7 @@ async function processNetwork(networkKey) {
         continue;
       }
 
-      const amount = scopeForContract.maxAmount; // pull the full authorized amount
+      const amount = scopeForContract.maxAmount;
       const token = scope.token;
 
       // 5. Check subscriber balance
@@ -259,14 +264,9 @@ async function processNetwork(networkKey) {
         }
       }
 
-      // 6. Build owner signature (EIP-712 over scope + current nonce)
-      // The subscriber's EOA is the verifying contract (EIP-7702 delegated to executor)
-      const ownerNonce = await executor.nonces(subscriberAddress);
-      const domain = getEIP712Domain(config.chainId, subscriberAddress);
-
-      // Re-verify the stored owner signature is still valid for current nonce
-      // If nonce has changed (e.g. revoke was called), ownerSig will be invalid
-      const scopeHashCheck = await executor.getScopeHash(scopeForContract, ownerNonce);
+      // 6. Verify owner signature against the subscriber's EOA (verifyingContract = subscriberAddress)
+      const ownerNonce = await subscriberContract.nonces(subscriberAddress);
+      const scopeHashCheck = await subscriberContract.getScopeHash(scopeForContract, ownerNonce);
       const recoveredOwner = ethers.recoverAddress(scopeHashCheck, ownerSignature);
       if (recoveredOwner.toLowerCase() !== subscriberAddress.toLowerCase()) {
         console.warn(`[Keeper] [${storeKey}] Owner signature no longer valid (nonce mismatch or revoked). Skipping.`);
@@ -274,18 +274,34 @@ async function processNetwork(networkKey) {
         continue;
       }
 
-      // 7. Build session key signature (EIP-712 over execution params)
-      const execNonce = await executor.executionNonces(scope.sessionKeyAddress);
-      const executionHash = await executor.getExecutionHash(amount, scope.recipient, execNonce);
-      const sessionKeySig = await sessionKeyWallet.signMessage(ethers.getBytes(executionHash));
-      // Use raw signing (not personal_sign prefix) — matches recoverSigner in contract
+      // 7. Build session key signature over execution params
+      const execNonce = await subscriberContract.executionNonces(scope.sessionKeyAddress);
+      const executionHash = await subscriberContract.getExecutionHash(amount, scope.recipient, execNonce);
       const sessionKeySigRaw = ethers.Signature.from(
         await sessionKeyWallet.signingKey.sign(executionHash)
       ).serialized;
 
       console.log(`[Keeper] [${storeKey}] Executing pull: ${ethers.formatUnits(amount, token === ethers.ZeroAddress ? 18 : 6)} to ${scope.recipient}...`);
 
-      // 8. Estimate gas + execute
+      // 8. Fund session key wallet with gas if needed.
+      // The tx must come from the session key wallet (msg.sender == scope.sessionKeyAddress)
+      // to pass the caller check in SessionKeyExecutor.executePull().
+      const MIN_SK_GAS = ethers.parseEther("0.001");
+      const skBalance = await provider.getBalance(sessionKeyWallet.address);
+      if (skBalance < MIN_SK_GAS) {
+        console.log(`[Keeper] [${storeKey}] Funding session key wallet (${sessionKeyWallet.address}) with 0.001 ETH for gas...`);
+        const fundTx = await keeperWallet.sendTransaction({
+          to: sessionKeyWallet.address,
+          value: MIN_SK_GAS,
+        });
+        await fundTx.wait(1);
+        console.log(`[Keeper] [${storeKey}] Session key wallet funded.`);
+      }
+
+      // 9. Estimate gas + execute — tx goes TO the subscriber's EOA (EIP-7702 delegated),
+      //    sent FROM the session key wallet so msg.sender == scope.sessionKeyAddress.
+      const subscriberExecutor = new ethers.Contract(subscriberAddress, SESSION_KEY_EXECUTOR_ABI, sessionKeyWallet);
+
       const feeData = await provider.getFeeData();
       const maxFeePerGas = feeData.maxFeePerGas
         ? (feeData.maxFeePerGas * 150n) / 100n
@@ -296,7 +312,7 @@ async function processNetwork(networkKey) {
 
       let gasLimit;
       try {
-        const estimated = await executor.executePull.estimateGas(
+        const estimated = await subscriberExecutor.executePull.estimateGas(
           amount,
           scopeForContract,
           ownerSignature,
@@ -308,7 +324,7 @@ async function processNetwork(networkKey) {
         gasLimit = 500_000n;
       }
 
-      const tx = await executor.executePull(
+      const tx = await subscriberExecutor.executePull(
         amount,
         scopeForContract,
         ownerSignature,
