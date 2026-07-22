@@ -1,0 +1,8 @@
+{
+  "crons": [
+    {
+      "path": "/api/keeper/execute-pulls",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

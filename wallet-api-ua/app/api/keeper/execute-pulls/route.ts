@@ -99,7 +99,6 @@ async function processEntry(
 
   const provider = new ethers.JsonRpcProvider(config.rpc);
   const keeperWallet = new ethers.Wallet(keeperKey, provider);
-  const executor = new ethers.Contract(SESSION_KEY_EXECUTOR_ADDRESS, EXECUTOR_ABI, keeperWallet);
 
   const scope = {
     sessionKeyAddress: entry.scope.sessionKeyAddress,
@@ -111,9 +110,13 @@ async function processEntry(
     planId: BigInt(entry.scope.planId),
   };
 
+  // All reads target the subscriber's EIP-7702-delegated EOA so address(this)
+  // matches the verifying contract used when the owner signed the scope.
+  const subscriberContract = new ethers.Contract(entry.subscriberAddress, EXECUTOR_ABI, provider);
+
   try {
     // Revocation check
-    const isRevoked = await executor.revokedSessionKeys(scope.sessionKeyAddress);
+    const isRevoked = await subscriberContract.revokedSessionKeys(scope.sessionKeyAddress);
     if (isRevoked) return { key: storeKey, status: "skipped", reason: "Session key revoked" };
 
     // Expiry check
@@ -121,7 +124,7 @@ async function processEntry(
     if (now > Number(scope.expiry)) return { key: storeKey, status: "skipped", reason: "Session key expired" };
 
     // Interval check
-    const lastPull = await executor.lastPullTimestamp(scope.sessionKeyAddress);
+    const lastPull = await subscriberContract.lastPullTimestamp(scope.sessionKeyAddress);
     const nextAllowed = Number(lastPull) + Number(scope.interval);
     if (now < nextAllowed) {
       const waitHrs = ((nextAllowed - now) / 3600).toFixed(1);
@@ -145,22 +148,37 @@ async function processEntry(
       if (bal < amount) return { key: storeKey, status: "skipped", reason: `Insufficient token balance` };
     }
 
-    // Validate owner signature is still valid for current nonce
-    const ownerNonce = await executor.nonces(entry.subscriberAddress);
-    const scopeHash = await executor.getScopeHash(scope, ownerNonce);
+    // Validate owner signature against subscriber's EOA (verifyingContract = subscriberAddress)
+    const ownerNonce = await subscriberContract.nonces(entry.subscriberAddress);
+    const scopeHash = await subscriberContract.getScopeHash(scope, ownerNonce);
     const recoveredOwner = ethers.recoverAddress(scopeHash, entry.ownerSignature);
     if (recoveredOwner.toLowerCase() !== entry.subscriberAddress.toLowerCase()) {
       return { key: storeKey, status: "skipped", reason: "Owner signature invalid (nonce changed)" };
     }
 
-    // Build session key signature
-    const sessionKeyWallet = new ethers.Wallet(entry.privateKey);
-    const execNonce = await executor.executionNonces(scope.sessionKeyAddress);
-    const execHash = await executor.getExecutionHash(amount, scope.recipient, execNonce);
-    const sessionKeySig = sessionKeyWallet.signingKey.sign(execHash);
-    const sessionKeySigBytes = ethers.Signature.from(sessionKeySig).serialized;
+    // Connect session key wallet to provider and fund it if needed.
+    // tx must come FROM the session key wallet so msg.sender == scope.sessionKeyAddress.
+    const sessionKeyWallet = new ethers.Wallet(entry.privateKey, provider);
+    const skBalance = await provider.getBalance(sessionKeyWallet.address);
+    const MIN_SK_GAS = ethers.parseEther("0.001");
+    if (skBalance < MIN_SK_GAS) {
+      const fundTx = await keeperWallet.sendTransaction({
+        to: sessionKeyWallet.address,
+        value: MIN_SK_GAS,
+      });
+      await fundTx.wait(1);
+    }
 
-    // Gas
+    // Build session key signature
+    const execNonce = await subscriberContract.executionNonces(scope.sessionKeyAddress);
+    const execHash = await subscriberContract.getExecutionHash(amount, scope.recipient, execNonce);
+    const sessionKeySigBytes = ethers.Signature.from(
+      sessionKeyWallet.signingKey.sign(execHash)
+    ).serialized;
+
+    // Gas — tx targets subscriber's EOA (EIP-7702 delegated), sent from session key wallet
+    const subscriberExecutor = new ethers.Contract(entry.subscriberAddress, EXECUTOR_ABI, sessionKeyWallet);
+
     const feeData = await provider.getFeeData();
     const maxFeePerGas = feeData.maxFeePerGas
       ? (feeData.maxFeePerGas * BigInt(150)) / BigInt(100)
@@ -171,14 +189,14 @@ async function processEntry(
 
     let gasLimit: bigint;
     try {
-      const est = await executor.executePull.estimateGas(amount, scope, entry.ownerSignature, sessionKeySigBytes);
+      const est = await subscriberExecutor.executePull.estimateGas(amount, scope, entry.ownerSignature, sessionKeySigBytes);
       gasLimit = (est * BigInt(140)) / BigInt(100);
     } catch {
       gasLimit = BigInt(500_000);
     }
 
     // Submit
-    const tx = await executor.executePull(
+    const tx = await subscriberExecutor.executePull(
       amount,
       scope,
       entry.ownerSignature,
