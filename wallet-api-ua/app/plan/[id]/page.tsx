@@ -145,35 +145,8 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
       <div className="mosaic-bg"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 pt-20 pb-12">
-        {/* Dashboard Header Bar */}
-        <div className="border-b border-[#3A3A38]/10 bg-white/60 backdrop-blur-sm">
-          <div className="max-w-[1400px] mx-auto px-6 py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-            <div className="flex items-center gap-4">
-              <Link href="/wallet" className="font-mono text-[9px] uppercase tracking-widest text-[#3A3A38]/50 hover:text-forest flex items-center gap-1.5">
-                <svg viewBox="0 0 24 24" className="w-3 h-3 fill-none stroke-current stroke-2"><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                Dashboard
-              </Link>
-              <span className="text-[#3A3A38]/20 text-xs">/</span>
-              <span className="font-mono text-[10px] uppercase tracking-widest text-forest font-bold">
-                {loading ? "Loading..." : details?.name}
-              </span>
-            </div>
-            <div className="flex items-center gap-3">
-              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">
-                {network === "arbitrum" ? "Arbitrum One" : "Base Mainnet"} · Plan #{id}
-              </span>
-              {!loading && details && (
-                <div className={`inline-flex items-center gap-1.5 border px-2.5 py-1 ${details.active ? "border-[#1A3C2B]/20 bg-[#9EFFBF]/20 text-[#1A3C2B]" : "border-gold/20 bg-gold/10 text-[#a8820a]"}`}>
-                  <div className={`w-1.5 h-1.5 rounded-full ${details.active ? "bg-[#1A3C2B]" : "bg-[#a8820a]"}`}></div>
-                  <span className="font-mono text-[9px] tracking-widest uppercase font-bold">{details.active ? "Active" : "Paused"}</span>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="max-w-[1400px] mx-auto px-6 pt-8 space-y-6">
+      <main className="flex-1 pt-24 pb-12">
+        <div className="max-w-[1400px] mx-auto px-6 space-y-6">
 
           {loading ? (
             <div className="text-center py-32 font-mono text-sm opacity-40">Querying plan contracts...</div>
@@ -182,10 +155,20 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
               {/* Plan Title + Action Buttons */}
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
                 <div>
-                  <h1 className="font-space text-4xl xl:text-5xl font-bold tracking-tighter leading-none text-forest uppercase">
-                    {details.name}
-                  </h1>
-                  <p className="font-mono text-[9px] uppercase opacity-30 mt-2">Pact Merchant Plan</p>
+                  <Link href="/wallet" className="font-mono text-[9px] uppercase tracking-widest text-[#3A3A38]/50 hover:text-forest flex items-center gap-1.5 mb-3">
+                    <svg viewBox="0 0 24 24" className="w-3 h-3 fill-none stroke-current stroke-2"><path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Back to Dashboard
+                  </Link>
+                  <div className="flex items-center gap-3 mb-1">
+                    <h1 className="font-space text-4xl xl:text-5xl font-bold tracking-tighter leading-none text-forest uppercase">
+                      {details.name}
+                    </h1>
+                    <div className={`inline-flex items-center gap-1.5 border px-2.5 py-1 self-center ${details.active ? "border-[#1A3C2B]/20 bg-[#9EFFBF]/20 text-[#1A3C2B]" : "border-gold/20 bg-gold/10 text-[#a8820a]"}`}>
+                      <div className={`w-1.5 h-1.5 rounded-full ${details.active ? "bg-[#1A3C2B]" : "bg-[#a8820a]"}`}></div>
+                      <span className="font-mono text-[9px] tracking-widest uppercase font-bold">{details.active ? "Active" : "Paused"}</span>
+                    </div>
+                  </div>
+                  <p className="font-mono text-[9px] uppercase opacity-30">{network === "arbitrum" ? "Arbitrum One" : "Base Mainnet"} · Plan #{id}</p>
                 </div>
                 <div className="flex gap-3 flex-shrink-0">
                   <button onClick={handleCopyLink} className="bg-forest text-white hover:opacity-90 font-mono text-[9px] font-bold uppercase tracking-widest px-5 py-3 rounded-sm transition-all cursor-pointer flex items-center gap-2">
