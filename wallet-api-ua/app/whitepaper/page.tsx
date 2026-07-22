@@ -113,7 +113,7 @@ export default function WhitepaperPage() {
               <div className="bg-[#1A3C2B] text-white p-6 relative font-mono text-xs">
                 <span className="text-[#9EFFBF] font-bold uppercase block mb-1">Contract Deployments</span>
                 <span>
-                  PactRegistry: <code className="text-[#9EFFBF]">0xF2cDBAcdcE2D7961C2dE969E28F623ffac617CF5</code> (Arbitrum One & Base Mainnet)
+                  PactRegistry: <code className="text-[#9EFFBF]">0x9Db4207Da96c5ee738F19B54aa4D49Bc0FA64F56</code> (Arbitrum One & Base Mainnet)
                 </span>
               </div>
             </section>
