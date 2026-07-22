@@ -21,3 +21,15 @@ export async function initDb() {
     )
   `;
 }
+
+export async function initWebhooksTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS plan_webhooks (
+      plan_id     TEXT NOT NULL,
+      network     TEXT NOT NULL,
+      webhook_url TEXT NOT NULL,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      PRIMARY KEY (plan_id, network)
+    )
+  `;
+}

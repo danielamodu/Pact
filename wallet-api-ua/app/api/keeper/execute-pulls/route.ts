@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { sql, initDb } from "@/lib/db";
+import { sql, initDb, initWebhooksTable } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300; // 5 min timeout for Vercel
@@ -211,6 +211,28 @@ async function processEntry(
       const registryWriter = new ethers.Contract(PACT_REGISTRY_ADDRESS, REGISTRY_ABI, keeperWallet);
       const logTx = await registryWriter.logPull(scope.planId, entry.subscriberAddress, amount);
       await logTx.wait(1);
+    } catch { /* non-critical */ }
+
+    // Fire webhook if configured (best-effort, non-blocking)
+    try {
+      await initWebhooksTable();
+      const wh = await sql`SELECT webhook_url FROM plan_webhooks WHERE plan_id = ${entry.planId} AND network = ${networkKey}`;
+      if (wh[0]?.webhook_url) {
+        await fetch(wh[0].webhook_url, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            event: "pull.executed",
+            planId: entry.planId,
+            network: networkKey,
+            subscriber: entry.subscriberAddress,
+            amount: amount.toString(),
+            txHash: tx.hash,
+            timestamp: new Date().toISOString(),
+          }),
+          signal: AbortSignal.timeout(5000),
+        });
+      }
     } catch { /* non-critical */ }
 
     return { key: storeKey, status: "executed", txHash: tx.hash };

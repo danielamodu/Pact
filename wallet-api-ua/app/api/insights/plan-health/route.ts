@@ -34,27 +34,21 @@ export async function GET(req: Request) {
     const paymentHeader = req.headers.get("payment-signature") || req.headers.get("x-payment");
 
     if (!paymentHeader) {
-      // Return HTTP 402 Payment Required
       const challengeResponse = {
         error: "Payment required",
         x402Version: PLAN_HEALTH_REQUIREMENTS.x402Version,
         paymentRequirements: PLAN_HEALTH_REQUIREMENTS
       };
 
-      // Set headers for standard x402 discovery
       const headers = new Headers();
       headers.set(
         "PAYMENT-REQUIRED",
         Buffer.from(JSON.stringify(PLAN_HEALTH_REQUIREMENTS)).toString("base64")
       );
 
-      return NextResponse.json(challengeResponse, {
-        status: 402,
-        headers
-      });
+      return NextResponse.json(challengeResponse, { status: 402, headers });
     }
 
-    // Verify the payment signature off-chain
     try {
       await verifyOffChainPayment(paymentHeader, PLAN_HEALTH_REQUIREMENTS);
     } catch (verifErr: any) {
@@ -65,7 +59,6 @@ export async function GET(req: Request) {
       );
     }
 
-    // Try to fetch real-time contract statistics
     let analyticsData = {
       isDemoData: true,
       activeSubscribers: 142,
@@ -85,14 +78,14 @@ export async function GET(req: Request) {
         if (details) {
           const priceNum = parseFloat(details.price.replace(/,/g, "")) || 0;
           const totalRevenueNum = parseFloat(details.totalRevenue.replace(/,/g, "")) || 0;
-          
+
           analyticsData = {
             isDemoData: false,
             activeSubscribers: details.subscribersCount,
             mrr: Math.round(priceNum * details.subscribersCount * 100) / 100,
-            churnRate: "0.0%", // On-chain cancellation logs not indexable yet
-            averageLtv: details.subscribersCount > 0 
-              ? Math.round((totalRevenueNum / details.subscribersCount) * 100) / 100 
+            churnRate: "0.0%",
+            averageLtv: details.subscribersCount > 0
+              ? Math.round((totalRevenueNum / details.subscribersCount) * 100) / 100
               : priceNum,
             dailyPaymentsSucceeded: details.subscribersCount,
             dailyPaymentsFailed: 0,
@@ -102,26 +95,21 @@ export async function GET(req: Request) {
           };
         }
       } catch (contractErr) {
-        console.warn("[x402] Failed to fetch real-time plan details from contract, falling back to demo data:", contractErr);
+        console.warn("[x402] Failed to fetch real-time plan details, falling back to demo data:", contractErr);
       }
     }
 
     return NextResponse.json({
       success: true,
-      message: analyticsData.isDemoData 
-        ? "Payment successfully verified. Demo analytics unlocked!" 
+      message: analyticsData.isDemoData
+        ? "Payment successfully verified. Demo analytics unlocked!"
         : "Payment successfully verified. Real-time product analytics unlocked!",
       data: analyticsData
     }, {
-      headers: {
-        "PAYMENT-RESPONSE": "Payment accepted"
-      }
+      headers: { "PAYMENT-RESPONSE": "Payment accepted" }
     });
   } catch (error: any) {
     console.error("[x402] Internal route error:", error);
-    return NextResponse.json(
-      { error: error.message || "Internal server error" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error.message || "Internal server error" }, { status: 500 });
   }
 }

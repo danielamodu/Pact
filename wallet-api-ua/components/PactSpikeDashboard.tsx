@@ -87,7 +87,7 @@ export function PactSpikeDashboard() {
       <NavigationBar mode="app" activeItem="dashboard" />
 
       <main className="flex-1 pt-24 pb-12">
-        <div className="max-w-7xl mx-auto px-6 space-y-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 sm:space-y-12">
           
           {/* Alerts Banner */}
           {alertVisible && subscriptions.some(sub => sub.status === "past-due") && (
@@ -113,26 +113,26 @@ export function PactSpikeDashboard() {
           )}
 
           {/* Overview Metrics Cards */}
-          <section id="overview" className="py-8">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="border border-[#3A3A38]/20 p-8 bg-white/50 relative">
+          <section id="overview" className="py-4 sm:py-8">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+              <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
                 <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Active Subscriptions</span>
                 <div className="flex items-baseline gap-2">
-                  <h2 className="font-space text-5xl font-bold">{loading ? "..." : String(subscriptions.filter(s => s.status === "active").length).padStart(2, "0")}</h2>
+                  <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : String(subscriptions.filter(s => s.status === "active").length).padStart(2, "0")}</h2>
                   <span className="text-[#9EFFBF] font-mono text-xs font-bold">on-chain</span>
                 </div>
               </div>
-              <div className="border border-[#3A3A38]/20 p-8 bg-white/50 relative">
+              <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
                 <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Monthly Spending</span>
                 <div className="flex items-baseline gap-2">
-                  <h2 className="font-space text-5xl font-bold">${loading ? "..." : totalMonthlySpending}</h2>
+                  <h2 className="font-space text-4xl sm:text-5xl font-bold">${loading ? "..." : totalMonthlySpending}</h2>
                   <span className="font-mono text-xs opacity-50">USDC</span>
                 </div>
               </div>
-              <div className="border border-[#3A3A38]/20 p-8 bg-white/50 relative">
+              <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
                 <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Available Balance</span>
                 <div className="flex items-baseline gap-2">
-                  <h2 className="font-space text-2xl font-bold text-forest leading-tight">{loading ? "..." : balance}</h2>
+                  <h2 className="font-space text-xl sm:text-2xl font-bold text-forest leading-tight">{loading ? "..." : balance}</h2>
                 </div>
               </div>
             </div>
