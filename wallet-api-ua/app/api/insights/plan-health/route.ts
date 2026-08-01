@@ -5,6 +5,7 @@ import {
   type PaymentRequirements
 } from "@/lib/openfort";
 import { getPlanDetails } from "@/lib/contracts";
+import { sql, initDb } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
@@ -63,7 +64,7 @@ export async function GET(req: Request) {
       isDemoData: false,
       activeSubscribers: 0,
       mrr: 0,
-      churnRate: "0.0%",
+      churnRate: "N/A",
       averageLtv: 0,
       dailyPaymentsSucceeded: 0,
       dailyPaymentsFailed: 0,
@@ -74,6 +75,27 @@ export async function GET(req: Request) {
     };
 
     if (planId) {
+      // Compute churn from delegation DB (keeper never deletes expired rows)
+      let churnRate = "N/A";
+      try {
+        await initDb();
+        const now = Math.floor(Date.now() / 1000);
+        const rows = await sql`
+          SELECT
+            COUNT(*)::int AS total,
+            COUNT(*) FILTER (WHERE (scope->>'expiry')::bigint <= ${now})::int AS expired
+          FROM keeper_delegations
+          WHERE plan_id = ${planId} AND network = ${network}
+        `;
+        const total = Number(rows[0]?.total ?? 0);
+        const expired = Number(rows[0]?.expired ?? 0);
+        if (total > 0) {
+          churnRate = `${((expired / total) * 100).toFixed(1)}%`;
+        }
+      } catch (dbErr: any) {
+        console.warn("[x402] Failed to compute churn rate:", dbErr);
+      }
+
       try {
         const details = await getPlanDetails(planId, network);
         if (details) {
@@ -84,7 +106,7 @@ export async function GET(req: Request) {
             isDemoData: false,
             activeSubscribers: details.subscribersCount,
             mrr: Math.round(priceNum * details.subscribersCount * 100000) / 100000,
-            churnRate: "0.0%",
+            churnRate,
             averageLtv: details.subscribersCount > 0
               ? Math.round((totalRevenueNum / details.subscribersCount) * 100000) / 100000
               : priceNum,

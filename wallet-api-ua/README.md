@@ -36,9 +36,9 @@ With Pact, a subscriber signs **once** to authorize a scoped session key. A rela
 ## Architecture
 
 ### EIP-7702 Account Delegation
-Pact uses [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) (live on Ethereum mainnet since Pectra, May 2025) to temporarily set an EOA's bytecode to point to `SessionKeyExecutor.sol`. This gives a standard wallet smart-contract execution capabilities without requiring full ERC-4337 migration.
+Pact uses [EIP-7702](https://eips.ethereum.org/EIPS/eip-7702) (live on Ethereum mainnet since Pectra, May 2025) to set a subscriber's EOA bytecode to point to `SessionKeyExecutor.sol`. This gives a standard EOA smart-contract execution capabilities — no ERC-4337 migration, no new address.
 
-The Type-4 upgrade transaction is sponsored by a server-side relayer — users never need ETH upfront for this step.
+Each subscriber's EOA is derived from their Google OAuth identity inside Magic's Trusted Execution Environment. The private key never leaves the TEE — not even Pact can access it. The EIP-7702 authorization is signed inside the TEE and submitted via a sponsored Type-4 transaction, so users pay zero gas for the upgrade step.
 
 ### Session Keys (EIP-712)
 After the EIP-7702 upgrade, a subscriber signs a `SessionKeyScope` struct:
@@ -56,7 +56,11 @@ SessionKeyScope {
 }
 ```
 
-The session key private key is stored in `localStorage`. The relayer uses it to co-sign execution calls without ever having the authority to pull more than `maxAmount` or pay anyone other than the registered merchant.
+The session key is an ephemeral EOA generated in the browser. Its private key is:
+1. Stored in `localStorage` for client-side UI state (detecting existing subscriptions)
+2. Encrypted with AES-256-GCM (per-key random IV + auth tag) and persisted in Neon PostgreSQL for the keeper to execute future pulls
+
+The session key can never pull more than `maxAmount`, pay anyone other than the registered merchant, or exceed the authorized `interval` — all enforced on-chain by `SessionKeyExecutor.sol`.
 
 ### Autonomous Execution (Keeper)
 `scripts/keeper.mjs` is a lightweight Node.js process that:
