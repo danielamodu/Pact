@@ -138,3 +138,8 @@ dist
 # Private Keys
 *.key
 deployer.key
+
+# Local Claude Code config (settings.local.json, launch.json) at any depth.
+# Committed project skills under .claude/skills/ are kept.
+**/.claude/*
+!**/.claude/skills/
