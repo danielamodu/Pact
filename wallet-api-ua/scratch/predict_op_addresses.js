@@ -9,8 +9,13 @@ const REGISTRY_BYTECODE = fs.readFileSync(path.join(__dirname, '..', 'contracts'
 const EXECUTOR_BYTECODE = fs.readFileSync(path.join(__dirname, '..', 'contracts', 'SessionKeyExecutor.json'), 'utf8');
 
 async function main() {
-  // Use the fresh OP deployer key
-  const privateKey = '0x2f7c30f47ffbcea68fd16d2749f2bcfa50906f98d4ef7561be90c22b1c36a4f8';
+  // Never hardcode a key here — this file is committed. The key that used to be
+  // inline is public in git history and must be treated as compromised.
+  const privateKey = process.env.OP_DEPLOYER_PRIVATE_KEY;
+  if (!privateKey) {
+    console.error("Set OP_DEPLOYER_PRIVATE_KEY before running this script.");
+    process.exit(1);
+  }
   const wallet = new ethers.Wallet(privateKey);
   
   console.log(`OP Deployer Address: ${wallet.address}`);

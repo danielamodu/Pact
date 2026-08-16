@@ -43,3 +43,10 @@ next-env.d.ts
 
 # Keeper delegation store (contains session key private keys — never commit)
 keeper-store.json
+
+# Private keys — never commit. Keys belong in .env or the shell environment,
+# never inline in a script, including throwaway ones under scratch/.
+*.key
+deployer.key
+*.pem
+secrets.json

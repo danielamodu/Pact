@@ -11,7 +11,15 @@ const RouterABI = [
 
 async function main() {
   const provider = new ethers.JsonRpcProvider(BASE_RPC);
-  const wallet = new ethers.Wallet("0xedb86a6103406ea6601beb2470987c2c1869173b2ca89792ff534b72870e7d08", provider);
+
+  // Never hardcode a key here — this file is committed. The key that used to be
+  // inline is public in git history and must be treated as compromised.
+  const key = process.env.SCRATCH_PRIVATE_KEY;
+  if (!key) {
+    console.error("Set SCRATCH_PRIVATE_KEY before running this script.");
+    process.exit(1);
+  }
+  const wallet = new ethers.Wallet(key, provider);
 
   const router = new ethers.Contract(SwapRouterAddress, RouterABI, wallet);
   const amount = ethers.parseEther("0.00005");
