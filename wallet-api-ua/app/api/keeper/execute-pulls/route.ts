@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { sql, initDb, initWebhooksTable, initNotificationsTable } from "@/lib/db";
+import { sql, initDb, initWebhooksTable, initNotificationsTable, initKeeperRunsTable } from "@/lib/db";
 import { decrypt, isEncrypted, signWebhook } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
@@ -302,31 +302,119 @@ export async function POST(req: Request) {
   const skipped = results.filter((r) => r.status === "skipped");
   const errors = results.filter((r) => r.status === "error");
 
-  return NextResponse.json({
-    success: true,
-    summary: {
-      total: results.length,
-      executed: executed.length,
-      skipped: skipped.length,
-      errors: errors.length,
-    },
-    results,
-  });
+  const summary = {
+    total: results.length,
+    executed: executed.length,
+    skipped: skipped.length,
+    errors: errors.length,
+  };
+
+  // Persist the run so a keeper that is failing silently is visible after the fact
+  try {
+    await initKeeperRunsTable();
+    await sql`
+      INSERT INTO keeper_runs (total, executed, skipped, errors, detail)
+      VALUES (${summary.total}, ${summary.executed}, ${summary.skipped}, ${summary.errors},
+              ${JSON.stringify(results)})
+    `;
+  } catch (err) {
+    console.warn("[Keeper] Could not record run:", err);
+  }
+
+  return NextResponse.json({ success: true, summary, results });
 }
 
-// Also support GET for quick health check
+/**
+ * Health check.
+ *
+ * Reports what is actually true rather than a fixed "ready". A missing keeper
+ * key or an unreachable database previously still returned status "ok" with
+ * delegationsStored 0, which is indistinguishable from a healthy idle keeper —
+ * that is how a completely non-operational keeper went unnoticed.
+ */
 export async function GET() {
+  const problems: string[] = [];
+
+  const keeperKey = process.env.KEEPER_RELAYER_PRIVATE_KEY;
+  const checks = {
+    keeperKey: !!keeperKey,
+    database: false,
+    encryptionKey: !!process.env.ENCRYPTION_KEY,
+  };
+
+  if (!checks.keeperKey) {
+    problems.push("KEEPER_RELAYER_PRIVATE_KEY is not set — the keeper cannot sign or execute any pull.");
+  }
+  if (!checks.encryptionKey) {
+    problems.push("ENCRYPTION_KEY is not set — stored session keys cannot be decrypted.");
+  }
+
+  // Keeper wallet identity and gas. Only the address is exposed, never the key.
+  let keeperWallet: { address: string; balances: Record<string, string> } | null = null;
+  if (keeperKey) {
+    try {
+      const address = new ethers.Wallet(keeperKey).address;
+      const balances: Record<string, string> = {};
+      await Promise.all(
+        Object.entries(NETWORKS).map(async ([key, cfg]) => {
+          try {
+            const bal = await new ethers.JsonRpcProvider(cfg.rpc).getBalance(address);
+            balances[key] = ethers.formatEther(bal);
+            if (bal === BigInt(0)) {
+              problems.push(`Keeper wallet has no ETH on ${cfg.name} — it cannot fund session keys.`);
+            }
+          } catch {
+            balances[key] = "unavailable";
+          }
+        })
+      );
+      keeperWallet = { address, balances };
+    } catch {
+      problems.push("KEEPER_RELAYER_PRIVATE_KEY is set but is not a valid private key.");
+    }
+  }
+
+  let delegations: { total: number; byNetwork: Record<string, number> } | null = null;
+  let lastRun: unknown = null;
+
   try {
     await initDb();
-    const rows = await sql`SELECT COUNT(*) as count FROM keeper_delegations`;
-    const count = Number(rows[0]?.count ?? 0);
-    return NextResponse.json({
-      status: "ok",
-      message: "Pact keeper is ready",
-      delegationsStored: count,
-      keeperConfigured: !!process.env.KEEPER_RELAYER_PRIVATE_KEY,
-    });
-  } catch {
-    return NextResponse.json({ status: "ok", message: "Pact keeper is ready", delegationsStored: 0, keeperConfigured: !!process.env.KEEPER_RELAYER_PRIVATE_KEY });
+    const rows = await sql`SELECT network, COUNT(*)::int AS count FROM keeper_delegations GROUP BY network`;
+    const byNetwork: Record<string, number> = {};
+    let total = 0;
+    for (const r of rows as any[]) {
+      byNetwork[r.network] = Number(r.count);
+      total += Number(r.count);
+    }
+    delegations = { total, byNetwork };
+    checks.database = true;
+
+    if (total === 0) {
+      problems.push("No delegations stored — the keeper has nothing to execute.");
+    }
+
+    try {
+      await initKeeperRunsTable();
+      const runs = await sql`
+        SELECT total, executed, skipped, errors, ran_at
+        FROM keeper_runs ORDER BY ran_at DESC LIMIT 1
+      `;
+      lastRun = runs[0] ?? null;
+      if (!runs[0]) problems.push("No keeper run has been recorded yet.");
+    } catch { /* runs table is optional */ }
+  } catch (err: any) {
+    problems.push(`Database unreachable: ${err.message || "unknown error"}`);
   }
+
+  return NextResponse.json(
+    {
+      status: problems.length === 0 ? "ok" : "degraded",
+      checks,
+      keeperWallet,
+      delegations,
+      lastRun,
+      problems,
+    },
+    { status: problems.length === 0 ? 200 : 503 }
+  );
 }

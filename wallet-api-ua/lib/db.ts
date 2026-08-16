@@ -22,6 +22,20 @@ export async function initDb() {
   `;
 }
 
+export async function initKeeperRunsTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS keeper_runs (
+      id          BIGSERIAL PRIMARY KEY,
+      total       INT NOT NULL DEFAULT 0,
+      executed    INT NOT NULL DEFAULT 0,
+      skipped     INT NOT NULL DEFAULT 0,
+      errors      INT NOT NULL DEFAULT 0,
+      detail      JSONB,
+      ran_at      TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+}
+
 export async function initNotificationsTable() {
   await sql`
     CREATE TABLE IF NOT EXISTS subscriber_notifications (

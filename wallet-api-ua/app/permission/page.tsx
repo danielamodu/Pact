@@ -19,6 +19,7 @@ const STEPS = [
   "Checking account status",
   "Upgrading account (EIP-7702)",
   "Signing session key",
+  "Registering with keeper",
   "Recording subscription",
   "Done",
 ] as const;
@@ -187,8 +188,13 @@ function PermissionContent() {
       saveSessionKeyDelegation(sessionKeyWallet.privateKey, scope, ownerSignature);
 
       // ── Persist delegation server-side for keeper execution ─────────────
+      // This is required, not optional: without a stored delegation the keeper
+      // has nothing to execute and the subscription silently never bills. Fail
+      // here, before the on-chain subscribe, so no gas is spent on a
+      // subscription that could never renew.
+      setCurrentStep("Registering with keeper");
       try {
-        await fetch("/api/keeper/store-delegation", {
+        const storeRes = await fetch("/api/keeper/store-delegation", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -208,10 +214,19 @@ function PermissionContent() {
             },
           }),
         });
+
+        const storeJson = await storeRes.json().catch(() => ({}));
+        if (!storeRes.ok || !storeJson.success) {
+          throw new Error(
+            storeJson.error || `Keeper registration failed (HTTP ${storeRes.status}).`
+          );
+        }
         console.log("[Permission] Delegation stored server-side for keeper.");
-      } catch (storeErr) {
-        // Non-fatal: subscription still works, keeper just won't auto-execute
-        console.warn("[Permission] Failed to store delegation server-side:", storeErr);
+      } catch (storeErr: unknown) {
+        const detail = storeErr instanceof Error ? storeErr.message : String(storeErr);
+        throw new Error(
+          `Could not register this subscription with the billing keeper, so it would never renew automatically. No subscription was created and no gas was spent. Details: ${detail}`
+        );
       }
 
       // ── Record subscription on-chain ────────────────────────────────────
