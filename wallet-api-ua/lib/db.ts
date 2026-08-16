@@ -22,6 +22,27 @@ export async function initDb() {
   `;
 }
 
+export async function initNotificationsTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS subscriber_notifications (
+      id                 BIGSERIAL PRIMARY KEY,
+      subscriber_address TEXT NOT NULL,
+      plan_id            TEXT NOT NULL,
+      network            TEXT NOT NULL,
+      event              TEXT NOT NULL,
+      amount             TEXT,
+      token              TEXT,
+      tx_hash            TEXT,
+      read_at            TIMESTAMPTZ,
+      created_at         TIMESTAMPTZ DEFAULT NOW()
+    )
+  `;
+  await sql`
+    CREATE INDEX IF NOT EXISTS subscriber_notifications_address_idx
+      ON subscriber_notifications (subscriber_address, created_at DESC)
+  `;
+}
+
 export async function initWebhooksTable() {
   await sql`
     CREATE TABLE IF NOT EXISTS plan_webhooks (

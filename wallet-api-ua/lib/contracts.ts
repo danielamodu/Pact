@@ -271,7 +271,9 @@ export async function getSubscriptionsForUser(userAddress: string, networkKey: "
 }
 
 /**
- * Creates a plan on-chain using the TEE-managed Universal Account signature
+ * Creates a plan on-chain using the TEE-managed Universal Account signature.
+ * Resolves the assigned planId from the PlanCreated receipt log so the merchant
+ * can share their subscribe link without looking it up on a block explorer.
  */
 export async function createPlanOnchain(
   networkKey: "arbitrum" | "base",
@@ -280,7 +282,7 @@ export async function createPlanOnchain(
   priceInUnits: string,
   intervalSeconds: number,
   payoutAddress: string
-): Promise<string> {
+): Promise<{ txHash: string; planId: string | null }> {
   const provider = getProvider(networkKey);
   const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
 
@@ -315,6 +317,105 @@ export async function createPlanOnchain(
 
   const signedTx = await ethereumService.signTransaction(txRequest);
   const txResponse = await provider.broadcastTransaction(signedTx);
+
+  // Resolve the assigned planId from the PlanCreated log. Non-fatal if it fails —
+  // the plan still exists on-chain, the merchant just has to look the id up.
+  let planId: string | null = null;
+  try {
+    const receipt = await txResponse.wait(1);
+    for (const log of receipt?.logs ?? []) {
+      try {
+        const parsed = contract.interface.parseLog({
+          topics: [...log.topics],
+          data: log.data,
+        });
+        if (parsed?.name === "PlanCreated") {
+          planId = (parsed.args[0] as bigint).toString();
+          break;
+        }
+      } catch {
+        // Log emitted by another contract — skip
+      }
+    }
+  } catch (err) {
+    console.warn("Could not resolve planId from receipt:", err);
+  }
+
+  return { txHash: txResponse.hash, planId };
+}
+
+/**
+ * Revokes a session key on-chain.
+ *
+ * SessionKeyExecutor.revoke() is guarded by `msg.sender == address(this)`, so the
+ * subscriber's own EIP-7702-delegated EOA has to send this transaction to itself.
+ *
+ * Note: revoke() also increments the owner nonce, which invalidates the scope
+ * signature of every OTHER active subscription on this account. Those subscriptions
+ * fail safe (the keeper skips them) but must be re-authorized to resume.
+ */
+export async function revokeOnchain(
+  networkKey: "arbitrum" | "base",
+  sessionKeyAddress: string
+): Promise<string> {
+  const provider = getProvider(networkKey);
+
+  const executorInterface = new ethers.Interface([
+    "function revoke(address sessionKey) external",
+  ]);
+  const data = executorInterface.encodeFunctionData("revoke", [sessionKeyAddress]);
+
+  const walletData = await getOrCreateWallet("ETH");
+  const fromAddress = walletData.public_address;
+
+  // Without the 7702 delegation in place this self-call is just an empty transfer,
+  // which would report success while revoking nothing.
+  const code = await provider.getCode(fromAddress);
+  if (!code || code === "0x") {
+    throw new Error(
+      "This account is not EIP-7702 delegated, so there is no on-chain session key to revoke."
+    );
+  }
+
+  const nonce = await provider.getTransactionCount(fromAddress);
+  const feeData = await provider.getFeeData();
+  const gasPrice = feeData.gasPrice
+    ? (feeData.gasPrice * BigInt(150)) / BigInt(100)
+    : BigInt(1_000_000_000);
+
+  let gasLimit: bigint;
+  try {
+    const estimated = await provider.estimateGas({
+      from: fromAddress,
+      to: fromAddress,
+      data,
+      nonce,
+      gasPrice,
+      chainId: NETWORKS[networkKey].chainId,
+    });
+    gasLimit = (estimated * BigInt(140)) / BigInt(100);
+  } catch {
+    gasLimit = BigInt(150_000);
+  }
+
+  const txRequest = {
+    to: fromAddress,
+    from: fromAddress,
+    data,
+    nonce,
+    gasLimit,
+    gasPrice,
+    chainId: NETWORKS[networkKey].chainId,
+  };
+
+  const signedTx = await ethereumService.signTransaction(txRequest);
+  const txResponse = await provider.broadcastTransaction(signedTx);
+
+  const receipt = await txResponse.wait(1);
+  if (!receipt || receipt.status !== 1) {
+    throw new Error(`Revocation transaction reverted. Hash: ${txResponse.hash}`);
+  }
+
   return txResponse.hash;
 }
 
@@ -436,10 +537,18 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
   const pullEvents = await queryEvents(contract, pullFilter, activeNet);
   
   let totalRevenueUnits = BigInt(0);
+  let pullsLast24h = 0;
+  const nowSeconds = Math.floor(Date.now() / 1000);
+
   for (const event of pullEvents) {
     if ("args" in event && event.args) {
       const amount = event.args[2] as bigint;
       totalRevenueUnits += amount;
+
+      const executedAt = Number(event.args[3]);
+      if (Number.isFinite(executedAt) && nowSeconds - executedAt <= 86400) {
+        pullsLast24h++;
+      }
     }
   }
 
@@ -452,7 +561,9 @@ export async function getPlanDetails(planIdStr: string, networkKey: "arbitrum" |
     active: plan.active,
     subscribersCount: subscribersList.length,
     subscribers: subscribersList,
-    totalRevenue: ethers.formatUnits(totalRevenueUnits, tokenDecimals)
+    totalRevenue: ethers.formatUnits(totalRevenueUnits, tokenDecimals),
+    totalPulls: pullEvents.length,
+    pullsLast24h
   };
 }
 

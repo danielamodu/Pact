@@ -110,7 +110,7 @@ export async function GET(req: Request) {
             averageLtv: details.subscribersCount > 0
               ? Math.round((totalRevenueNum / details.subscribersCount) * 100000) / 100000
               : priceNum,
-            dailyPaymentsSucceeded: details.subscribersCount,
+            dailyPaymentsSucceeded: details.pullsLast24h,
             dailyPaymentsFailed: 0,
             totalRevenue: details.totalRevenue,
             token: details.token,

@@ -13,7 +13,7 @@
 
 import { NextResponse } from "next/server";
 import { ethers } from "ethers";
-import { sql, initDb, initWebhooksTable } from "@/lib/db";
+import { sql, initDb, initWebhooksTable, initNotificationsTable } from "@/lib/db";
 import { decrypt, isEncrypted, signWebhook } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
@@ -212,6 +212,20 @@ async function processEntry(
       const registryWriter = new ethers.Contract(PACT_REGISTRY_ADDRESS, REGISTRY_ABI, keeperWallet);
       const logTx = await registryWriter.logPull(scope.planId, entry.subscriberAddress, amount);
       await logTx.wait(1);
+    } catch { /* non-critical */ }
+
+    // Record a subscriber-facing receipt (best-effort, non-blocking)
+    try {
+      await initNotificationsTable();
+      const decimals = scope.token === ethers.ZeroAddress ? 18 : 6;
+      const symbol = scope.token === ethers.ZeroAddress ? "ETH" : "USDC";
+      await sql`
+        INSERT INTO subscriber_notifications
+          (subscriber_address, plan_id, network, event, amount, token, tx_hash)
+        VALUES
+          (${entry.subscriberAddress.toLowerCase()}, ${entry.planId}, ${networkKey},
+           'pull.executed', ${ethers.formatUnits(amount, decimals)}, ${symbol}, ${tx.hash})
+      `;
     } catch { /* non-critical */ }
 
     // Fire webhook if configured (best-effort, non-blocking)

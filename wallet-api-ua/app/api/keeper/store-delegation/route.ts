@@ -66,18 +66,25 @@ export async function DELETE(req: Request) {
   }
 
   try {
-    const { planId, subscriberAddress, network } = await req.json();
-    if (!planId || !subscriberAddress || !network) {
+    const { planId, network } = await req.json();
+    if (!planId || !network) {
       return NextResponse.json({ error: "Missing fields" }, { status: 400 });
     }
 
     await initDb();
 
-    const storeKey = `${planId}_${subscriberAddress.toLowerCase()}_${network}`;
-    await sql`DELETE FROM keeper_delegations WHERE store_key = ${storeKey}`;
+    // Scoped to the signed-in owner rather than a client-supplied address, so a
+    // wrong or stale address can never leave the delegation live in the keeper.
+    const deleted = await sql`
+      DELETE FROM keeper_delegations
+      WHERE plan_id = ${planId.toString()}
+        AND network = ${network}
+        AND stored_by = ${session.user.email}
+      RETURNING store_key
+    `;
 
-    console.log(`[KeeperStore] Removed delegation for ${storeKey}`);
-    return NextResponse.json({ success: true });
+    console.log(`[KeeperStore] Removed ${deleted.length} delegation(s) for plan ${planId} on ${network}`);
+    return NextResponse.json({ success: true, removed: deleted.length });
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
   }

@@ -17,11 +17,14 @@ export default function SetupPage() {
   const [token, setToken] = useState("USDC");
   const [price, setPrice] = useState("49.99");
   const [cycle, setCycle] = useState("Monthly");
+  const [customDays, setCustomDays] = useState("14");
   const [payoutAddress, setPayoutAddress] = useState("");
   const [network, setNetwork] = useState<"arbitrum" | "base">("arbitrum");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
+  const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   useEffect(() => {
     if (publicAddress) {
@@ -64,6 +67,12 @@ export default function SetupPage() {
         intervalSeconds = 604800;
       } else if (cycle === "Quarterly") {
         intervalSeconds = 7776000;
+      } else if (cycle === "Custom") {
+        const days = parseInt(customDays, 10);
+        if (!Number.isFinite(days) || days < 1 || days > 365) {
+          throw new Error("Custom billing cycle must be between 1 and 365 days.");
+        }
+        intervalSeconds = days * 86400;
       }
 
       // 4. Select standard token address for selected network
@@ -78,7 +87,7 @@ export default function SetupPage() {
       }
 
       // 5. Submit transaction to registry contract via TEE Universal Account
-      const txHash = await createPlanOnchain(
+      const { txHash, planId } = await createPlanOnchain(
         network,
         planName,
         tokenAddress,
@@ -88,6 +97,7 @@ export default function SetupPage() {
       );
 
       setSuccessTxHash(txHash);
+      setCreatedPlanId(planId);
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to launch plan");
@@ -122,22 +132,65 @@ export default function SetupPage() {
               Your subscription plan contract is live on-chain and ready to accept subscriber flows.
             </p>
 
+            {createdPlanId && (
+              <div className="w-full bg-[#9EFFBF]/15 border border-forest/20 p-4 text-left mb-4">
+                <span className="block opacity-40 uppercase tracking-widest text-[9px] mb-1 font-mono">Plan ID</span>
+                <span className="font-space text-3xl font-bold text-forest leading-none">#{createdPlanId}</span>
+                <p className="font-mono text-[9px] opacity-50 mt-2 uppercase tracking-tight">
+                  Share the link below to start accepting subscribers
+                </p>
+              </div>
+            )}
+
+            {createdPlanId && (
+              <div className="w-full bg-[#F7F7F5] border border-[#3A3A38]/10 p-4 text-left mb-4">
+                <span className="block opacity-40 uppercase tracking-widest text-[9px] mb-2 font-mono">Subscribe Link</span>
+                <code className="font-mono text-[10px] text-forest break-all block mb-3">
+                  {`${typeof window !== "undefined" ? window.location.origin : ""}/subscribe?planId=${createdPlanId}&network=${network}`}
+                </code>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(
+                      `${window.location.origin}/subscribe?planId=${createdPlanId}&network=${network}`
+                    );
+                    setLinkCopied(true);
+                    setTimeout(() => setLinkCopied(false), 2000);
+                  }}
+                  className="w-full bg-white border border-forest/20 text-forest font-mono text-[9px] font-bold uppercase tracking-widest py-2.5 hover:bg-forest hover:text-white transition-colors cursor-pointer"
+                >
+                  {linkCopied ? "Copied!" : "Copy Subscribe Link"}
+                </button>
+              </div>
+            )}
+
             <div className="w-full bg-[#F7F7F5] border border-[#3A3A38]/10 p-4 font-mono text-[11px] break-all text-left mb-8">
               <span className="block opacity-40 uppercase tracking-widest text-[9px] mb-1">Transaction Hash</span>
-              <a 
-                href={network === "arbitrum" ? `https://arbiscan.io/tx/${successTxHash}` : `https://basescan.org/tx/${successTxHash}`} 
-                target="_blank" 
-                rel="noopener noreferrer" 
+              <a
+                href={network === "arbitrum" ? `https://arbiscan.io/tx/${successTxHash}` : `https://basescan.org/tx/${successTxHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="text-coral hover:underline font-bold"
               >
                 {successTxHash}
               </a>
             </div>
 
-            <div className="w-full">
+            <div className="w-full flex flex-col sm:flex-row gap-3">
+              {createdPlanId && (
+                <button
+                  onClick={() => router.push(`/plan/${createdPlanId}?network=${network}`)}
+                  className="flex-1 bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest py-4 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  View Plan Dashboard
+                </button>
+              )}
               <button
                 onClick={() => router.push("/wallet")}
-                className="w-full bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest py-4 rounded-sm hover:opacity-90 transition-opacity"
+                className={`flex-1 font-mono text-xs font-bold uppercase tracking-widest py-4 rounded-sm transition-opacity cursor-pointer ${
+                  createdPlanId
+                    ? "border border-forest/20 text-forest hover:bg-forest/5"
+                    : "bg-forest text-white hover:opacity-90"
+                }`}
               >
                 Return to Dashboard
               </button>
@@ -265,11 +318,41 @@ export default function SetupPage() {
                       </div>
                     ))}
                     <div className="flex-1">
-                      <label className="flex items-center justify-center p-3 bg-white border border-[#3A3A38]/10 cursor-not-allowed font-mono text-[10px] uppercase tracking-widest opacity-30">
+                      <input
+                        type="radio"
+                        name="cycle"
+                        id="cycle-custom"
+                        className="hidden custom-radio"
+                        checked={cycle === "Custom"}
+                        onChange={() => setCycle("Custom")}
+                      />
+                      <label
+                        htmlFor="cycle-custom"
+                        className={`flex items-center justify-center p-3 border cursor-pointer font-mono text-[10px] uppercase tracking-widest font-bold ${
+                          cycle === "Custom" ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/20"
+                        }`}
+                      >
                         Custom
                       </label>
                     </div>
                   </div>
+
+                  {cycle === "Custom" && (
+                    <div className="flex">
+                      <input
+                        type="number"
+                        min={1}
+                        max={365}
+                        value={customDays}
+                        onChange={(e) => setCustomDays(e.target.value)}
+                        placeholder="14"
+                        className="flex-1 bg-white border border-[#3A3A38]/20 p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
+                      />
+                      <div className="bg-[#1A3C2B]/5 border border-[#3A3A38]/20 border-l-0 px-6 flex items-center">
+                        <span className="font-mono text-[10px] font-bold tracking-widest">DAYS</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* 05. Payout Address */}
@@ -286,12 +369,12 @@ export default function SetupPage() {
                       className="w-full bg-white border border-[#3A3A38]/20 p-4 font-mono text-[12px] placeholder:text-[#3A3A38]/30 rounded-sm"
                     />
                     {!publicAddress && (
-                      <button
-                        type="button"
+                      <Link
+                        href="/login"
                         className="absolute right-2 px-3 py-1.5 border border-forest text-forest font-mono text-[9px] uppercase tracking-widest hover:bg-forest hover:text-white transition-all"
                       >
                         Connect Wallet
-                      </button>
+                      </Link>
                     )}
                   </div>
                   <p className="font-mono text-[9px] opacity-50 tracking-tight mt-1">
@@ -344,19 +427,20 @@ export default function SetupPage() {
                     </div>
                     <div className="text-right">
                       <div className="font-space text-3xl font-bold text-[#1A3C2B]">
-                        {price || "0.00"} {token} / {cycle === "Weekly" ? "WK" : cycle === "Monthly" ? "MO" : "QTR"}
+                        {price || "0.00"} {token} /{" "}
+                        {cycle === "Weekly"
+                          ? "WK"
+                          : cycle === "Monthly"
+                          ? "MO"
+                          : cycle === "Quarterly"
+                          ? "QTR"
+                          : `${customDays || "0"}D`}
                       </div>
                       <div className="font-mono text-[10px] uppercase tracking-widest opacity-50 mt-1">
-                        {cycle} billing cycle
+                        {cycle === "Custom" ? `Every ${customDays || "0"} days` : `${cycle} billing cycle`}
                       </div>
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    className="w-full mt-4 border border-[#3A3A38]/20 p-3 font-mono text-[10px] uppercase tracking-[0.2em] hover:bg-white transition-colors"
-                  >
-                    Preview Subscriber Page
-                  </button>
                 </div>
 
                 {error && (
@@ -366,20 +450,14 @@ export default function SetupPage() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="pt-10 flex flex-col md:flex-row gap-4 justify-center">
+                <div className="pt-10">
                   <button
                     type="submit"
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 bg-[#1A3C2B] text-white font-mono text-xs tracking-[0.2em] uppercase px-12 py-5 rounded-sm hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full bg-[#1A3C2B] text-white font-mono text-xs tracking-[0.2em] uppercase px-12 py-5 rounded-sm hover:opacity-95 transition-opacity cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isSubmitting ? "Launching Plan..." : "Create & Launch Plan"}
-                  </button>
-                  <button
-                    type="button"
-                    className="flex-1 border border-[#3A3A38]/20 text-[#1A3C2B] font-mono text-xs tracking-[0.2em] uppercase px-12 py-5 rounded-sm hover:bg-white transition-all cursor-pointer"
-                  >
-                    Save as Draft
                   </button>
                 </div>
 
@@ -387,9 +465,9 @@ export default function SetupPage() {
                 <div className="text-center mt-8">
                   <p className="font-sans text-sm text-[#3A3A38]/60">
                     By creating a plan, you agree to Pact merchant terms.{" "}
-                    <a href="#" className="text-[#FF8C69] hover:underline">
+                    <Link href="/terms" className="text-[#FF8C69] hover:underline">
                       View Terms
-                    </a>
+                    </Link>
                   </p>
                 </div>
               </form>

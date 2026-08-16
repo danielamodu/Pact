@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { NavigationBar } from "@/components/NavigationBar";
-import { getPlanDetails, getPullHistory, PullHistoryEntry } from "@/lib/contracts";
+import { getPlanDetails, getPullHistory, revokeOnchain, PullHistoryEntry } from "@/lib/contracts";
 import { getSessionKeyDelegation, clearSessionKeyDelegation, isRevokedSessionKey } from "@/lib/sessionKey";
 import { useAuth } from "@/contexts/AuthProvider";
 import { ethers } from "ethers";
@@ -18,9 +18,15 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
   const [plan, setPlan] = useState<any>(null);
   const [delegationInfo, setDelegationInfo] = useState<any>(null);
   const [pullHistory, setPullHistory] = useState<PullHistoryEntry[]>([]);
+  const [receipts, setReceipts] = useState<Array<{
+    id: string; amount: string; token: string; txHash: string; createdAt: string; read: boolean;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [revoked, setRevoked] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+  const [revokeError, setRevokeError] = useState<string | null>(null);
+  const [revokeTxHash, setRevokeTxHash] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadData() {
@@ -31,15 +37,56 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
         setPlan(fetchedPlan);
 
         const localDelegation = getSessionKeyDelegation(planIdNum);
-        setDelegationInfo(localDelegation);
+        let resolved = localDelegation;
 
-        if (isRevokedSessionKey(planIdNum) || (!localDelegation.delegation && !localDelegation.privateKey)) {
+        // localStorage is per-device. Fall back to the server-side delegation store
+        // so a cleared browser or a second device still sees the subscription.
+        if (!localDelegation.delegation) {
+          try {
+            const res = await fetch(`/api/subscriptions?planId=${id}&network=${network}`);
+            const json = await res.json();
+            const remote = json.subscriptions?.[0];
+            if (remote) {
+              resolved = {
+                privateKey: null,
+                delegation: {
+                  scope: {
+                    sessionKeyAddress: remote.sessionKeyAddress,
+                    recipient: remote.recipient,
+                    maxAmount: BigInt(remote.maxAmount ?? 0),
+                    token: remote.token,
+                    interval: Number(remote.interval),
+                    expiry: Number(remote.expiry),
+                    planId: Number(remote.planId),
+                  },
+                  signature: "",
+                },
+              };
+            }
+          } catch (err) {
+            console.warn("Could not recover delegation from server:", err);
+          }
+        }
+
+        setDelegationInfo(resolved);
+
+        if (isRevokedSessionKey(planIdNum) || !resolved.delegation) {
           setRevoked(true);
         }
 
         if (publicAddress) {
           const history = await getPullHistory(id, publicAddress, network);
           setPullHistory(history);
+
+          try {
+            const res = await fetch(`/api/notifications?subscriber=${publicAddress}`);
+            const json = await res.json();
+            if (json.notifications) {
+              setReceipts(json.notifications.filter((n: any) => n.planId === id));
+            }
+          } catch (err) {
+            console.warn("Could not load payment receipts:", err);
+          }
         }
       } catch (err) {
         console.error("Failed to load subscription details:", err);
@@ -52,19 +99,44 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
 
   const handleRevoke = async () => {
     const planIdNum = parseInt(id);
-    clearSessionKeyDelegation(planIdNum);
-    setRevoked(true);
-    setShowModal(false);
+    const sessionKeyAddress = delegationInfo?.delegation?.scope?.sessionKeyAddress;
 
-    // Also remove from server-side keeper store so no future pulls are attempted
+    if (!sessionKeyAddress) {
+      setRevokeError("No active session key found for this subscription.");
+      return;
+    }
+
+    setRevoking(true);
+    setRevokeError(null);
+
     try {
-      await fetch("/api/keeper/store-delegation", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ planId: id, subscriberAddress: "self", network }),
-      });
-    } catch {
-      // Non-fatal
+      // 1. On-chain revocation is the authoritative step — it flips
+      //    revokedSessionKeys[sessionKey] so executePull can never succeed again.
+      const txHash = await revokeOnchain(network, sessionKeyAddress);
+      setRevokeTxHash(txHash);
+
+      // 2. Drop the delegation so the keeper stops attempting pulls entirely.
+      try {
+        await fetch("/api/keeper/store-delegation", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planId: id, network }),
+        });
+      } catch (err) {
+        // On-chain revocation already blocks pulls, so this is not fatal.
+        console.warn("Failed to remove delegation from keeper store:", err);
+      }
+
+      // 3. Only now clear local state — otherwise the UI would claim the
+      //    subscription was cancelled while the keeper kept pulling.
+      clearSessionKeyDelegation(planIdNum);
+      setRevoked(true);
+      setShowModal(false);
+    } catch (err: any) {
+      console.error("[Revoke] Failed:", err);
+      setRevokeError(err?.message || "Revocation failed. Your subscription is still active.");
+    } finally {
+      setRevoking(false);
     }
   };
 
@@ -279,6 +351,84 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
                 </div>
               </section>
 
+              {/* Keeper-issued payment receipts */}
+              {receipts.length > 0 && (
+                <section id="payment-receipts" className="bg-white border border-[#3A3A38]/20 p-8">
+                  <div className="mb-6 flex items-start justify-between gap-4">
+                    <div>
+                      <h3 className="font-space text-2xl font-bold">Payment Receipts</h3>
+                      <p className="font-mono text-[10px] uppercase tracking-widest opacity-40 mt-1">
+                        Recorded by the keeper at execution time
+                      </p>
+                    </div>
+                    {receipts.some((r) => !r.read) && (
+                      <button
+                        onClick={async () => {
+                          await fetch("/api/notifications", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ subscriber: publicAddress }),
+                          });
+                          setReceipts((prev) => prev.map((r) => ({ ...r, read: true })));
+                        }}
+                        className="font-mono text-[9px] uppercase tracking-widest text-forest border border-forest/20 px-3 py-2 hover:bg-forest hover:text-white transition-colors cursor-pointer flex-shrink-0"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                  </div>
+
+                  <div className="space-y-0">
+                    {receipts.map((r) => (
+                      <div
+                        key={r.id}
+                        className="flex items-center justify-between gap-4 py-4 border-b border-[#3A3A38]/10 last:border-0"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          {!r.read && <div className="w-2 h-2 rounded-full bg-coral flex-shrink-0"></div>}
+                          <div className="min-w-0">
+                            <span className="font-mono text-xs font-bold block">
+                              {r.amount} {r.token} charged
+                            </span>
+                            <span className="font-mono text-[9px] opacity-40">
+                              {new Date(r.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        <a
+                          href={`${network === "arbitrum" ? "https://arbiscan.io" : "https://basescan.org"}/tx/${r.txHash}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="font-mono text-[10px] text-forest underline underline-offset-2 hover:opacity-70 flex-shrink-0"
+                        >
+                          {r.txHash.slice(0, 8)}...{r.txHash.slice(-6)} ↗
+                        </a>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* On-chain revocation receipt */}
+              {revokeTxHash && (
+                <section className="bg-[#9EFFBF]/10 border border-forest/20 p-8 border-l-[4px] border-l-forest space-y-2">
+                  <h3 className="font-space text-xl font-bold text-forest uppercase tracking-tight">
+                    Revocation Confirmed On-Chain
+                  </h3>
+                  <p className="font-sans text-sm text-[#3A3A38]/70">
+                    The session key is now permanently blocked from pulling funds.
+                  </p>
+                  <a
+                    href={`${network === "arbitrum" ? "https://arbiscan.io" : "https://basescan.org"}/tx/${revokeTxHash}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-mono text-[10px] text-forest underline underline-offset-2 break-all inline-block pt-1"
+                  >
+                    {revokeTxHash} ↗
+                  </a>
+                </section>
+              )}
+
               {/* Revoke Section */}
               {!revoked && (
                 <section id="revoke-access" className="bg-[#FF8C69]/5 border border-[#3A3A38]/20 p-8 border-l-[4px] border-l-[#FF8C69]">
@@ -313,19 +463,47 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
             <h4 className="font-space text-xl font-bold text-forest uppercase tracking-tight mb-4">
               Are you sure?
             </h4>
-            <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed mb-8">
-              This will permanently revoke the session permission. The merchant will lose access to auto-settlement.
+            <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed mb-4">
+              This submits an on-chain revocation from your account. Once confirmed, the merchant permanently loses the ability to pull funds.
             </p>
+
+            <div className="bg-gold/10 border border-gold/30 p-4 mb-6">
+              <p className="font-mono text-[9px] uppercase tracking-widest text-[#a8820a] font-bold mb-1">
+                Affects your other subscriptions
+              </p>
+              <p className="font-sans text-xs text-[#3A3A38]/70 leading-relaxed">
+                Revoking increments your account nonce, which pauses every other active Pact subscription on this wallet. They stop safely — no funds can be pulled — but you&apos;ll need to re-authorize each one to resume.
+              </p>
+            </div>
+
+            {revokeError && (
+              <div className="border border-coral bg-coral/5 p-4 mb-6">
+                <p className="font-mono text-[10px] text-coral font-bold uppercase tracking-wide mb-1">
+                  Revocation Failed
+                </p>
+                <p className="font-mono text-[10px] text-[#3A3A38] break-words">{revokeError}</p>
+              </div>
+            )}
+
             <div className="flex gap-4">
               <button
                 onClick={handleRevoke}
-                className="flex-1 bg-coral text-white font-mono text-[10px] tracking-widest uppercase py-4 hover:opacity-95 transition-opacity"
+                disabled={revoking}
+                className="flex-1 bg-coral text-white font-mono text-[10px] tracking-widest uppercase py-4 hover:opacity-95 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Yes, Revoke
+                {revoking ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Revoking On-Chain
+                  </>
+                ) : (
+                  "Yes, Revoke"
+                )}
               </button>
               <button
-                onClick={() => setShowModal(false)}
-                className="flex-1 border border-[#3A3A38]/20 text-forest font-mono text-[10px] tracking-widest uppercase py-4 hover:bg-white transition-all"
+                onClick={() => { setShowModal(false); setRevokeError(null); }}
+                disabled={revoking}
+                className="flex-1 border border-[#3A3A38]/20 text-forest font-mono text-[10px] tracking-widest uppercase py-4 hover:bg-white transition-all disabled:opacity-50"
               >
                 Cancel
               </button>
