@@ -4,7 +4,12 @@ if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
-const client = postgres(process.env.DATABASE_URL, { ssl: "require" });
+const client = postgres(process.env.DATABASE_URL, {
+  ssl: "require",
+  max: 1,
+  idle_timeout: 20,
+  connect_timeout: 10,
+});
 
 // Tagged-template sql helper matching the @neondatabase/serverless API
 export const sql = client;
