@@ -1,18 +1,10 @@
-import postgres from "postgres";
+import { neon } from "@neondatabase/serverless";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
-const client = postgres(process.env.DATABASE_URL, {
-  ssl: "require",
-  max: 1,
-  idle_timeout: 20,
-  connect_timeout: 10,
-});
-
-// Tagged-template sql helper matching the @neondatabase/serverless API
-export const sql = client;
+export const sql = neon(process.env.DATABASE_URL);
 
 export async function initDb() {
   await sql`
