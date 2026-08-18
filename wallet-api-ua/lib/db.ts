@@ -1,10 +1,13 @@
-import { neon } from "@neondatabase/serverless";
+import postgres from "postgres";
 
 if (!process.env.DATABASE_URL) {
   throw new Error("DATABASE_URL environment variable is not set");
 }
 
-export const sql = neon(process.env.DATABASE_URL);
+const client = postgres(process.env.DATABASE_URL, { ssl: "require" });
+
+// Tagged-template sql helper matching the @neondatabase/serverless API
+export const sql = client;
 
 export async function initDb() {
   await sql`
@@ -68,7 +71,6 @@ export async function initWebhooksTable() {
       PRIMARY KEY (plan_id, network)
     )
   `;
-  // Add webhook_secret column to existing tables that predate this migration
   await sql`
     ALTER TABLE plan_webhooks ADD COLUMN IF NOT EXISTS webhook_secret TEXT NOT NULL DEFAULT ''
   `;
