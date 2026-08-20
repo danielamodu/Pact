@@ -3,13 +3,37 @@
 import { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { ethers } from "ethers";
 import { NavigationBar } from "@/components/NavigationBar";
 import { getPlanDetails } from "@/lib/contracts";
+import { useAuth } from "@/contexts/AuthProvider";
+import { signData as signTeeData } from "@/lib/express-proxy";
+
+// EIP-3009 TransferWithAuthorization types — kept local to the client bundle
+// rather than imported from lib/openfort.ts, which pulls in the Node-only
+// Openfort SDK and would break in the browser.
+const TRANSFER_WITH_AUTHORIZATION_TYPES = {
+  TransferWithAuthorization: [
+    { name: "from", type: "address" },
+    { name: "to", type: "address" },
+    { name: "value", type: "uint256" },
+    { name: "validAfter", type: "uint256" },
+    { name: "validBefore", type: "uint256" },
+    { name: "nonce", type: "bytes32" },
+  ],
+};
+
+function randomNonce(): string {
+  const bytes = new Uint8Array(32);
+  crypto.getRandomValues(bytes);
+  return "0x" + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
+}
 
 export default function MerchantPlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
   const network = (searchParams.get("network") as "arbitrum" | "base") || "arbitrum";
+  const { publicAddress } = useAuth();
 
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
@@ -39,6 +63,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
     fetchError?: string | null;
   } | null>(null);
   const [insightsPayer, setInsightsPayer] = useState("");
+  const [settlementTxHash, setSettlementTxHash] = useState<string | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
 
@@ -52,18 +77,73 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
     setLoadingInsights(true);
     setInsightsError(null);
     try {
-      const signRes = await fetch("/api/insights/plan-health/pay-signature", { method: "POST", headers: { "Content-Type": "application/json" } });
-      const signData = await signRes.json();
-      if (!signRes.ok || !signData.success) throw new Error(signData.error || "Failed to generate payment signature.");
+      if (!publicAddress) throw new Error("Wallet not ready — please wait a moment and try again.");
 
+      // 1. x402 challenge — ask the server what payment it requires (HTTP 402)
+      const challengeRes = await fetch(`/api/insights/plan-health?planId=${id}&network=${network}`);
+      if (challengeRes.status !== 402) {
+        const j = await challengeRes.json().catch(() => ({}));
+        throw new Error(j.error || "Expected a payment challenge from the server.");
+      }
+      const challenge = await challengeRes.json();
+      const req = challenge.paymentRequirements;
+
+      // 2. Build and sign an EIP-3009 TransferWithAuthorization from the
+      // merchant's own Magic TEE wallet — this is a real payment authorization,
+      // not a self-signed demo.
+      const nowSeconds = Math.floor(Date.now() / 1000);
+      const validAfter = nowSeconds - 600;
+      const validBefore = nowSeconds + 300;
+      const nonce = randomNonce();
+
+      const domain = {
+        name: req.extra?.name || "USD Coin",
+        version: req.extra?.version || "2",
+        chainId: 84532, // Base Sepolia
+        verifyingContract: req.asset,
+      };
+      const message = {
+        from: publicAddress,
+        to: req.payTo,
+        value: BigInt(req.maxAmountRequired),
+        validAfter: BigInt(validAfter),
+        validBefore: BigInt(validBefore),
+        nonce,
+      };
+
+      const hash = ethers.TypedDataEncoder.hash(domain, TRANSFER_WITH_AUTHORIZATION_TYPES, message);
+      const sig = await signTeeData(hash, "ETH");
+      const signature = ethers.Signature.from({ r: sig.r, s: sig.s, v: sig.v }).serialized;
+
+      const payload = {
+        x402Version: 2,
+        scheme: "exact",
+        network: req.network,
+        payload: {
+          signature,
+          authorization: {
+            from: publicAddress,
+            to: req.payTo,
+            value: req.maxAmountRequired,
+            validAfter: validAfter.toString(),
+            validBefore: validBefore.toString(),
+            nonce,
+          },
+        },
+      };
+      const encoded = btoa(JSON.stringify(payload));
+
+      // 3. Retry with proof of payment — server verifies the signature, then
+      // broadcasts transferWithAuthorization on-chain to actually settle it.
       const dataRes = await fetch(`/api/insights/plan-health?planId=${id}&network=${network}`, {
-        headers: { "payment-signature": signData.paymentHeader }
+        headers: { "payment-signature": encoded }
       });
       const data = await dataRes.json();
-      if (!dataRes.ok || !data.success) throw new Error(data.error || "Failed to fetch insights.");
+      if (!dataRes.ok || !data.success) throw new Error(data.details || data.error || "Failed to fetch insights.");
 
       setInsightsData(data.data);
-      setInsightsPayer(signData.payerAddress);
+      setInsightsPayer(publicAddress);
+      setSettlementTxHash(data.settlementTxHash || null);
     } catch (err: any) {
       setInsightsError(err.message || "Unexpected error.");
     } finally {
@@ -207,7 +287,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                 {/* Left Column — 2/3 width */}
                 <div className="lg:col-span-2 space-y-6">
 
-                  {/* Plan Health Insights — x402 Openfort integration */}
+                  {/* Plan Health Insights — real x402 settlement via EIP-3009 */}
                   <div className="bg-white border border-[#3A3A38]/15 relative">
                     <div className="corner-marker corner-tl"></div>
                     <div className="corner-marker corner-tr"></div>
@@ -216,7 +296,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                     <div className="flex justify-between items-center px-6 py-5 border-b border-[#3A3A38]/10">
                       <div>
                         <h3 className="font-space text-lg font-bold uppercase tracking-tight">Plan Health Insights</h3>
-                        <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">Powered by Openfort Backend Wallets & x402 Micropayments</p>
+                        <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">x402 pay-per-call — settled on-chain via your wallet (Base Sepolia testnet)</p>
                       </div>
                       <div className="border border-[#1A3C2B]/10 bg-[#1A3C2B]/5 px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider text-[#1A3C2B] font-bold flex-shrink-0">
                         0.05 USDC / Call
@@ -226,10 +306,10 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                       {!insightsData ? (
                         <div className="space-y-4">
                           <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed">
-                            Unlock advanced analytics — MRR forecasting, churn rate, LTV, and payment success rates — via a secure EIP-3009 payment signed automatically by your Openfort backend wallet.
+                            Unlock advanced analytics — MRR forecasting, churn rate, LTV, and payment success rates. You'll sign an EIP-3009 payment authorization with your own wallet, which is then broadcast on-chain to settle 0.05 testnet USDC (Base Sepolia).
                           </p>
                           <button onClick={handleUnlockInsights} disabled={loadingInsights} className="bg-[#1A3C2B] text-white hover:opacity-90 font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm transition-all cursor-pointer disabled:opacity-50">
-                            {loadingInsights ? "PROCESSING X402 PAYMENT..." : "UNLOCK INSIGHTS WITH X402"}
+                            {loadingInsights ? "SETTLING X402 PAYMENT..." : "UNLOCK INSIGHTS WITH X402"}
                           </button>
                           {insightsError && <p className="font-mono text-[10px] text-red-600 uppercase tracking-wider bg-red-50 border border-red-200/50 p-3">Error: {insightsError}</p>}
                         </div>
@@ -253,15 +333,26 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                               <span className="font-space text-2xl font-bold text-green-600">{insightsData.dailyPaymentsSucceeded}</span>
                             </div>
                             <div className="space-y-1 col-span-2">
-                              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Payer Wallet (Openfort)</span>
+                              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Payer Wallet</span>
                               <span className="font-mono text-[10px] font-bold break-all opacity-70">{insightsPayer}</span>
                             </div>
                           </div>
                           {insightsData.fetchError && (
                             <p className="font-mono text-[9px] text-amber-700 bg-amber-50 border border-amber-200/50 p-2 uppercase tracking-wider">⚠ {insightsData.fetchError}</p>
                           )}
-                          <div className="flex items-center justify-between pt-4 border-t border-[#3A3A38]/10">
-                            <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B]">✓ x402 Payment Verified Off-Chain</span>
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4 border-t border-[#3A3A38]/10">
+                            {settlementTxHash ? (
+                              <a
+                                href={`https://sepolia.basescan.org/tx/${settlementTxHash}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B] hover:text-coral transition-colors"
+                              >
+                                ✓ Settled On-Chain — View Tx
+                              </a>
+                            ) : (
+                              <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B]">✓ x402 Payment Verified</span>
+                            )}
                             <span className="font-mono text-[9px] opacity-40">Unlocked: {new Date(insightsData.unlockedAt).toLocaleTimeString()}</span>
                           </div>
                         </div>

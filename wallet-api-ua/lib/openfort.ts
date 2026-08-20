@@ -1,6 +1,7 @@
 import OpenfortModule from "@openfort/openfort-node";
 const Openfort = (OpenfortModule as any).default || OpenfortModule;
 import { verifyTypedData, getAddress, type Address, type Hex } from "viem";
+import { ethers } from "ethers";
 
 const apiKey = process.env.OPENFORT_SECRET_KEY;
 const walletSecret = process.env.OPENFORT_WALLET_SECRET;
@@ -130,6 +131,12 @@ export async function verifyOffChainPayment(
     throw new Error("Payment is not addressed to the correct recipient.");
   }
 
+  // Payer must not be the payee — a self-payment proves nothing about willingness
+  // to pay and must never be accepted as valid settlement.
+  if (getAddress(authorization.from) === getAddress(authorization.to)) {
+    throw new Error("Payer and payee must not be the same address.");
+  }
+
   // Amount validation
   if (BigInt(authorization.value) < BigInt(requirements.maxAmountRequired)) {
     throw new Error("Payment amount is less than the required amount.");
@@ -174,4 +181,59 @@ export async function verifyOffChainPayment(
   }
 
   return true;
+}
+
+const BASE_SEPOLIA_RPC = "https://sepolia.base.org";
+
+const USDC_EIP3009_ABI = [
+  "function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, uint8 v, bytes32 r, bytes32 s) external",
+  "function authorizationState(address authorizer, bytes32 nonce) external view returns (bool)",
+];
+
+/**
+ * Broadcasts the already-verified EIP-3009 authorization on-chain, moving
+ * real (testnet) USDC from payer to payee. This is the step that turns the
+ * signature into an actual settled payment rather than a signed promise —
+ * verifyOffChainPayment alone never touches the chain.
+ *
+ * The relayer pays gas (EIP-3009 is a meta-transaction: any third party can
+ * submit it). The USDC contract's own authorizationState mapping is the
+ * replay guard — a reused nonce reverts on-chain, so no separate DB tracking
+ * is needed for correctness.
+ */
+export async function settlePaymentOnChain(payment: PaymentPayload): Promise<{ txHash: string }> {
+  const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+  if (!relayerKey) {
+    throw new Error("RELAYER_PRIVATE_KEY not configured — cannot broadcast settlement.");
+  }
+
+  const { authorization, signature } = payment.payload;
+  const sig = ethers.Signature.from(signature);
+
+  const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
+  const relayer = new ethers.Wallet(relayerKey, provider);
+  const usdc = new ethers.Contract(USDC_ADDRESSES[84532], USDC_EIP3009_ABI, relayer);
+
+  const alreadyUsed: boolean = await usdc.authorizationState(authorization.from, authorization.nonce);
+  if (alreadyUsed) {
+    throw new Error("This payment authorization has already been settled.");
+  }
+
+  const tx = await usdc.transferWithAuthorization(
+    authorization.from,
+    authorization.to,
+    BigInt(authorization.value),
+    BigInt(authorization.validAfter),
+    BigInt(authorization.validBefore),
+    authorization.nonce,
+    sig.v,
+    sig.r,
+    sig.s
+  );
+  const receipt = await tx.wait(1);
+  if (receipt.status !== 1) {
+    throw new Error("Settlement transaction reverted on-chain.");
+  }
+
+  return { txHash: tx.hash };
 }

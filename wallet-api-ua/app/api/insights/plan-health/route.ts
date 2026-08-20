@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import {
   verifyOffChainPayment,
+  settlePaymentOnChain,
+  decodeAndParsePaymentHeader,
   BACKEND_WALLET_ADDRESS,
   type PaymentRequirements
 } from "@/lib/openfort";
@@ -50,10 +52,14 @@ export async function GET(req: Request) {
       return NextResponse.json(challengeResponse, { status: 402, headers });
     }
 
+    let settlementTxHash: string;
     try {
       await verifyOffChainPayment(paymentHeader, PLAN_HEALTH_REQUIREMENTS);
+      const payment = decodeAndParsePaymentHeader(paymentHeader);
+      const settlement = await settlePaymentOnChain(payment);
+      settlementTxHash = settlement.txHash;
     } catch (verifErr: any) {
-      console.error("[x402] Verification failed:", verifErr.message || verifErr);
+      console.error("[x402] Verification or settlement failed:", verifErr.message || verifErr);
       return NextResponse.json(
         { error: "Payment verification failed", details: verifErr.message || "Invalid signature" },
         { status: 402 }
@@ -126,9 +132,8 @@ export async function GET(req: Request) {
 
     return NextResponse.json({
       success: true,
-      message: analyticsData.isDemoData
-        ? "Payment successfully verified. Demo analytics unlocked!"
-        : "Payment successfully verified. Real-time product analytics unlocked!",
+      message: "Payment settled on-chain. Real-time product analytics unlocked!",
+      settlementTxHash,
       data: analyticsData
     }, {
       headers: { "PAYMENT-RESPONSE": "Payment accepted" }
