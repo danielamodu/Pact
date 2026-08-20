@@ -55,12 +55,14 @@ export const NETWORKS = {
  */
 export function getProvider(networkKey: "arbitrum" | "base") {
   const config = NETWORKS[networkKey];
-  // ethers batches concurrent requests into one JSON-RPC array by default
-  // (up to batchMaxCount, default 100). Base's public RPC rejects any batch
-  // over 10 calls outright, which silently failed every chunked getLogs
-  // query once queryEvents fired several requests in parallel. Disabling
-  // batching sends each call as its own HTTP request instead.
-  return new ethers.JsonRpcProvider(config.rpc, undefined, { batchMaxCount: 1 });
+  // ethers bundles concurrent requests into one JSON-RPC array (default 100).
+  // Base's public RPC rejects any batch over 10 calls, so cap it there —
+  // dropping to 1 works but turns Base's ~140 chunked getLogs calls into 140
+  // separate HTTP round trips, which is what made the dashboard crawl.
+  // Arbitrum has no such cap and doesn't chunk, so it keeps full batching.
+  return new ethers.JsonRpcProvider(config.rpc, undefined, {
+    batchMaxCount: networkKey === "base" ? 10 : 100,
+  });
 }
 
 /**
@@ -735,7 +737,12 @@ export async function getRecentProtocolActivity(limit = 20): Promise<ProtocolEve
         const provider = getProvider(networkKey);
         const contract = new ethers.Contract(PACT_REGISTRY_ADDRESS, PACT_REGISTRY_ABI, provider);
         const latestBlock = await provider.getBlockNumber();
-        const recentFrom = Math.max(NETWORKS[networkKey].deployBlock, latestBlock - 500_000);
+        // Base chunks this into 10k-block getLogs calls, so a wide window costs
+        // real round trips. ~2s blocks there means 150k covers about 3 days,
+        // which is plenty for a "recent activity" feed. Arbitrum doesn't chunk,
+        // so it keeps the wider window at no cost.
+        const lookback = networkKey === "base" ? 150_000 : 500_000;
+        const recentFrom = Math.max(NETWORKS[networkKey].deployBlock, latestBlock - lookback);
         const explorerBase = networkKey === "arbitrum" ? "https://arbiscan.io/tx" : "https://basescan.org/tx";
 
         const [pullEvents, subEvents] = await Promise.all([
