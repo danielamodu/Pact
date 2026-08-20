@@ -25,12 +25,34 @@ export default function SetupPage() {
   const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
   const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [ethPrice, setEthPrice] = useState<number | null>(null);
 
   useEffect(() => {
     if (publicAddress) {
       setPayoutAddress(publicAddress);
     }
   }, [publicAddress]);
+
+  useEffect(() => {
+    async function fetchEthPrice() {
+      try {
+        const res = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.ethereum?.usd) setEthPrice(data.ethereum.usd);
+        }
+      } catch (err) {
+        console.warn("Failed to fetch ETH price:", err);
+      }
+    }
+    fetchEthPrice();
+  }, []);
+
+  const priceNum = parseFloat(price);
+  const priceInUsd =
+    token === "ETH" && ethPrice && !isNaN(priceNum) && priceNum > 0
+      ? (priceNum * ethPrice).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+      : null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (e && e.preventDefault) e.preventDefault();
@@ -287,7 +309,7 @@ export default function SetupPage() {
                     </div>
                   </div>
                   <p className="font-mono text-[9px] opacity-50 tracking-tight mt-1">
-                    Price per billing cycle
+                    {priceInUsd ? `≈ $${priceInUsd} USD per billing cycle` : "Price per billing cycle"}
                   </p>
                 </div>
 
@@ -438,6 +460,7 @@ export default function SetupPage() {
                       </div>
                       <div className="font-mono text-[10px] uppercase tracking-widest opacity-50 mt-1">
                         {cycle === "Custom" ? `Every ${customDays || "0"} days` : `${cycle} billing cycle`}
+                        {priceInUsd && ` · ≈ $${priceInUsd}`}
                       </div>
                     </div>
                   </div>
