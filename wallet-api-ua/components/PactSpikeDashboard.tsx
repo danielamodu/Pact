@@ -19,6 +19,8 @@ export function PactSpikeDashboard() {
   const [alertVisible, setAlertVisible] = useState(true);
   const [activity, setActivity] = useState<ProtocolEvent[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
+  const [view, setView] = useState<"subscriber" | "merchant">("subscriber");
+  const [autoDetected, setAutoDetected] = useState(false);
 
   useEffect(() => {
     async function loadData() {
@@ -39,10 +41,19 @@ export function PactSpikeDashboard() {
         const totalUsdc = (parseFloat(arbUsdc) + parseFloat(baseUsdc)).toFixed(2);
         const totalEth = (parseFloat(arbEth) + parseFloat(baseEth)).toFixed(5);
         setBalance(`${totalEth} ETH / ${totalUsdc} USDC`);
-        
+
         // Combine plans and subscriptions
-        setPlans([...arbPlans, ...basePlans]);
-        setSubscriptions([...arbSubs, ...baseSubs]);
+        const allPlans = [...arbPlans, ...basePlans];
+        const allSubs = [...arbSubs, ...baseSubs];
+        setPlans(allPlans);
+        setSubscriptions(allSubs);
+
+        // Land on whichever tab actually has content, without fighting a
+        // manual switch on a later refetch.
+        if (!autoDetected) {
+          if (allSubs.length === 0 && allPlans.length > 0) setView("merchant");
+          setAutoDetected(true);
+        }
       } catch (err) {
         console.error("Error loading dashboard data:", err);
       } finally {
@@ -81,6 +92,12 @@ export function PactSpikeDashboard() {
     }, 0)
     .toFixed(2);
 
+  // Merchant-side overview totals
+  const totalSubscribersAcrossPlans = plans.reduce((acc, p) => acc + (p.subscribers || 0), 0);
+  const totalPlanRevenue = plans
+    .reduce((acc, p) => acc + (parseFloat(String(p.revenue).replace(/[^0-9.]/g, "")) || 0), 0)
+    .toFixed(2);
+
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
       <div className="mosaic-bg"></div>
@@ -112,33 +129,80 @@ export function PactSpikeDashboard() {
             </section>
           )}
 
-          {/* Overview Metrics Cards */}
-          <section id="overview" className="py-4 sm:py-8">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-              <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Active Subscriptions</span>
-                <div className="flex items-baseline gap-2">
-                  <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : String(subscriptions.filter(s => s.status === "active").length).padStart(2, "0")}</h2>
-                  <span className="text-[#9EFFBF] font-mono text-xs font-bold">on-chain</span>
-                </div>
-              </div>
-              <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Monthly Spending</span>
-                <div className="flex items-baseline gap-2">
-                  <h2 className="font-space text-4xl sm:text-5xl font-bold">${loading ? "..." : totalMonthlySpending}</h2>
-                  <span className="font-mono text-xs opacity-50">USDC</span>
-                </div>
-              </div>
-              <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Available Balance</span>
-                <div className="flex items-baseline gap-2">
-                  <h2 className="font-space text-xl sm:text-2xl font-bold text-forest leading-tight">{loading ? "..." : balance}</h2>
-                </div>
-              </div>
+          {/* Subscriber / Merchant tab switcher */}
+          <section id="view-switcher" className="pt-4 sm:pt-8">
+            <div className="inline-flex border border-[#3A3A38]/20 bg-white/50 rounded-sm p-1 gap-1">
+              <button
+                onClick={() => setView("subscriber")}
+                className={`px-5 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest rounded-sm transition-colors cursor-pointer ${
+                  view === "subscriber" ? "bg-forest text-white" : "text-forest/50 hover:text-forest"
+                }`}
+              >
+                Subscriptions
+              </button>
+              <button
+                onClick={() => setView("merchant")}
+                className={`px-5 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest rounded-sm transition-colors cursor-pointer ${
+                  view === "merchant" ? "bg-forest text-white" : "text-forest/50 hover:text-forest"
+                }`}
+              >
+                Merchant
+              </button>
             </div>
           </section>
 
+          {/* Overview Metrics Cards */}
+          <section id="overview" className="py-4 sm:py-8">
+            {view === "subscriber" ? (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
+                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Active Subscriptions</span>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : String(subscriptions.filter(s => s.status === "active").length).padStart(2, "0")}</h2>
+                    <span className="text-[#9EFFBF] font-mono text-xs font-bold">on-chain</span>
+                  </div>
+                </div>
+                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
+                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Monthly Spending</span>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="font-space text-4xl sm:text-5xl font-bold">${loading ? "..." : totalMonthlySpending}</h2>
+                    <span className="font-mono text-xs opacity-50">USDC</span>
+                  </div>
+                </div>
+                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
+                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Available Balance</span>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="font-space text-xl sm:text-2xl font-bold text-forest leading-tight">{loading ? "..." : balance}</h2>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
+                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Plans Live</span>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : String(plans.length).padStart(2, "0")}</h2>
+                    <span className="text-[#9EFFBF] font-mono text-xs font-bold">on-chain</span>
+                  </div>
+                </div>
+                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
+                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Total Subscribers</span>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : totalSubscribersAcrossPlans}</h2>
+                  </div>
+                </div>
+                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
+                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Total Revenue</span>
+                  <div className="flex items-baseline gap-2">
+                    <h2 className="font-space text-4xl sm:text-5xl font-bold">${loading ? "..." : totalPlanRevenue}</h2>
+                  </div>
+                </div>
+              </div>
+            )}
+          </section>
+
           {/* My Subscriptions List */}
+          {view === "subscriber" && (
           <section id="subscriptions" className="space-y-8 pb-12 border-b border-[#3A3A38]/10">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
               <div className="border-l-4 border-forest pl-4">
@@ -201,6 +265,7 @@ export function PactSpikeDashboard() {
               </div>
             )}
           </section>
+          )}
 
           {/* Protocol Activity Feed */}
           <section id="protocol-feed" className="space-y-8 py-12 border-t border-[#3A3A38]/10">
@@ -264,6 +329,7 @@ export function PactSpikeDashboard() {
           </section>
 
           {/* Merchant Plans List */}
+          {view === "merchant" && (
           <section id="merchant" className="space-y-8 py-12">
             {hasPlans ? (
               <div className="space-y-8">
@@ -304,6 +370,7 @@ export function PactSpikeDashboard() {
               </div>
             )}
           </section>
+          )}
 
         </div>
       </main>
