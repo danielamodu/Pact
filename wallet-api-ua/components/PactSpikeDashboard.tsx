@@ -267,6 +267,50 @@ export function PactSpikeDashboard() {
           </section>
           )}
 
+          {/* Merchant Plans List */}
+          {view === "merchant" && (
+          <section id="merchant" className="space-y-8 py-12">
+            {hasPlans ? (
+              <div className="space-y-8">
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                  <div className="border-l-4 border-gold pl-4">
+                    <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">My Plans</h2>
+                    <p className="font-mono text-[10px] tracking-widest uppercase opacity-50">Subscriptions and services you are offering as a merchant</p>
+                  </div>
+                  <Link href="/setup" id="create-plan-btn" className="bg-forest text-white font-mono text-[10px] tracking-widest uppercase px-6 py-4 rounded-sm text-center">
+                    Create New Plan
+                  </Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {plans.map((plan, i) => (
+                    <PlanCard
+                      key={plan.id || i}
+                      planId={plan.id}
+                      network={plan.network}
+                      planName={plan.planName}
+                      token={plan.token}
+                      status={plan.status}
+                      price={plan.price}
+                      subscribers={plan.subscribers}
+                      revenue={plan.revenue}
+                      onToggleActive={() => handleTogglePlan(plan.id)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="border border-[#3A3A38]/20 bg-white/30 p-12 text-center">
+                <p className="font-mono text-[10px] opacity-40 uppercase tracking-[0.2em] mb-4">No plans created yet</p>
+                <h3 className="font-space text-2xl font-bold mb-8 uppercase tracking-tight">Start accepting on-chain subscriptions</h3>
+                <Link href="/setup" id="empty-create-plan-btn" className="inline-block bg-forest text-white font-mono text-[10px] tracking-widest uppercase px-8 py-4 rounded-sm hover:opacity-95 transition-opacity">
+                  Create Your First Plan
+                </Link>
+              </div>
+            )}
+          </section>
+          )}
+
           {/* Protocol Activity Feed */}
           <section id="protocol-feed" className="space-y-8 py-12 border-t border-[#3A3A38]/10">
             <div className="border-l-4 border-[#9EFFBF] pl-4">
@@ -327,50 +371,6 @@ export function PactSpikeDashboard() {
               )}
             </div>
           </section>
-
-          {/* Merchant Plans List */}
-          {view === "merchant" && (
-          <section id="merchant" className="space-y-8 py-12">
-            {hasPlans ? (
-              <div className="space-y-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                  <div className="border-l-4 border-gold pl-4">
-                    <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">My Plans</h2>
-                    <p className="font-mono text-[10px] tracking-widest uppercase opacity-50">Subscriptions and services you are offering as a merchant</p>
-                  </div>
-                  <Link href="/setup" id="create-plan-btn" className="bg-forest text-white font-mono text-[10px] tracking-widest uppercase px-6 py-4 rounded-sm text-center">
-                    Create New Plan
-                  </Link>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {plans.map((plan, i) => (
-                    <PlanCard
-                      key={plan.id || i}
-                      planId={plan.id}
-                      network={plan.network}
-                      planName={plan.planName}
-                      token={plan.token}
-                      status={plan.status}
-                      price={plan.price}
-                      subscribers={plan.subscribers}
-                      revenue={plan.revenue}
-                      onToggleActive={() => handleTogglePlan(plan.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="border border-[#3A3A38]/20 bg-white/30 p-12 text-center">
-                <p className="font-mono text-[10px] opacity-40 uppercase tracking-[0.2em] mb-4">No plans created yet</p>
-                <h3 className="font-space text-2xl font-bold mb-8 uppercase tracking-tight">Start accepting on-chain subscriptions</h3>
-                <Link href="/setup" id="empty-create-plan-btn" className="inline-block bg-forest text-white font-mono text-[10px] tracking-widest uppercase px-8 py-4 rounded-sm hover:opacity-95 transition-opacity">
-                  Create Your First Plan
-                </Link>
-              </div>
-            )}
-          </section>
-          )}
 
         </div>
       </main>
