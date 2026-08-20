@@ -196,29 +196,112 @@ const USDC_EIP3009_ABI = [
  * signature into an actual settled payment rather than a signed promise —
  * verifyOffChainPayment alone never touches the chain.
  *
- * The relayer pays gas (EIP-3009 is a meta-transaction: any third party can
- * submit it). The USDC contract's own authorizationState mapping is the
- * replay guard — a reused nonce reverts on-chain, so no separate DB tracking
- * is needed for correctness.
+ * The settlement is submitted by the **Openfort backend wallet**, which acts
+ * as the x402 facilitator: it signs the transaction through Openfort's API
+ * (the key never leaves Openfort) and pays the gas. EIP-3009 is a
+ * meta-transaction, so a third party submitting it is exactly the intended
+ * design — the payer's signature is what authorizes the transfer.
+ *
+ * The USDC contract's own authorizationState mapping is the replay guard —
+ * a reused nonce reverts on-chain, so no separate DB tracking is needed.
+ *
+ * If Openfort is unreachable, this falls back to the local relayer so a live
+ * demo never hard-fails; the returned `settledBy` says which path ran so the
+ * caller can report it honestly rather than implying Openfort did the work.
  */
-export async function settlePaymentOnChain(payment: PaymentPayload): Promise<{ txHash: string }> {
-  const relayerKey = process.env.RELAYER_PRIVATE_KEY;
-  if (!relayerKey) {
-    throw new Error("RELAYER_PRIVATE_KEY not configured — cannot broadcast settlement.");
-  }
-
+export async function settlePaymentOnChain(
+  payment: PaymentPayload
+): Promise<{ txHash: string; settledBy: "openfort" | "relayer" }> {
   const { authorization, signature } = payment.payload;
   const sig = ethers.Signature.from(signature);
-
   const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
-  const relayer = new ethers.Wallet(relayerKey, provider);
-  const usdc = new ethers.Contract(USDC_ADDRESSES[84532], USDC_EIP3009_ABI, relayer);
 
-  const alreadyUsed: boolean = await usdc.authorizationState(authorization.from, authorization.nonce);
+  // Replay guard, checked before either signing path spends gas.
+  const usdcRead = new ethers.Contract(USDC_ADDRESSES[84532], USDC_EIP3009_ABI, provider);
+  const alreadyUsed: boolean = await usdcRead.authorizationState(
+    authorization.from,
+    authorization.nonce
+  );
   if (alreadyUsed) {
     throw new Error("This payment authorization has already been settled.");
   }
 
+  const iface = new ethers.Interface(USDC_EIP3009_ABI);
+  const data = iface.encodeFunctionData("transferWithAuthorization", [
+    authorization.from,
+    authorization.to,
+    BigInt(authorization.value),
+    BigInt(authorization.validAfter),
+    BigInt(authorization.validBefore),
+    authorization.nonce,
+    sig.v,
+    sig.r,
+    sig.s,
+  ]);
+
+  // ── Preferred path: Openfort backend wallet signs and pays ────────────────
+  if (apiKey && walletSecret && BACKEND_WALLET_ID && BACKEND_WALLET_ADDRESS) {
+    try {
+      const openfort = getOpenfortClient();
+      const account = await openfort.accounts.evm.backend.get({ id: BACKEND_WALLET_ID });
+
+      const from = ethers.getAddress(account.address);
+      const [nonce, feeData] = await Promise.all([
+        provider.getTransactionCount(from),
+        provider.getFeeData(),
+      ]);
+
+      const maxFeePerGas = feeData.maxFeePerGas
+        ? (feeData.maxFeePerGas * BigInt(150)) / BigInt(100)
+        : BigInt(2_000_000_000);
+      const maxPriorityFeePerGas = feeData.maxPriorityFeePerGas
+        ? (feeData.maxPriorityFeePerGas * BigInt(130)) / BigInt(100)
+        : BigInt(1_000_000);
+
+      let gasLimit: bigint;
+      try {
+        const est = await provider.estimateGas({ from, to: USDC_ADDRESSES[84532], data });
+        gasLimit = (est * BigInt(140)) / BigInt(100);
+      } catch {
+        gasLimit = BigInt(150_000);
+      }
+
+      const tx = ethers.Transaction.from({
+        type: 2,
+        chainId: 84532,
+        to: USDC_ADDRESSES[84532],
+        data,
+        nonce,
+        gasLimit,
+        maxFeePerGas,
+        maxPriorityFeePerGas,
+        value: 0,
+      });
+
+      // Openfort signs the transaction hash — the private key stays inside
+      // Openfort's infrastructure and is never present in this process.
+      const openfortSig = await account.sign({ hash: tx.unsignedHash as `0x${string}` });
+      tx.signature = ethers.Signature.from(openfortSig);
+
+      const sent = await provider.broadcastTransaction(tx.serialized);
+      const receipt = await sent.wait(1);
+      if (!receipt || receipt.status !== 1) {
+        throw new Error("Settlement transaction reverted on-chain.");
+      }
+      return { txHash: sent.hash, settledBy: "openfort" };
+    } catch (err: any) {
+      console.warn("[x402] Openfort settlement failed, falling back to relayer:", err?.message || err);
+    }
+  }
+
+  // ── Fallback: local relayer submits the same meta-transaction ─────────────
+  const relayerKey = process.env.RELAYER_PRIVATE_KEY;
+  if (!relayerKey) {
+    throw new Error("Settlement unavailable: Openfort is not configured and no relayer key is set.");
+  }
+
+  const relayer = new ethers.Wallet(relayerKey, provider);
+  const usdc = new ethers.Contract(USDC_ADDRESSES[84532], USDC_EIP3009_ABI, relayer);
   const tx = await usdc.transferWithAuthorization(
     authorization.from,
     authorization.to,
@@ -235,5 +318,5 @@ export async function settlePaymentOnChain(payment: PaymentPayload): Promise<{ t
     throw new Error("Settlement transaction reverted on-chain.");
   }
 
-  return { txHash: tx.hash };
+  return { txHash: tx.hash, settledBy: "relayer" };
 }

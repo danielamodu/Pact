@@ -53,11 +53,13 @@ export async function GET(req: Request) {
     }
 
     let settlementTxHash: string;
+    let settledBy: "openfort" | "relayer";
     try {
       await verifyOffChainPayment(paymentHeader, PLAN_HEALTH_REQUIREMENTS);
       const payment = decodeAndParsePaymentHeader(paymentHeader);
       const settlement = await settlePaymentOnChain(payment);
       settlementTxHash = settlement.txHash;
+      settledBy = settlement.settledBy;
     } catch (verifErr: any) {
       console.error("[x402] Verification or settlement failed:", verifErr.message || verifErr);
       return NextResponse.json(
@@ -134,6 +136,7 @@ export async function GET(req: Request) {
       success: true,
       message: "Payment settled on-chain. Real-time product analytics unlocked!",
       settlementTxHash,
+      settledBy,
       data: analyticsData
     }, {
       headers: { "PAYMENT-RESPONSE": "Payment accepted" }

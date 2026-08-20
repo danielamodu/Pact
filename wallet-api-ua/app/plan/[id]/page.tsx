@@ -64,6 +64,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
   } | null>(null);
   const [insightsPayer, setInsightsPayer] = useState("");
   const [settlementTxHash, setSettlementTxHash] = useState<string | null>(null);
+  const [settledBy, setSettledBy] = useState<"openfort" | "relayer" | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
 
@@ -144,6 +145,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
       setInsightsData(data.data);
       setInsightsPayer(publicAddress);
       setSettlementTxHash(data.settlementTxHash || null);
+      setSettledBy(data.settledBy || null);
     } catch (err: any) {
       setInsightsError(err.message || "Unexpected error.");
     } finally {
@@ -348,7 +350,9 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                                 rel="noopener noreferrer"
                                 className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B] hover:text-coral transition-colors"
                               >
-                                ✓ Settled On-Chain — View Tx
+                                {settledBy === "openfort"
+                                  ? "✓ Settled by Openfort Backend Wallet — View Tx"
+                                  : "✓ Settled On-Chain — View Tx"}
                               </a>
                             ) : (
                               <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B]">✓ x402 Payment Verified</span>
