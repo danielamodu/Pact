@@ -23,7 +23,13 @@ const PLAN_HEALTH_REQUIREMENTS: PaymentRequirements = {
   maxTimeoutSeconds: 300,
   asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia USDC
   extra: {
-    name: "USD Coin",
+    // Must match the token's own EIP-712 domain exactly or transferWithAuthorization
+    // reverts with "FiatTokenV2: invalid signature". Base Sepolia USDC reports
+    // name() == "USDC" (NOT "USD Coin", which is what Base *mainnet* USDC uses)
+    // and version() == "2"; verified against its on-chain DOMAIN_SEPARATOR.
+    // Both the client signer and verifyOffChainPayment read these values, so
+    // a wrong value here passes our own verification and only fails on-chain.
+    name: "USDC",
     version: "2"
   }
 };

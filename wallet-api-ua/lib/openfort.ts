@@ -150,8 +150,11 @@ export async function verifyOffChainPayment(
   }
 
   // Domain configuration
+  // Domain must mirror the token contract's own EIP-712 domain exactly.
+  // Base Sepolia USDC uses name "USDC" (Base mainnet uses "USD Coin"), so the
+  // requirements carry the value and this fallback only guards a missing field.
   const domain = {
-    name: requirements.extra?.name || "USD Coin",
+    name: requirements.extra?.name || "USDC",
     version: requirements.extra?.version || "2",
     chainId,
     verifyingContract: getAddress(requirements.asset),

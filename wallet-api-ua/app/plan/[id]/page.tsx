@@ -98,7 +98,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
       const nonce = randomNonce();
 
       const domain = {
-        name: req.extra?.name || "USD Coin",
+        name: req.extra?.name || "USDC",
         version: req.extra?.version || "2",
         chainId: 84532, // Base Sepolia
         verifyingContract: req.asset,
