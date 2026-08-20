@@ -136,7 +136,13 @@ async function processEntry(
     const plan = await registry.getPlan(scope.planId);
     if (!plan.active) return { key: storeKey, status: "skipped", reason: "Plan is paused" };
 
-    const amount = scope.maxAmount;
+    // Charge what the plan actually costs today, never more than the subscriber
+    // authorized. If the plan price has risen past the signed cap, halt rather
+    // than silently pulling the full cap.
+    if (BigInt(plan.price) > scope.maxAmount) {
+      return { key: storeKey, status: "skipped", reason: "Plan price exceeds authorized cap — subscriber must re-authorize" };
+    }
+    const amount = BigInt(plan.price);
 
     // Balance check
     if (scope.token === ethers.ZeroAddress) {
@@ -268,7 +274,7 @@ export async function POST(req: Request) {
   // Auth
   const authHeader = req.headers.get("authorization") || "";
   const secret = process.env.KEEPER_API_SECRET;
-  if (secret && authHeader !== `Bearer ${secret}`) {
+  if (!secret || authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -279,24 +285,41 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, message: "No delegations stored.", results: [] });
   }
 
-  const entries: [string, DelegationEntry][] = rows.map((row: any) => [
-    row.store_key,
-    {
-      privateKey: isEncrypted(row.private_key) ? decrypt(row.private_key) : row.private_key,
-      ownerSignature: row.owner_signature,
-      subscriberAddress: row.subscriber_address,
-      planId: row.plan_id,
-      network: row.network,
-      scope: row.scope,
-    } as DelegationEntry,
-  ]);
+  // Decrypt row-by-row so one corrupted/undecryptable delegation can't crash
+  // the entire run and silently stop every other subscriber's billing.
+  const entries: [string, DelegationEntry][] = [];
+  const decryptErrors: PullResult[] = [];
+  for (const row of rows as any[]) {
+    try {
+      entries.push([
+        row.store_key,
+        {
+          privateKey: isEncrypted(row.private_key) ? decrypt(row.private_key) : row.private_key,
+          ownerSignature: row.owner_signature,
+          subscriberAddress: row.subscriber_address,
+          planId: row.plan_id,
+          network: row.network,
+          scope: row.scope,
+        } as DelegationEntry,
+      ]);
+    } catch (err: any) {
+      decryptErrors.push({
+        key: row.store_key,
+        status: "error",
+        reason: `Failed to decrypt stored session key: ${err.message || String(err)}`,
+      });
+    }
+  }
 
   // Process all entries
-  const results: PullResult[] = await Promise.all(
-    entries.map(([key, entry]) =>
-      processEntry(key, entry, entry.network || key.split("_").pop() || "arbitrum")
-    )
-  );
+  const results: PullResult[] = [
+    ...decryptErrors,
+    ...(await Promise.all(
+      entries.map(([key, entry]) =>
+        processEntry(key, entry, entry.network || key.split("_").pop() || "arbitrum")
+      )
+    )),
+  ];
 
   const executed = results.filter((r) => r.status === "executed");
   const skipped = results.filter((r) => r.status === "skipped");

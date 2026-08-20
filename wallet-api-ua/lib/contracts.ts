@@ -1,7 +1,6 @@
 import { ethers } from "ethers";
 import { getOrCreateWallet } from "./express-proxy";
 import { ethereumService } from "./ethereum";
-import { getSessionKeyDelegation, isRevokedSessionKey } from "./sessionKey";
 
 // PactRegistry ABI
 export const PACT_REGISTRY_ABI = [
@@ -47,7 +46,7 @@ export const NETWORKS = {
     name: "Base Mainnet",
     rpc: "https://mainnet.base.org",
     usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913",
-    deployBlock: 487800000
+    deployBlock: 48848000
   }
 };
 
@@ -72,13 +71,17 @@ async function queryEvents(
   const provider = contract.runner as ethers.JsonRpcProvider;
   const config = NETWORKS[networkKey];
   const startBlock = fromBlock ?? config.deployBlock;
-  
+
   if (networkKey === "arbitrum") {
     // Arbitrum has no range limit on public RPCs, query directly
     return await contract.queryFilter(filter, startBlock);
   } else {
     // Base limits queries to 10,000 block ranges
     const latestBlock = await provider.getBlockNumber();
+    if (startBlock > latestBlock) {
+      console.error(`[queryEvents] startBlock ${startBlock} is past latestBlock ${latestBlock} on ${networkKey} — deployBlock is misconfigured.`);
+      return [];
+    }
     const chunkSize = 10000;
     const promises = [];
     
@@ -237,9 +240,25 @@ export async function getSubscriptionsForUser(userAddress: string, networkKey: "
 
           const formattedPrice = ethers.formatUnits(plan.price, tokenDecimals);
 
-          const localDelegation = getSessionKeyDelegation(Number(planId));
-          const isRevoked = isRevokedSessionKey(Number(planId)) || (!localDelegation.delegation && !localDelegation.privateKey);
-          const statusVal = isRevoked ? ("revoked" as const) : plan.active ? ("active" as const) : ("past-due" as const);
+          // Server-truth status: on-chain revocation + DB delegation state, not
+          // localStorage — a cleared browser or a second device must not be able
+          // to misreport an active subscription as revoked (or vice versa).
+          let statusVal: "active" | "past-due" | "revoked" = plan.active ? ("active" as const) : ("past-due" as const);
+          try {
+            const statusRes = await fetch(
+              `/api/v1/subscriptions/status?planId=${pIdStr}&subscriber=${userAddress}&network=${networkKey}`
+            );
+            if (statusRes.ok) {
+              const statusData = await statusRes.json();
+              if (!statusData.active) {
+                statusVal = statusData.reason === "Payment overdue" ? "past-due" : "revoked";
+              } else {
+                statusVal = "active";
+              }
+            }
+          } catch {
+            // status API unreachable — fall back to on-chain plan.active, never localStorage
+          }
 
           subsList.push({
             id: planId.toString(),
