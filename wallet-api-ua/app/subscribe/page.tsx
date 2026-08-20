@@ -177,7 +177,7 @@ function SubscribeContent() {
             </h1>
 
             <p className="font-sans text-xl text-[#3A3A38]/70 max-w-2xl mb-12">
-              Authorize a recurring subscription for this plan. Your smart account will automatically handle the recurring payments on the specified interval.
+              Approve this subscription once, and payments happen automatically on schedule. You&apos;ll never need to sign again.
             </p>
 
             <div className="mb-16">
@@ -238,7 +238,7 @@ function SubscribeContent() {
                     </div>
                     <div className="flex items-center gap-3">
                       <iconify-icon icon="lucide:zap" className="text-[#F4D35E] text-lg"></iconify-icon>
-                      <span className="font-mono text-[10px] uppercase tracking-widest">Gas-Optimized Pulls</span>
+                      <span className="font-mono text-[10px] uppercase tracking-widest">No Fees From Pact</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <iconify-icon icon="lucide:refresh-ccw" className="text-[#FF8C69] text-lg"></iconify-icon>
@@ -276,7 +276,7 @@ function SubscribeContent() {
                         id="cta-subscribe-authorize"
                         className="block w-full text-center bg-forest text-white font-mono text-xs tracking-[0.2em] uppercase py-5 rounded-sm hover:opacity-95 transition-opacity"
                       >
-                        Subscribe &amp; Authorize
+                        Subscribe
                       </Link>
                     )}
                     <Link
@@ -307,10 +307,10 @@ function SubscribeContent() {
         <section className="max-w-7xl mx-auto px-6 py-24 border-t border-[#3A3A38]/10">
           <div className="grid md:grid-cols-3 gap-12">
             <div className="space-y-4">
-              <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">SESSION PARAMETERS</span>
+              <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">YOUR LIMITS</span>
               <h5 className="font-space text-xl font-bold uppercase tracking-tight">Hard Limits</h5>
               <p className="font-sans text-sm text-[#3A3A38]/60">
-                Your signed permission defines an immutable spending cap. The protocol physically cannot pull more than the authorized limit.
+                You set a hard spending cap when you approve. This merchant cannot charge you a penny more, or any sooner than the schedule you agreed to.
               </p>
             </div>
 
@@ -318,15 +318,15 @@ function SubscribeContent() {
               <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">FULL TRANSPARENCY</span>
               <h5 className="font-space text-xl font-bold uppercase tracking-tight">Audit Trail</h5>
               <p className="font-sans text-sm text-[#3A3A38]/60">
-                Every recurring pull is an on-chain event. Monitor every transaction, success, or decline through your private dashboard.
+                Every payment is recorded on-chain. See exactly what you were charged and when, any time, from your dashboard.
               </p>
             </div>
 
             <div className="space-y-4">
-              <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">INSTANT KILLSWITCH</span>
-              <h5 className="font-space text-xl font-bold uppercase tracking-tight">One-Click Revoke</h5>
+              <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">ALWAYS IN CONTROL</span>
+              <h5 className="font-space text-xl font-bold uppercase tracking-tight">Cancel Instantly</h5>
               <p className="font-sans text-sm text-[#3A3A38]/60">
-                Pact ensures you remain in control. Cancel your session instantly at any time directly on-chain without merchant consent.
+                Cancel whenever you want, straight from your dashboard. No emails, no waiting, and no permission needed from the merchant.
               </p>
             </div>
           </div>
