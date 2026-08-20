@@ -17,8 +17,15 @@ export async function initDb() {
       network           TEXT NOT NULL,
       scope             JSONB NOT NULL,
       stored_at         TIMESTAMPTZ DEFAULT NOW(),
-      stored_by         TEXT
+      stored_by         TEXT,
+      key_version       INT NOT NULL DEFAULT 1
     )
+  `;
+  // Explicit encryption marker instead of guessing from ciphertext shape.
+  // Every row this app has ever written was encrypted, so backfilling
+  // existing rows to 1 reflects reality rather than assuming it.
+  await sql`
+    ALTER TABLE keeper_delegations ADD COLUMN IF NOT EXISTS key_version INT NOT NULL DEFAULT 1
   `;
 }
 
@@ -54,6 +61,18 @@ export async function initNotificationsTable() {
   await sql`
     CREATE INDEX IF NOT EXISTS subscriber_notifications_address_idx
       ON subscriber_notifications (subscriber_address, created_at DESC)
+  `;
+}
+
+export async function initSponsorshipsTable() {
+  await sql`
+    CREATE TABLE IF NOT EXISTS relayer_sponsorships (
+      id                 BIGSERIAL PRIMARY KEY,
+      subscriber_address TEXT NOT NULL,
+      network            TEXT NOT NULL,
+      tx_hash            TEXT,
+      sponsored_at       TIMESTAMPTZ DEFAULT NOW()
+    )
   `;
 }
 

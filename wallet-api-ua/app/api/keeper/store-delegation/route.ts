@@ -39,16 +39,17 @@ export async function POST(req: Request) {
 
     await sql`
       INSERT INTO keeper_delegations
-        (store_key, private_key, owner_signature, subscriber_address, plan_id, network, scope, stored_by)
+        (store_key, private_key, owner_signature, subscriber_address, plan_id, network, scope, stored_by, key_version)
       VALUES
         (${storeKey}, ${encrypt(privateKey)}, ${ownerSignature}, ${subscriberAddress.toLowerCase()},
-         ${planId.toString()}, ${network}, ${JSON.stringify(scopeJson)}, ${session.user.email})
+         ${planId.toString()}, ${network}, ${JSON.stringify(scopeJson)}, ${session.user.email}, 1)
       ON CONFLICT (store_key) DO UPDATE SET
         private_key       = EXCLUDED.private_key,
         owner_signature   = EXCLUDED.owner_signature,
         scope             = EXCLUDED.scope,
         stored_at         = NOW(),
-        stored_by         = EXCLUDED.stored_by
+        stored_by         = EXCLUDED.stored_by,
+        key_version        = EXCLUDED.key_version
     `;
 
     console.log(`[KeeperStore] Upserted delegation for ${storeKey}`);

@@ -294,7 +294,14 @@ export async function POST(req: Request) {
       entries.push([
         row.store_key,
         {
-          privateKey: isEncrypted(row.private_key) ? decrypt(row.private_key) : row.private_key,
+          // key_version is the explicit source of truth for whether this row
+          // is encrypted. isEncrypted() only backstops rows written before
+          // that column existed, where the shape guess is the best available
+          // signal — every row this app writes now sets key_version itself.
+          privateKey:
+            row.key_version === 1 || (row.key_version == null && isEncrypted(row.private_key))
+              ? decrypt(row.private_key)
+              : row.private_key,
           ownerSignature: row.owner_signature,
           subscriberAddress: row.subscriber_address,
           planId: row.plan_id,

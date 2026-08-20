@@ -1,11 +1,28 @@
 import { NextResponse } from "next/server";
 import { ethers, Signature } from "ethers";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { getProvider, SESSION_KEY_EXECUTOR_ADDRESS, NETWORKS } from "@/lib/contracts";
+import { checkDelegated } from "@/lib/eip7702";
+import { sql, initSponsorshipsTable } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+// Anyone with a valid EIP-7702 authorization signature could otherwise drain
+// the relayer's gas for free, with no account behind the request at all.
+// A ceiling bounds the blast radius even if a signed-in account is compromised.
+const DAILY_SPONSORSHIP_CEILING = 100;
+
 export async function POST(req: Request) {
   try {
+    // Sponsorship costs real gas from the relayer wallet — only signed-in
+    // Pact users may request it, not anyone on the open internet with a
+    // self-signed authorization.
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.email) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { subscriberAddress, nonce, chainId, signature, networkKey } = await req.json();
 
     if (!subscriberAddress || nonce === undefined || !chainId || !signature || !networkKey) {
@@ -20,6 +37,26 @@ export async function POST(req: Request) {
     const executorAddress = SESSION_KEY_EXECUTOR_ADDRESS[netKey];
     if (!executorAddress) {
       return NextResponse.json({ error: `Executor address not found for network ${netKey}` }, { status: 500 });
+    }
+
+    // An EOA only ever needs upgrading once. Rejecting an already-delegated
+    // address closes off repeat-sponsorship spam against the same account.
+    const delegation = await checkDelegated(subscriberAddress, netKey);
+    if (delegation.isDelegated) {
+      return NextResponse.json({ error: "This account is already upgraded — no sponsorship needed." }, { status: 400 });
+    }
+
+    try {
+      await initSponsorshipsTable();
+      const [{ count }] = await sql`
+        SELECT COUNT(*)::int AS count FROM relayer_sponsorships
+        WHERE sponsored_at > NOW() - INTERVAL '24 hours'
+      `;
+      if (count >= DAILY_SPONSORSHIP_CEILING) {
+        return NextResponse.json({ error: "Daily sponsorship limit reached. Please try again later." }, { status: 429 });
+      }
+    } catch (err) {
+      console.warn("[Relayer] Sponsorship budget check failed, proceeding without it:", err);
     }
 
     const provider = getProvider(netKey);
@@ -130,6 +167,13 @@ export async function POST(req: Request) {
     console.log("[Relayer] Broadcasting sponsored transaction...");
     const txResponse = await provider.broadcastTransaction(signedTx);
     console.log("[Relayer] Broadcasted successfully. Tx hash:", txResponse.hash);
+
+    try {
+      await sql`
+        INSERT INTO relayer_sponsorships (subscriber_address, network, tx_hash)
+        VALUES (${subscriberAddress.toLowerCase()}, ${netKey}, ${txResponse.hash})
+      `;
+    } catch { /* non-critical */ }
 
     return NextResponse.json({ hash: txResponse.hash });
   } catch (error: any) {
