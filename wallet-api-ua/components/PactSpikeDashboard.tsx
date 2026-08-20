@@ -217,7 +217,7 @@ export function PactSpikeDashboard() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loading ? (
                 <div className="col-span-full py-8 text-center font-mono text-xs opacity-50 uppercase tracking-widest">
-                  Scanning contract logs...
+                  Loading your subscriptions...
                 </div>
               ) : subscriptions.filter(s => s.status === "active").length === 0 ? (
                 <div className="col-span-full py-8 text-center font-mono text-xs opacity-50 uppercase tracking-widest">
@@ -244,8 +244,8 @@ export function PactSpikeDashboard() {
             {!loading && subscriptions.filter(s => s.status !== "active").length > 0 && (
               <div className="pt-8 space-y-6 border-t border-[#3A3A38]/10">
                 <div className="border-l-4 border-coral/50 pl-4">
-                  <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-[#3A3A38]/70">Revoked &amp; Past Subscriptions</h3>
-                  <p className="font-mono text-[10px] tracking-widest uppercase opacity-40">Session permissions previously authorized and revoked</p>
+                  <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-[#3A3A38]/70">Cancelled &amp; Past Subscriptions</h3>
+                  <p className="font-mono text-[10px] tracking-widest uppercase opacity-40">Subscriptions you&apos;ve cancelled or that are no longer active</p>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-80">
                   {subscriptions

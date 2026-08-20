@@ -75,7 +75,7 @@ export function PlanCard({
             }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${isPaused ? "bg-[#a8820a]" : "bg-forest"}`}></span>
-            {status}
+            {isPaused ? "Paused" : "Active"}
           </button>
         </div>
 

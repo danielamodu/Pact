@@ -15,12 +15,12 @@ import { ethers } from "ethers";
 
 // ─── Step labels shown in the loading state ───────────────────────────────────
 const STEPS = [
-  "Connecting wallet",
-  "Checking account status",
-  "Upgrading account (EIP-7702)",
-  "Signing session key",
-  "Registering with keeper",
-  "Recording subscription",
+  "Connecting your account",
+  "Checking your account",
+  "Setting up your account (one time)",
+  "Creating your payment permission",
+  "Enabling automatic billing",
+  "Confirming your subscription",
   "Done",
 ] as const;
 
@@ -77,13 +77,13 @@ function PermissionContent() {
 
     try {
       if (!isAuthenticated) {
-        setCurrentStep("Connecting wallet");
+        setCurrentStep("Connecting your account");
         await signIn("google", { callbackUrl: window.location.href });
         autoTriggerRef.current = true;
         return;
       }
 
-      setCurrentStep("Connecting wallet");
+      setCurrentStep("Connecting your account");
       if (!publicAddress) {
         throw new Error("Wallet address not yet available. Please wait a moment and try again.");
       }
@@ -98,11 +98,11 @@ function PermissionContent() {
       if (gasBalance === BigInt(0)) {
         setIsGasError(true);
         setIsDepositOpen(true);
-        throw new Error("Your Universal Account needs a small gas balance (~0.0001 ETH) on " + (networkKey === "arbitrum" ? "Arbitrum" : "Base") + " to authorize this subscription.");
+        throw new Error("You'll need a small amount of ETH on " + (networkKey === "arbitrum" ? "Arbitrum" : "Base") + " to confirm this subscription — under $1 covers it. Add funds below, then tap Confirm again.");
       }
 
       // ── EIP-7702 check ──────────────────────────────────────────────────
-      setCurrentStep("Checking account status");
+      setCurrentStep("Checking your account");
       const delegationStatus = await checkDelegated(publicAddress, networkKey);
       const executorAddress = SESSION_KEY_EXECUTOR_ADDRESS[networkKey];
 
@@ -115,7 +115,7 @@ function PermissionContent() {
         delegationStatus.delegatee?.toLowerCase() === executorAddress.toLowerCase();
 
       if (!alreadyUpgraded) {
-        setCurrentStep("Upgrading account (EIP-7702)");
+        setCurrentStep("Setting up your account (one time)");
         const upgradeTxHash = await upgradeEOAWithEIP7702(networkKey, publicAddress);
 
         const postUpgradeStatus = await checkDelegated(publicAddress, networkKey);
@@ -130,7 +130,7 @@ function PermissionContent() {
       }
 
       // ── Generate session key & sign EIP-712 ─────────────────────────────
-      setCurrentStep("Signing session key");
+      setCurrentStep("Creating your payment permission");
       const sessionKeyWallet = generateSessionKey();
       const sessionKeyAddress = sessionKeyWallet.address.toLowerCase();
 
@@ -192,7 +192,7 @@ function PermissionContent() {
       // has nothing to execute and the subscription silently never bills. Fail
       // here, before the on-chain subscribe, so no gas is spent on a
       // subscription that could never renew.
-      setCurrentStep("Registering with keeper");
+      setCurrentStep("Enabling automatic billing");
       try {
         const storeRes = await fetch("/api/keeper/store-delegation", {
           method: "POST",
@@ -225,12 +225,12 @@ function PermissionContent() {
       } catch (storeErr: unknown) {
         const detail = storeErr instanceof Error ? storeErr.message : String(storeErr);
         throw new Error(
-          `Could not register this subscription with the billing keeper, so it would never renew automatically. No subscription was created and no gas was spent. Details: ${detail}`
+          `We couldn't enable automatic billing for this subscription, so it would never renew on its own. Nothing was created and you weren't charged — please try again. (${detail})`
         );
       }
 
       // ── Record subscription on-chain ────────────────────────────────────
-      setCurrentStep("Recording subscription");
+      setCurrentStep("Confirming your subscription");
       const subscribeTxHash = await subscribeOnchain(networkKey, parseInt(planId), sessionKeyAddress);
       console.log(`[Permission] Subscribe tx: ${explorerBase}/tx/${subscribeTxHash}`);
 
@@ -242,7 +242,7 @@ function PermissionContent() {
       if (msg.toLowerCase().includes("insufficient funds") || msg.toLowerCase().includes("has 0 want")) {
         setIsGasError(true);
         setIsDepositOpen(true);
-        setError(`Universal Account balance is 0 ETH on ${network === "arbitrum" ? "Arbitrum" : "Base"}. Please deposit ETH to complete transaction.`);
+        setError(`You'll need a small amount of ETH on ${network === "arbitrum" ? "Arbitrum" : "Base"} to confirm this — under $1 covers it. Add funds below, then tap Confirm again.`);
       } else {
         setError(msg);
       }
@@ -284,7 +284,7 @@ function PermissionContent() {
               Confirm Payment Permission
             </h1>
             <p className="font-sans text-[#3A3A38]/60 text-base">
-              Review the terms you&apos;re agreeing to before initializing the session.
+              Here&apos;s exactly what you&apos;re approving. Take a second to check it over.
             </p>
           </div>
 
@@ -329,10 +329,10 @@ function PermissionContent() {
               </div>
               <div className="bg-[#F7F7F5] p-5">
                 <span className="font-mono text-[9px] tracking-widest uppercase opacity-40 block mb-1">
-                  Revocation
+                  Cancelling
                 </span>
                 <span className="font-mono text-[10px] text-[#1A3C2B] font-bold block">
-                  Instant, Fee-Free
+                  Instant, Free
                 </span>
               </div>
             </div>
@@ -406,7 +406,7 @@ function PermissionContent() {
             <label htmlFor="confirm-terms" className="font-mono text-xs uppercase tracking-tight text-[#1A3C2B] cursor-pointer select-none">
               I understand and agree to this authorization
               <span className="block text-[10px] text-[#3A3A38]/50 normal-case mt-0.5">
-                I confirm I have reviewed the session parameters and know that I can revoke access directly from the Pact dashboard at any time.
+                I&apos;ve reviewed the amount and schedule above, and I know I can cancel anytime from my dashboard.
               </span>
             </label>
           </div>
@@ -428,7 +428,7 @@ function PermissionContent() {
                   <span>{currentStep || "Processing..."}</span>
                 </>
               ) : (
-                alreadySubscribed ? "Update Session Permission" : "Confirm Authorization"
+                alreadySubscribed ? "Update Approval" : "Approve & Subscribe"
               )}
             </button>
 

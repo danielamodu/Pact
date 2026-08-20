@@ -102,7 +102,7 @@ function SubscribeContent() {
         <NavigationBar />
         <main className="flex-1 flex items-center justify-center p-6 pt-24">
           <div className="text-center py-20 font-mono text-sm opacity-60">
-            Querying plan data and resolving secure contracts...
+            Loading plan details...
           </div>
         </main>
       </div>
@@ -227,14 +227,14 @@ function SubscribeContent() {
                   <div className="pb-8 border-b border-[#3A3A38]/10">
                     <h4 className="font-space text-xl font-bold mb-4">Confirm Intent</h4>
                     <p className="font-sans text-sm text-[#3A3A38]/60 leading-relaxed">
-                      By proceeding, you grant Pact the ability to request session authorization. No funds are moved in this step.
+                      Next you&apos;ll review and approve the exact amount and schedule. No money moves in this step.
                     </p>
                   </div>
 
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <iconify-icon icon="lucide:shield-check" className="text-[#9EFFBF] text-lg"></iconify-icon>
-                      <span className="font-mono text-[10px] uppercase tracking-widest">Revoke Access Anytime</span>
+                      <span className="font-mono text-[10px] uppercase tracking-widest">Cancel Anytime</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <iconify-icon icon="lucide:zap" className="text-[#F4D35E] text-lg"></iconify-icon>
@@ -267,7 +267,7 @@ function SubscribeContent() {
                           href={planData ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}` : "/permission"}
                           className="block w-full text-center border border-forest/20 text-forest font-mono text-[10px] font-bold tracking-widest uppercase py-3 rounded-sm hover:bg-forest/5 transition-colors"
                         >
-                          Re-Authorize Session Key
+                          Renew Approval
                         </Link>
                       </>
                     ) : (

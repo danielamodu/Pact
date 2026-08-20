@@ -20,6 +20,8 @@ export function SubscriptionCard({
   revokeHref,
 }: SubscriptionCardProps) {
   const isInactive = status === "past-due" || status === "revoked";
+  const statusLabel =
+    status === "active" ? "Active" : status === "past-due" ? "Payment Due" : "Cancelled";
 
   return (
     <div className="relative bg-white/50 backdrop-blur-md border border-[#3A3A38]/20 p-8 flex flex-col justify-between h-full group hover:border-[#1A3C2B] transition-colors duration-300">
@@ -42,7 +44,7 @@ export function SubscriptionCard({
             }`}
           >
             <span className={`w-1.5 h-1.5 rounded-full ${isInactive ? "bg-coral" : "bg-forest"}`}></span>
-            {status}
+            {statusLabel}
           </div>
         </div>
 
@@ -60,7 +62,7 @@ export function SubscriptionCard({
             Next Charge
           </span>
           <span className={`font-mono text-[10px] font-bold ${isInactive ? "text-coral" : "text-forest"}`}>
-            {status === "revoked" ? "N/A (Revoked)" : nextBilling}
+            {status === "revoked" ? "Cancelled" : nextBilling}
           </span>
         </div>
 
@@ -68,23 +70,17 @@ export function SubscriptionCard({
           href={revokeHref}
           className="font-mono text-[9px] uppercase tracking-widest text-[#3A3A38]/60 hover:text-coral transition-colors"
         >
-          {status === "revoked" ? "View Details" : "Manage / Revoke"}
+          {status === "revoked" ? "View Details" : "Manage"}
         </Link>
       </div>
 
-      <div className="mt-4 pt-4 border-t border-[#3A3A38]/10">
-        <button
-          disabled={status === "revoked"}
-          onClick={() => alert("In production, this is executed automatically by the Pact relayer. This button simulates that scheduled background trigger.")}
-          className={`w-full text-center py-2 border rounded-sm font-mono text-[9px] uppercase tracking-widest font-bold transition-colors ${
-            status === "revoked"
-              ? "bg-coral/5 text-coral/50 border-coral/10 cursor-not-allowed"
-              : "bg-forest/5 text-forest border-forest/10 hover:bg-forest/10 cursor-pointer"
-          }`}
-        >
-          {status === "revoked" ? "Session Revoked" : "Simulate Scheduled Billing Trigger"}
-        </button>
-      </div>
+      {status === "active" && (
+        <div className="mt-4 pt-4 border-t border-[#3A3A38]/10">
+          <p className="font-mono text-[9px] text-forest/50 tracking-tight text-center leading-relaxed">
+            Renews automatically — no action needed
+          </p>
+        </div>
+      )}
     </div>
   );
 }

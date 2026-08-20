@@ -134,7 +134,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
       setShowModal(false);
     } catch (err: any) {
       console.error("[Revoke] Failed:", err);
-      setRevokeError(err?.message || "Revocation failed. Your subscription is still active.");
+      setRevokeError(err?.message || "We couldn't cancel that — your subscription is still active. Please try again.");
     } finally {
       setRevoking(false);
     }
@@ -173,7 +173,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
             }`}>
               <div className={`w-2 h-2 rounded-full ${revoked ? "bg-coral" : "bg-[#1A3C2B]"}`}></div>
               <span className="font-mono text-[10px] tracking-widest uppercase font-bold">
-                {revoked ? "REVOKED / INACTIVE" : "Active"}
+                {revoked ? "Cancelled" : "Active"}
               </span>
             </div>
           </header>
@@ -223,7 +223,7 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
                 <div className="grid md:grid-cols-3 gap-8 pt-10">
                   <div className="space-y-1">
                     <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                      Authorized Amount Cap
+                      Most They Can Charge
                     </span>
                     <span className="font-mono text-sm font-bold uppercase tracking-tight">
                       {plan ? `${plan.price} ${plan.token}` : "—"}
@@ -253,16 +253,16 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
               {/* Session Details */}
               <section id="permission-terms" className="bg-white border border-[#3A3A38]/20 p-8 border-l-[4px] border-l-[#1A3C2B]">
                 <h3 className="font-space text-2xl font-bold mb-4">
-                  Session Permission Details
+                  What You Approved
                 </h3>
                 <p className="font-sans text-lg text-[#3A3A38]/80 leading-relaxed mb-10">
-                  Merchant can pull up to {plan?.price} {plan?.token} every {plan?.intervalDays} days. Nothing else. Revoke access anytime.
+                  This merchant can charge up to {plan?.price} {plan?.token} every {plan?.intervalDays} days — nothing more, nothing sooner. Cancel anytime.
                 </p>
 
                 <div className="grid md:grid-cols-3 gap-8 border-t border-[#3A3A38]/10 pt-8">
                   <div className="space-y-1">
                     <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                      Ephemeral Session Key
+                      Payment Key
                     </span>
                     <span className="font-mono text-[10px] font-bold uppercase tracking-tight truncate block">
                       {formatAddr(delegationInfo?.delegation?.scope?.sessionKeyAddress)}
@@ -271,20 +271,20 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
 
                   <div className="space-y-1">
                     <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                      Billing Scope
+                      Charges Every
                     </span>
                     <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
-                      {plan?.intervalDays} Days Recurring
+                      {plan?.intervalDays} Days
                     </span>
                   </div>
 
                   <div className="space-y-1">
                     <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">
-                      Session Expiry
+                      Approval Expires
                     </span>
                     <span className="font-mono text-[10px] font-bold uppercase tracking-tight">
                       {revoked
-                        ? "REVOKED / INACTIVE"
+                        ? "Cancelled"
                         : delegationInfo?.delegation?.scope?.expiry 
                           ? new Date(delegationInfo.delegation.scope.expiry * 1000).toLocaleDateString("en-US", {
                               month: "short",
@@ -413,10 +413,10 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
               {revokeTxHash && (
                 <section className="bg-[#9EFFBF]/10 border border-forest/20 p-8 border-l-[4px] border-l-forest space-y-2">
                   <h3 className="font-space text-xl font-bold text-forest uppercase tracking-tight">
-                    Revocation Confirmed On-Chain
+                    Subscription Cancelled
                   </h3>
                   <p className="font-sans text-sm text-[#3A3A38]/70">
-                    The session key is now permanently blocked from pulling funds.
+                    Confirmed on-chain — this merchant can no longer charge you.
                   </p>
                   <a
                     href={`${network === "arbitrum" ? "https://arbiscan.io" : "https://basescan.org"}/tx/${revokeTxHash}`}
@@ -437,15 +437,24 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
                       Cancel This Subscription
                     </h3>
                     <p className="font-sans text-lg text-[#3A3A38]/80">
-                      Once revoked, merchant will no longer be able to pull funds. This action is immediate and fee-free.
+                      This merchant will immediately lose the ability to charge you. It's instant and free.
                     </p>
+                    <div className="flex gap-3 bg-[#F4D35E]/10 border border-[#F4D35E]/40 p-4 rounded-sm">
+                      <span className="text-[#a8820a] flex-shrink-0 font-bold">!</span>
+                      <p className="font-sans text-sm text-[#3A3A38]/80 leading-relaxed">
+                        <strong className="font-bold">This also pauses your other Pact subscriptions.</strong>{" "}
+                        Cancelling resets the security counter on your account, which safely stops every
+                        other subscription too — nothing can be charged without your say-so. You'll just
+                        need to re-approve the ones you want to keep.
+                      </p>
+                    </div>
                     <div className="pt-4">
                       <button
                         onClick={() => setShowModal(true)}
                         id="revoke-access-btn"
                         className="w-full max-w-md bg-[#FF8C69] text-white font-mono text-[10px] font-bold tracking-widest uppercase py-5 hover:opacity-90 transition-opacity cursor-pointer"
                       >
-                        Revoke Access
+                        Cancel Subscription
                       </button>
                     </div>
                   </div>
@@ -464,22 +473,24 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
               Are you sure?
             </h4>
             <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed mb-4">
-              This submits an on-chain revocation from your account. Once confirmed, the merchant permanently loses the ability to pull funds.
+              We'll record this on-chain. Once it confirms, this merchant permanently loses the ability to charge you.
             </p>
 
             <div className="bg-gold/10 border border-gold/30 p-4 mb-6">
               <p className="font-mono text-[9px] uppercase tracking-widest text-[#a8820a] font-bold mb-1">
-                Affects your other subscriptions
+                Your other subscriptions pause too
               </p>
               <p className="font-sans text-xs text-[#3A3A38]/70 leading-relaxed">
-                Revoking increments your account nonce, which pauses every other active Pact subscription on this wallet. They stop safely — no funds can be pulled — but you&apos;ll need to re-authorize each one to resume.
+                Cancelling resets the security counter on your account, which safely stops every other
+                Pact subscription as well. Nothing can be charged without your approval — you&apos;ll just
+                need to re-approve the ones you want to keep.
               </p>
             </div>
 
             {revokeError && (
               <div className="border border-coral bg-coral/5 p-4 mb-6">
                 <p className="font-mono text-[10px] text-coral font-bold uppercase tracking-wide mb-1">
-                  Revocation Failed
+                  Couldn&apos;t Cancel
                 </p>
                 <p className="font-mono text-[10px] text-[#3A3A38] break-words">{revokeError}</p>
               </div>
@@ -494,10 +505,10 @@ export default function SubscriptionDetailPage({ params }: { params: Promise<{ i
                 {revoking ? (
                   <>
                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Revoking On-Chain
+                    Cancelling
                   </>
                 ) : (
-                  "Yes, Revoke"
+                  "Yes, Cancel"
                 )}
               </button>
               <button
