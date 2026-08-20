@@ -45,7 +45,7 @@ export const NETWORKS = {
     chainId: 8453,
     name: "Base Mainnet",
     rpc: "https://mainnet.base.org",
-    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913",
+    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
     deployBlock: 48848000
   }
 };
@@ -55,7 +55,12 @@ export const NETWORKS = {
  */
 export function getProvider(networkKey: "arbitrum" | "base") {
   const config = NETWORKS[networkKey];
-  return new ethers.JsonRpcProvider(config.rpc);
+  // ethers batches concurrent requests into one JSON-RPC array by default
+  // (up to batchMaxCount, default 100). Base's public RPC rejects any batch
+  // over 10 calls outright, which silently failed every chunked getLogs
+  // query once queryEvents fired several requests in parallel. Disabling
+  // batching sends each call as its own HTTP request instead.
+  return new ethers.JsonRpcProvider(config.rpc, undefined, { batchMaxCount: 1 });
 }
 
 /**

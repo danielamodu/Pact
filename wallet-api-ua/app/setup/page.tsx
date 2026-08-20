@@ -103,7 +103,7 @@ export default function SetupPage() {
         tokenAddress =
           network === "arbitrum"
             ? "0xFd086bC7CD5C481DCC9C85ebE478A1C0b69FCbb9"
-            : "0x50c5725949A6F0c72E6C4a641F240E934e271057";
+            : "0x50C5725949A6f0C72E6C4A641F240e934e271057";
       } else if (token === "ETH") {
         tokenAddress = "0x0000000000000000000000000000000000000000";
       }

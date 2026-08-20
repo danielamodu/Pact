@@ -142,7 +142,7 @@ function PermissionContent() {
       if (token.toUpperCase() === "USDC") {
         tokenAddress = networkKey === "arbitrum"
           ? "0xaf88d065e77c8cC2239327C5EDb3A432268e5831"
-          : "0x833589fCD6eDb6E08f4c7C32D4f71b54bda02913";
+          : "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         decimals = 6;
       } else if (token.toUpperCase() === "USDT") {
         tokenAddress = networkKey === "arbitrum"
