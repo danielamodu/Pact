@@ -120,14 +120,14 @@ export function PactSpikeDashboard() {
       <NavigationBar mode="app" activeItem="dashboard" />
 
       <main className="flex-1 pt-16">
-        <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+        <div className="max-w-5xl mx-auto px-6 py-8 space-y-5">
 
           {/* Greeting */}
           <div>
-            <h1 className="font-space text-3xl font-bold tracking-tight text-forest">
+            <h1 className="font-space text-2xl font-bold tracking-tight text-forest">
               {firstName ? `Hi, ${firstName}` : "Your account"}
             </h1>
-            <p className="font-sans text-sm text-[#3A3A38]/60 mt-1">
+            <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
               {isNewUser
                 ? "Let's get you set up — it takes about a minute."
                 : "Subscriptions here renew on their own. Nothing to approve each month."}
@@ -139,7 +139,7 @@ export function PactSpikeDashboard() {
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-coral bg-coral/5 border border-coral/20 p-5">
               <div>
                 <h5 className="font-space font-bold text-base text-forest">A payment couldn&apos;t go through</h5>
-                <p className="font-sans text-sm text-[#3A3A38]/70 mt-0.5">
+                <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
                   Your balance was too low to cover a subscription. Add funds to keep it active.
                 </p>
               </div>
@@ -152,7 +152,7 @@ export function PactSpikeDashboard() {
                 </button>
                 <button
                   onClick={() => setAlertVisible(false)}
-                  className="text-sm text-[#3A3A38]/50 hover:text-forest px-3 py-2 cursor-pointer"
+                  className="text-sm text-[#56655C] hover:text-forest px-3 py-2 cursor-pointer"
                 >
                   Dismiss
                 </button>
@@ -161,22 +161,22 @@ export function PactSpikeDashboard() {
           )}
 
           {/* Balance — one number, in dollars */}
-          <section className="bg-white border border-[#3A3A38]/15 p-7">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+          <section className="bg-white border border-[#3A3A38]/15 p-6">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
               <div>
-                <span className="font-sans text-sm text-[#3A3A38]/50 block mb-1">Your balance</span>
+                <span className="font-sans text-[15px] text-[#56655C] block mb-1.5">Your balance</span>
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="font-space text-4xl font-bold text-forest leading-none">
+                  <span className="font-space text-[42px] font-bold text-forest leading-none tracking-tight">
                     {loading ? "—" : totalUsd !== null ? `$${totalUsd.toFixed(2)}` : `${eth.toFixed(4)} ETH`}
                   </span>
                   {!loading && (
-                    <span className="font-mono text-[11px] text-[#3A3A38]/40">
+                    <span className="font-mono text-[11px] text-[#66756B]">
                       {eth.toFixed(5)} ETH · {usdc.toFixed(2)} USDC
                     </span>
                   )}
                 </div>
                 {!loading && !hasFunds && (
-                  <p className="font-sans text-sm text-[#3A3A38]/50 mt-2">
+                  <p className="font-sans text-[15px] text-[#56655C] mt-2">
                     Empty for now — add funds to start subscribing.
                   </p>
                 )}
@@ -201,7 +201,7 @@ export function PactSpikeDashboard() {
           {/* First run — a path, not an empty grid */}
           {isNewUser ? (
             <section className="bg-white border border-[#3A3A38]/15">
-              <div className="px-7 py-5 border-b border-[#3A3A38]/10">
+              <div className="px-6 py-4 border-b border-[#3A3A38]/10">
                 <h2 className="font-space text-lg font-bold text-forest">Getting started</h2>
               </div>
               <ol className="divide-y divide-[#3A3A38]/8">
@@ -239,13 +239,13 @@ export function PactSpikeDashboard() {
                     action: null,
                   },
                 ].map((step) => (
-                  <li key={step.n} className="flex items-start gap-5 px-7 py-5">
+                  <li key={step.n} className="flex items-start gap-4 px-6 py-4">
                     <span className="w-7 h-7 rounded-full border border-forest/20 text-forest font-space text-sm font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
                       {step.n}
                     </span>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-space text-base font-bold text-forest">{step.title}</h3>
-                      <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5 leading-relaxed">{step.body}</p>
+                      <p className="font-sans text-[15px] text-[#46564E] mt-0.5 leading-relaxed">{step.body}</p>
                     </div>
                     {step.action && <div className="flex-shrink-0">{step.action}</div>}
                   </li>
@@ -260,7 +260,7 @@ export function PactSpikeDashboard() {
                   <div>
                     <h2 className="font-space text-lg font-bold text-forest">Your subscriptions</h2>
                     {activeSubs.length > 0 && (
-                      <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5">
+                      <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
                         About ${monthlySpend} a month across {activeSubs.length} subscription
                         {activeSubs.length === 1 ? "" : "s"}
                       </p>
@@ -275,13 +275,13 @@ export function PactSpikeDashboard() {
                 </div>
 
                 {loading ? (
-                  <div className="bg-white border border-[#3A3A38]/15 py-12 text-center font-sans text-sm text-[#3A3A38]/40">
+                  <div className="bg-white border border-[#3A3A38]/15 py-10 text-center font-sans text-[15px] text-[#66756B]">
                     Loading your subscriptions…
                   </div>
                 ) : activeSubs.length === 0 ? (
                   <div className="bg-white border border-[#3A3A38]/15 py-12 px-6 text-center">
                     <p className="font-space text-base font-bold text-forest">No subscriptions yet</p>
-                    <p className="font-sans text-sm text-[#3A3A38]/60 mt-1 mb-5">
+                    <p className="font-sans text-[15px] text-[#46564E] mt-1 mb-5">
                       Open a merchant&apos;s subscribe link to set one up.
                     </p>
                     <Link
@@ -292,7 +292,7 @@ export function PactSpikeDashboard() {
                     </Link>
                   </div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {activeSubs.map((sub, i) => (
                       <SubscriptionCard
                         key={i}
@@ -309,13 +309,13 @@ export function PactSpikeDashboard() {
 
                 {!loading && pastSubs.length > 0 && (
                   <details className="group">
-                    <summary className="cursor-pointer font-sans text-sm text-[#3A3A38]/50 hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
+                    <summary className="cursor-pointer font-sans text-[15px] text-[#56655C] hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
                       <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2 transition-transform group-open:rotate-90">
                         <polyline points="9 18 15 12 9 6" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
                       {pastSubs.length} cancelled or past subscription{pastSubs.length === 1 ? "" : "s"}
                     </summary>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-4 opacity-75">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 pt-4 opacity-75">
                       {pastSubs.map((sub, i) => (
                         <SubscriptionCard
                           key={i}
@@ -339,7 +339,7 @@ export function PactSpikeDashboard() {
                     <div>
                       <h2 className="font-space text-lg font-bold text-forest">Plans you offer</h2>
                       {hasPlans && (
-                        <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5">
+                        <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
                           {totalSubscribers} subscriber{totalSubscribers === 1 ? "" : "s"} · ${planRevenue} collected
                         </p>
                       )}
@@ -353,7 +353,7 @@ export function PactSpikeDashboard() {
                   </div>
 
                   {hasPlans ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {plans.map((plan, i) => (
                         <PlanCard
                           key={plan.id || i}
@@ -371,7 +371,7 @@ export function PactSpikeDashboard() {
                     </div>
                   ) : (
                     <div className="bg-white border border-[#3A3A38]/15 py-10 px-6 text-center">
-                      <p className="font-sans text-sm text-[#3A3A38]/60 mb-4">
+                      <p className="font-sans text-[15px] text-[#46564E] mb-4">
                         Create a plan and share a link — payments arrive on their own.
                       </p>
                       <Link
@@ -386,11 +386,11 @@ export function PactSpikeDashboard() {
               ) : (
                 <button
                   onClick={() => setShowMerchant(true)}
-                  className="w-full text-left bg-white border border-[#3A3A38]/15 px-7 py-5 hover:bg-[#F7F7F5] transition-colors cursor-pointer flex items-center justify-between gap-4"
+                  className="w-full text-left bg-white border border-[#3A3A38]/15 px-6 py-4 hover:bg-[#F7F7F5] transition-colors cursor-pointer flex items-center justify-between gap-4"
                 >
                   <div>
                     <h3 className="font-space text-base font-bold text-forest">Offering a service?</h3>
-                    <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5">
+                    <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
                       Charge customers on a schedule and get paid automatically.
                     </p>
                   </div>
@@ -402,7 +402,7 @@ export function PactSpikeDashboard() {
 
           {/* Live network activity — quiet proof this is really on-chain */}
           <details className="group pt-2">
-            <summary className="cursor-pointer font-sans text-sm text-[#3A3A38]/50 hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
+            <summary className="cursor-pointer font-sans text-[15px] text-[#56655C] hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2 transition-transform group-open:rotate-90">
                 <polyline points="9 18 15 12 9 6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
@@ -411,11 +411,11 @@ export function PactSpikeDashboard() {
 
             <div className="border border-[#3A3A38]/15 bg-white overflow-hidden mt-3">
               {activityLoading ? (
-                <div className="px-6 py-10 text-center font-sans text-sm text-[#3A3A38]/40">
+                <div className="px-6 py-8 text-center font-sans text-[15px] text-[#66756B]">
                   Checking the network…
                 </div>
               ) : activity.length === 0 ? (
-                <div className="px-6 py-10 text-center font-sans text-sm text-[#3A3A38]/40">
+                <div className="px-6 py-8 text-center font-sans text-[15px] text-[#66756B]">
                   No recent activity
                 </div>
               ) : (
@@ -430,22 +430,22 @@ export function PactSpikeDashboard() {
                           event.type === "pull" ? "bg-forest" : "bg-[#FF8C69]"
                         }`}
                       />
-                      <span className="font-sans text-sm text-forest">
+                      <span className="font-sans text-[15px] text-forest">
                         {event.type === "pull" ? "Payment collected" : "New subscriber"}
                       </span>
-                      <span className="font-mono text-[10px] text-[#3A3A38]/40 truncate">
+                      <span className="font-mono text-[11px] text-[#66756B] truncate">
                         Plan #{event.planId}
                       </span>
                     </div>
                     <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="font-mono text-[9px] uppercase tracking-wider text-[#3A3A38]/40">
+                      <span className="font-mono text-[10px] uppercase tracking-wider text-[#66756B]">
                         {event.network === "arbitrum" ? "Arbitrum" : "Base"}
                       </span>
                       <a
                         href={event.explorerUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="font-sans text-xs text-forest/60 hover:text-coral underline underline-offset-2 transition-colors"
+                        className="font-sans text-[13px] text-forest hover:text-coral underline underline-offset-2 transition-colors"
                       >
                         Receipt
                       </a>

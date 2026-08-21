@@ -46,7 +46,7 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
   return (
     <>
       <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-[#3A3A38]/10">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
+        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
           <div className="flex items-center gap-10 min-w-0">
             <Link href="/" className="flex items-center gap-3 group cursor-pointer flex-shrink-0">
               <PactLogo className="w-8 h-8 transition-transform group-hover:scale-105" />
@@ -62,10 +62,10 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
                 <Link
                   key={item.id}
                   href={item.href}
-                  className={`font-sans text-sm transition-colors relative h-16 flex items-center ${
+                  className={`font-sans text-[15px] transition-colors relative h-16 flex items-center ${
                     activeItem === item.id
                       ? "text-forest font-semibold"
-                      : "text-[#3A3A38]/60 hover:text-forest"
+                      : "text-[#46564E] hover:text-forest"
                   }`}
                 >
                   {item.label}
@@ -95,7 +95,7 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
                 <button
                   onClick={handleLogout}
                   title={publicAddress}
-                  className="font-sans text-sm text-[#3A3A38]/50 hover:text-forest transition-colors px-2 py-1 cursor-pointer"
+                  className="font-sans text-[15px] text-[#56655C] hover:text-forest transition-colors px-2 py-1 cursor-pointer"
                 >
                   Sign out
                 </button>
