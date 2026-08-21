@@ -25,6 +25,7 @@ export default function SetupPage() {
   const [successTxHash, setSuccessTxHash] = useState<string | null>(null);
   const [createdPlanId, setCreatedPlanId] = useState<string | null>(null);
   const [linkCopied, setLinkCopied] = useState(false);
+  const [usingCustomPayout, setUsingCustomPayout] = useState(false);
   const [ethPrice, setEthPrice] = useState<number | null>(null);
 
   useEffect(() => {
@@ -365,30 +366,69 @@ export default function SetupPage() {
                   )}
                 </div>
 
-                {/* Where payments go */}
+                {/* Where payments go — defaults to the wallet you're signed in
+                    with, which is what almost everyone wants. The address is
+                    only worth showing as an editable field if you actually
+                    want to send earnings somewhere else. */}
                 <div className="space-y-2">
                   <label className="font-sans text-[15px] font-semibold text-forest">
                     Where payments go
                   </label>
-                  <div className="relative flex items-center">
-                    <input
-                      type="text"
-                      value={payoutAddress}
-                      onChange={(e) => setPayoutAddress(e.target.value)}
-                      placeholder="0x7a2C0f8dB8E42Fe5d7f9E9e9e9e9e9e9e9e9c8F"
-                      className="ui-field font-mono !text-sm"
-                    />
-                    {!publicAddress && (
-                      <Link
-                        href="/login"
-                        className="absolute right-2 ui-btn ui-btn-ghost ui-btn-sm"
-                      >
-                        Connect Wallet
+
+                  {!publicAddress ? (
+                    <div className="flex items-center justify-between gap-4 bg-[#F7F7F5] border border-[#3A3A38]/12 rounded-xl px-5 py-4">
+                      <p className="font-sans text-[15px] text-[#46564E]">
+                        Sign in to receive payments to your wallet.
+                      </p>
+                      <Link href="/login" className="ui-btn ui-btn-ghost ui-btn-sm flex-shrink-0">
+                        Sign in
                       </Link>
-                    )}
-                  </div>
+                    </div>
+                  ) : usingCustomPayout ? (
+                    <>
+                      <input
+                        type="text"
+                        value={payoutAddress}
+                        onChange={(e) => setPayoutAddress(e.target.value)}
+                        placeholder="0x…"
+                        className="ui-field font-mono !text-sm"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUsingCustomPayout(false);
+                          setPayoutAddress(publicAddress);
+                        }}
+                        className="font-sans text-sm text-forest font-semibold hover:text-coral transition-colors cursor-pointer"
+                      >
+                        Use my Pact wallet instead
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between gap-4 bg-[#F7F7F5] border border-[#3A3A38]/12 rounded-xl px-5 py-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="ui-pill ui-pill-good flex-shrink-0">
+                          <span className="w-1.5 h-1.5 rounded-full bg-[#145233]" />
+                          Your Pact wallet
+                        </span>
+                        <span className="font-mono text-[13px] text-[#66756B] truncate">
+                          {publicAddress.slice(0, 10)}…{publicAddress.slice(-8)}
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setUsingCustomPayout(true)}
+                        className="font-sans text-sm text-forest font-semibold hover:text-coral transition-colors cursor-pointer flex-shrink-0"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  )}
+
                   <p className="font-sans text-sm text-[#66756B] mt-1.5">
-                    Funds will settle to this address. Must be a valid EVM wallet.
+                    {usingCustomPayout
+                      ? "Earnings from this plan go to this address. Must be a valid EVM wallet."
+                      : "Earnings from this plan land straight in your wallet."}
                   </p>
                 </div>
 
