@@ -189,8 +189,8 @@ export default function BalanceRevealPage() {
       <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="balance" />
 
-      <main className="flex-1 pt-12 pb-36 relative z-10">
-        <div className="max-w-[1400px] mx-auto px-10 py-12 space-y-8">
+      <main className="flex-1 pt-14 pb-28 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-10 space-y-8">
 
           <div>
             <h1 className="font-space text-[44px] font-bold tracking-tight text-forest leading-[1.1]">Balance</h1>

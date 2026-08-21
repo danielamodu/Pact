@@ -125,7 +125,7 @@ function SubscribeContent() {
               </svg>
             </div>
             
-            <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-forest mb-3">
+            <h3 className="font-space text-2xl font-bold tracking-tight text-forest mb-3">
               {isNoPlanSelected ? "No Plan Selected Yet" : "Plan Not Found"}
             </h3>
             <p className="font-sans text-sm text-[#3A3A38]/70 mb-8 leading-relaxed">
@@ -151,7 +151,7 @@ function SubscribeContent() {
   return (
     <div className="min-h-screen flex flex-col bg-paper">
       <NavigationBar />
-      <main className="flex-1 pt-12 pb-36">
+      <main className="flex-1 pt-14 pb-28">
         <section className="max-w-[1400px] mx-auto px-10 py-12 md:py-20">
         <div className="grid lg:grid-cols-12 gap-16 items-start">
           
@@ -192,20 +192,20 @@ function SubscribeContent() {
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#3A3A38]/10 border border-[#3A3A38]/10 rounded-sm overflow-hidden">
               <div className="bg-white p-6">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2">Token</span>
-                <span className="font-space text-lg font-bold uppercase">{planData ? planData.token : "USDC"}</span>
+                <span className="font-sans text-sm text-[#66756B]">Token</span>
+                <span className="font-space text-lg font-bold">{planData ? planData.token : "USDC"}</span>
               </div>
               <div className="bg-white p-6">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2">Interval</span>
-                <span className="font-space text-lg font-bold uppercase">{planData ? `${planData.intervalDays} Days` : "--"}</span>
+                <span className="font-sans text-sm text-[#66756B]">Interval</span>
+                <span className="font-space text-lg font-bold">{planData ? `${planData.intervalDays} Days` : "--"}</span>
               </div>
                 <div className="bg-white p-6">
-                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2">Network</span>
-                  <span className="font-space text-lg font-bold uppercase">{network === "arbitrum" ? "Arbitrum" : "Base"}</span>
+                  <span className="font-sans text-sm text-[#66756B]">Network</span>
+                  <span className="font-space text-lg font-bold">{network === "arbitrum" ? "Arbitrum" : "Base"}</span>
                 </div>
                 <div className="bg-white p-6">
-                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2">Renewal</span>
-                  <span className="font-space text-lg font-bold uppercase">Automatic</span>
+                  <span className="font-sans text-sm text-[#66756B]">Renewal</span>
+                  <span className="font-space text-lg font-bold">Automatic</span>
                 </div>
               </div>
             </div>
@@ -226,15 +226,15 @@ function SubscribeContent() {
                   <div className="space-y-4">
                     <div className="flex items-center gap-3">
                       <iconify-icon icon="lucide:shield-check" className="text-[#9EFFBF] text-lg"></iconify-icon>
-                      <span className="font-mono text-[10px] uppercase tracking-widest">Cancel Anytime</span>
+                      <span className="font-sans text-sm text-[#66756B]">Cancel Anytime</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <iconify-icon icon="lucide:zap" className="text-[#F4D35E] text-lg"></iconify-icon>
-                      <span className="font-mono text-[10px] uppercase tracking-widest">No Fees From Pact</span>
+                      <span className="font-sans text-sm text-[#66756B]">No Fees From Pact</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <iconify-icon icon="lucide:refresh-ccw" className="text-[#FF8C69] text-lg"></iconify-icon>
-                      <span className="font-mono text-[10px] uppercase tracking-widest">Direct To Merchant</span>
+                      <span className="font-sans text-sm text-[#66756B]">Direct To Merchant</span>
                     </div>
                   </div>
 
@@ -284,9 +284,9 @@ function SubscribeContent() {
               <div className="mt-8 border border-[#3A3A38]/10 p-6 bg-[#3A3A38]/5 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className={`w-2 h-2 rounded-full ${publicAddress ? "bg-mint animate-pulse" : "bg-coral"}`}></div>
-                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-60">Wallet Status</span>
+                  <span className="font-sans text-sm text-[#66756B]">Wallet Status</span>
                 </div>
-                <span className="font-mono text-[9px] uppercase tracking-widest font-bold">
+                <span className="font-sans text-sm text-[#66756B]">
                   {publicAddress ? "Connected" : "Not Connected"}
                 </span>
               </div>
@@ -300,7 +300,7 @@ function SubscribeContent() {
           <div className="grid md:grid-cols-3 gap-12">
             <div className="space-y-4">
               <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">YOUR LIMITS</span>
-              <h5 className="font-space text-xl font-bold uppercase tracking-tight">Hard Limits</h5>
+              <h5 className="font-space text-xl font-bold tracking-tight">Hard Limits</h5>
               <p className="font-sans text-sm text-[#3A3A38]/60">
                 You set a hard spending cap when you approve. This merchant cannot charge you a penny more, or any sooner than the schedule you agreed to.
               </p>
@@ -308,7 +308,7 @@ function SubscribeContent() {
 
             <div className="space-y-4">
               <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">FULL TRANSPARENCY</span>
-              <h5 className="font-space text-xl font-bold uppercase tracking-tight">Audit Trail</h5>
+              <h5 className="font-space text-xl font-bold tracking-tight">Audit Trail</h5>
               <p className="font-sans text-sm text-[#3A3A38]/60">
                 Every payment is recorded on-chain. See exactly what you were charged and when, any time, from your dashboard.
               </p>
@@ -316,7 +316,7 @@ function SubscribeContent() {
 
             <div className="space-y-4">
               <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">ALWAYS IN CONTROL</span>
-              <h5 className="font-space text-xl font-bold uppercase tracking-tight">Cancel Instantly</h5>
+              <h5 className="font-space text-xl font-bold tracking-tight">Cancel Instantly</h5>
               <p className="font-sans text-sm text-[#3A3A38]/60">
                 Cancel whenever you want, straight from your dashboard. No emails, no waiting, and no permission needed from the merchant.
               </p>

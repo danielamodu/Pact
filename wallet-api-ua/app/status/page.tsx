@@ -36,7 +36,7 @@ export default function StatusPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
-      <div className="mosaic-bg"></div>
+      <div className="bg-paper"></div>
       <NavigationBar />
 
       <main className="flex-1 pt-28 pb-12">
@@ -44,7 +44,7 @@ export default function StatusPage() {
 
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-              <h1 className="font-space text-5xl font-bold tracking-tighter leading-none text-forest uppercase">
+              <h1 className="font-space text-5xl font-bold tracking-tighter leading-none text-forest">
                 Keeper Status
               </h1>
               <p className="font-mono text-[10px] uppercase opacity-40 mt-2">
@@ -54,7 +54,7 @@ export default function StatusPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={load}
-                className="font-mono text-[9px] uppercase tracking-widest border border-forest/20 px-4 py-2.5 hover:bg-forest hover:text-white transition-colors cursor-pointer"
+                className="font-sans text-sm text-[#66756B]"
               >
                 Refresh
               </button>
@@ -65,7 +65,7 @@ export default function StatusPage() {
                     : "border-coral/30 bg-coral/10 text-coral"
                 }`}>
                   <div className={`w-2 h-2 rounded-full ${healthy ? "bg-forest" : "bg-coral"}`}></div>
-                  <span className="font-mono text-[10px] tracking-widest uppercase font-bold">
+                  <span className="font-sans text-sm text-[#66756B]">
                     {healthy ? "Operational" : "Degraded"}
                   </span>
                 </div>
@@ -85,7 +85,7 @@ export default function StatusPage() {
             <>
               {health.problems.length > 0 && (
                 <section className="bg-coral/5 border border-coral/30 border-l-[4px] border-l-coral p-6">
-                  <h3 className="font-space text-lg font-bold uppercase tracking-tight text-coral mb-3">
+                  <h3 className="font-space text-lg font-bold tracking-tight text-coral mb-3">
                     {health.problems.length} problem{health.problems.length > 1 ? "s" : ""} blocking billing
                   </h3>
                   <ul className="space-y-2">
@@ -106,9 +106,7 @@ export default function StatusPage() {
                   { label: "Encryption Key", ok: health.checks.encryptionKey },
                 ].map(({ label, ok }) => (
                   <div key={label} className="relative bg-white border border-[#3A3A38]/15 p-6">
-                    <div className="corner-marker corner-tl"></div>
-                    <div className="corner-marker corner-br"></div>
-                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-2">{label}</span>
+                    <span className="font-sans text-sm text-[#66756B]">{label}</span>
                     <span className={`font-space text-2xl font-bold ${ok ? "text-forest" : "text-coral"}`}>
                       {ok ? "Configured" : "Missing"}
                     </span>
@@ -118,20 +116,20 @@ export default function StatusPage() {
 
               <section className="bg-white border border-[#3A3A38]/15">
                 <div className="px-6 py-5 border-b border-[#3A3A38]/10">
-                  <h3 className="font-space text-lg font-bold uppercase tracking-tight">Keeper Wallet</h3>
-                  <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">Pays gas to fund session keys</p>
+                  <h3 className="font-space text-lg font-bold tracking-tight">Keeper Wallet</h3>
+                  <p className="font-sans text-sm text-[#66756B]">Pays gas to fund session keys</p>
                 </div>
                 <div className="p-6 space-y-4">
                   {health.keeperWallet ? (
                     <>
                       <div>
-                        <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-1">Address</span>
+                        <span className="font-sans text-sm text-[#66756B]">Address</span>
                         <span className="font-mono text-[11px] font-bold break-all">{health.keeperWallet.address}</span>
                       </div>
                       <div className="grid grid-cols-2 gap-4">
                         {Object.entries(health.keeperWallet.balances).map(([net, bal]) => (
                           <div key={net}>
-                            <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block mb-1">{net}</span>
+                            <span className="font-sans text-sm text-[#66756B]">{net}</span>
                             <span className={`font-mono text-sm font-bold ${bal === "0.0" ? "text-coral" : ""}`}>{bal} ETH</span>
                           </div>
                         ))}
@@ -146,7 +144,7 @@ export default function StatusPage() {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <section className="bg-white border border-[#3A3A38]/15">
                   <div className="px-6 py-5 border-b border-[#3A3A38]/10">
-                    <h3 className="font-space text-lg font-bold uppercase tracking-tight">Stored Delegations</h3>
+                    <h3 className="font-space text-lg font-bold tracking-tight">Stored Delegations</h3>
                   </div>
                   <div className="p-6">
                     <span className={`font-space text-4xl font-bold ${health.delegations?.total ? "text-forest" : "text-coral"}`}>
@@ -165,7 +163,7 @@ export default function StatusPage() {
 
                 <section className="bg-white border border-[#3A3A38]/15">
                   <div className="px-6 py-5 border-b border-[#3A3A38]/10">
-                    <h3 className="font-space text-lg font-bold uppercase tracking-tight">Last Run</h3>
+                    <h3 className="font-space text-lg font-bold tracking-tight">Last Run</h3>
                   </div>
                   <div className="p-6">
                     {health.lastRun ? (

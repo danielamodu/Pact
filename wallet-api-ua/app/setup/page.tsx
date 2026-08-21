@@ -135,7 +135,7 @@ export default function SetupPage() {
 
       {successTxHash && (
         <div className="fixed inset-0 bg-[#3A3A38]/40 backdrop-blur-md z-50 flex items-center justify-center p-6">
-          <div className="relative bg-paper border border-[#3A3A38]/30 max-w-lg w-full p-10 flex flex-col items-center text-center">
+          <div className="ui-card max-w-lg w-full p-10 flex flex-col items-center text-center">
 
             <div className="w-16 h-16 bg-mint/10 border border-mint flex items-center justify-center text-forest rounded-full mb-6">
               <svg viewBox="0 0 24 24" className="w-8 h-8 stroke-current stroke-2 fill-none" xmlns="http://www.w3.org/2000/svg">
@@ -143,18 +143,18 @@ export default function SetupPage() {
               </svg>
             </div>
 
-            <h2 className="font-space text-3xl font-bold uppercase tracking-tight text-forest mb-2">
+            <h2 className="font-space text-3xl font-bold tracking-tight text-forest mb-2">
               Plan Successfully Launched
             </h2>
-            <p className="font-sans text-[#3A3A38]/70 text-sm mb-6">
+            <p className="font-sans text-[17px] text-[#46564E] mb-6">
               Your subscription plan contract is live on-chain and ready to accept subscriber flows.
             </p>
 
             {createdPlanId && (
               <div className="w-full bg-[#9EFFBF]/15 border border-forest/20 p-4 text-left mb-4">
-                <span className="block opacity-40 uppercase tracking-widest text-[9px] mb-1 font-mono">Plan ID</span>
+                <span className="block font-sans text-sm text-[#66756B] mb-1">Plan ID</span>
                 <span className="font-space text-3xl font-bold text-forest leading-none">#{createdPlanId}</span>
-                <p className="font-mono text-[9px] opacity-50 mt-2 uppercase tracking-tight">
+                <p className="font-sans text-sm text-[#66756B] mt-2">
                   Share the link below to start accepting subscribers
                 </p>
               </div>
@@ -162,8 +162,8 @@ export default function SetupPage() {
 
             {createdPlanId && (
               <div className="w-full bg-[#F7F7F5] border border-[#3A3A38]/10 p-4 text-left mb-4">
-                <span className="block opacity-40 uppercase tracking-widest text-[9px] mb-2 font-mono">Subscribe Link</span>
-                <code className="font-mono text-[10px] text-forest break-all block mb-3">
+                <span className="block font-sans text-sm text-[#66756B] mb-2">Subscribe Link</span>
+                <code className="font-mono text-[13px] text-forest break-all block mb-3">
                   {`${typeof window !== "undefined" ? window.location.origin : ""}/subscribe?planId=${createdPlanId}&network=${network}`}
                 </code>
                 <button
@@ -174,7 +174,7 @@ export default function SetupPage() {
                     setLinkCopied(true);
                     setTimeout(() => setLinkCopied(false), 2000);
                   }}
-                  className="w-full bg-white border border-forest/20 text-forest font-mono text-[9px] font-bold uppercase tracking-widest py-2.5 hover:bg-forest hover:text-white transition-colors cursor-pointer"
+                  className="ui-btn ui-btn-ghost ui-btn-sm w-full"
                 >
                   {linkCopied ? "Copied!" : "Copy Subscribe Link"}
                 </button>
@@ -182,7 +182,7 @@ export default function SetupPage() {
             )}
 
             <div className="w-full bg-[#F7F7F5] border border-[#3A3A38]/10 p-4 font-mono text-[11px] break-all text-left mb-8">
-              <span className="block opacity-40 uppercase tracking-widest text-[9px] mb-1">Transaction Hash</span>
+              <span className="block font-sans text-sm text-[#66756B] mb-1">Transaction Hash</span>
               <a
                 href={network === "arbitrum" ? `https://arbiscan.io/tx/${successTxHash}` : `https://basescan.org/tx/${successTxHash}`}
                 target="_blank"
@@ -204,11 +204,7 @@ export default function SetupPage() {
               )}
               <button
                 onClick={() => router.push("/wallet")}
-                className={`flex-1 font-mono text-xs font-bold uppercase tracking-widest py-4 rounded-sm transition-opacity cursor-pointer ${
-                  createdPlanId
-                    ? "border border-forest/20 text-forest hover:bg-forest/5"
-                    : "bg-forest text-white hover:opacity-90"
-                }`}
+                className={`flex-1 ui-btn ${createdPlanId ? "ui-btn-ghost" : "ui-btn-primary"}`}
               >
                 Return to Dashboard
               </button>
@@ -217,45 +213,45 @@ export default function SetupPage() {
         </div>
       )}
 
-      <main className="flex-1 pt-12 pb-36 min-h-screen">
+      <main className="flex-1 pt-14 pb-28 min-h-screen">
         <div className="max-w-[1400px] mx-auto px-10">
           {/* Page Header */}
-          <div className="text-center mb-16">
-            <h1 className="font-space text-[48px] font-bold tracking-tight text-[#1A3C2B] leading-[0.9] mb-4">
-              Create a Subscription Plan
+          <div className="mb-10">
+            <h1 className="font-space text-[44px] font-bold tracking-tight text-forest leading-[1.1]">
+              Create a plan
             </h1>
-            <p className="font-sans text-base text-[#3A3A38]/60">
-              Define your plan terms and start accepting recurring payments
+            <p className="font-sans text-[17px] text-[#46564E] mt-1">
+              Set your price and schedule, then share the link.
             </p>
           </div>
 
           {/* Form Container */}
           <div className="max-w-[720px] mx-auto">
-            <div className="relative bg-[#F7F7F5] border border-[#3A3A38]/20 p-10">
+            <div className="ui-card p-10">
               {/* Corner Markers */}
 
               <form onSubmit={handleSubmit} className="space-y-8">
-                {/* 01. Plan Name */}
+                {/* Plan name */}
                 <div className="space-y-2">
-                  <label className="font-mono text-[10px] tracking-widest uppercase text-[#1A3C2B] font-bold">
-                    01. Plan Name
+                  <label className="font-sans text-[15px] font-semibold text-forest">
+                    Plan name
                   </label>
                   <input
                     type="text"
                     value={planName}
                     onChange={(e) => setPlanName(e.target.value)}
                     placeholder="e.g. Professional Plan"
-                    className="w-full ui-card p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
+                    className="ui-field font-sans"
                   />
-                  <p className="font-mono text-[9px] opacity-50 tracking-tight mt-1">
+                  <p className="font-sans text-sm text-[#66756B] mt-1.5">
                     This name will be displayed to subscribers
                   </p>
                 </div>
 
-                {/* 02. Payment Token */}
+                {/* Payment token */}
                 <div className="space-y-4">
-                  <label className="font-mono text-[10px] tracking-widest uppercase text-[#1A3C2B] font-bold">
-                    02. Payment Token
+                  <label className="font-sans text-[15px] font-semibold text-forest">
+                    Payment token
                   </label>
                   <div className="flex gap-3">
                     {["USDC", "USDT", "ETH"].map((tok) => (
@@ -270,8 +266,8 @@ export default function SetupPage() {
                         />
                         <label
                           htmlFor={`token-${tok.toLowerCase()}`}
-                          className={`flex flex-col items-center justify-center p-4 border cursor-pointer hover:bg-[#1A3C2B]/5 transition-colors font-space font-bold uppercase text-sm ${
-                            token === tok ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/20"
+                          className={`flex items-center justify-center py-3.5 rounded-xl border cursor-pointer transition-colors font-sans text-[15px] font-semibold ${
+                            token === tok ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/15 hover:bg-[#F7F7F5]"
                           }`}
                         >
                           {tok}
@@ -281,10 +277,10 @@ export default function SetupPage() {
                   </div>
                 </div>
 
-                {/* 03. Subscription Price */}
+                {/* Price */}
                 <div className="space-y-2">
-                  <label className="font-mono text-[10px] tracking-widest uppercase text-[#1A3C2B] font-bold">
-                    03. Subscription Price
+                  <label className="font-sans text-[15px] font-semibold text-forest">
+                    Price
                   </label>
                   <div className="flex">
                     <input
@@ -292,23 +288,23 @@ export default function SetupPage() {
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="49.99"
-                      className="flex-1 ui-card p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
+                      className="ui-field font-sans rounded-r-none"
                     />
-                    <div className="bg-[#1A3C2B]/5 border border-[#3A3A38]/20 border-l-0 px-6 flex items-center">
-                      <span className="font-mono text-[10px] font-bold tracking-widest">
+                    <div className="bg-[#F7F7F5] border border-l-0 border-[#3A3A38]/12 rounded-r-xl px-5 flex items-center">
+                      <span className="font-sans text-[15px] font-semibold text-[#46564E]">
                         {token}
                       </span>
                     </div>
                   </div>
-                  <p className="font-mono text-[9px] opacity-50 tracking-tight mt-1">
+                  <p className="font-sans text-sm text-[#66756B] mt-1.5">
                     {priceInUsd ? `≈ $${priceInUsd} USD per billing cycle` : "Price per billing cycle"}
                   </p>
                 </div>
 
-                {/* 04. Billing Cycle */}
+                {/* Billing cycle */}
                 <div className="space-y-4">
-                  <label className="font-mono text-[10px] tracking-widest uppercase text-[#1A3C2B] font-bold">
-                    04. Billing Cycle
+                  <label className="font-sans text-[15px] font-semibold text-forest">
+                    Billing cycle
                   </label>
                   <div className="flex gap-3">
                     {["Weekly", "Monthly", "Quarterly"].map((cyc) => (
@@ -323,8 +319,8 @@ export default function SetupPage() {
                         />
                         <label
                           htmlFor={`cycle-${cyc.toLowerCase()}`}
-                          className={`flex items-center justify-center p-3 border cursor-pointer font-mono text-[10px] uppercase tracking-widest font-bold ${
-                            cycle === cyc ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/20"
+                          className={`flex items-center justify-center py-3.5 rounded-xl border cursor-pointer transition-colors font-sans text-[15px] font-semibold ${
+                            cycle === cyc ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/15 hover:bg-[#F7F7F5]"
                           }`}
                         >
                           {cyc}
@@ -342,8 +338,8 @@ export default function SetupPage() {
                       />
                       <label
                         htmlFor="cycle-custom"
-                        className={`flex items-center justify-center p-3 border cursor-pointer font-mono text-[10px] uppercase tracking-widest font-bold ${
-                          cycle === "Custom" ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/20"
+                        className={`flex items-center justify-center py-3.5 rounded-xl border cursor-pointer transition-colors font-sans text-[15px] font-semibold ${
+                          cycle === "Custom" ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/15 hover:bg-[#F7F7F5]"
                         }`}
                       >
                         Custom
@@ -360,19 +356,19 @@ export default function SetupPage() {
                         value={customDays}
                         onChange={(e) => setCustomDays(e.target.value)}
                         placeholder="14"
-                        className="flex-1 ui-card p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
+                        className="ui-field font-sans rounded-r-none"
                       />
-                      <div className="bg-[#1A3C2B]/5 border border-[#3A3A38]/20 border-l-0 px-6 flex items-center">
-                        <span className="font-mono text-[10px] font-bold tracking-widest">DAYS</span>
+                      <div className="bg-[#F7F7F5] border border-l-0 border-[#3A3A38]/12 rounded-r-xl px-5 flex items-center">
+                        <span className="font-sans text-[15px] font-semibold text-[#46564E]">DAYS</span>
                       </div>
                     </div>
                   )}
                 </div>
 
-                {/* 05. Payout Address */}
+                {/* Where payments go */}
                 <div className="space-y-2">
-                  <label className="font-mono text-[10px] tracking-widest uppercase text-[#1A3C2B] font-bold">
-                    05. Payout Address
+                  <label className="font-sans text-[15px] font-semibold text-forest">
+                    Where payments go
                   </label>
                   <div className="relative flex items-center">
                     <input
@@ -380,26 +376,26 @@ export default function SetupPage() {
                       value={payoutAddress}
                       onChange={(e) => setPayoutAddress(e.target.value)}
                       placeholder="0x7a2C0f8dB8E42Fe5d7f9E9e9e9e9e9e9e9e9c8F"
-                      className="w-full ui-card p-4 font-mono text-[12px] placeholder:text-[#3A3A38]/30 rounded-sm"
+                      className="ui-field font-mono !text-sm"
                     />
                     {!publicAddress && (
                       <Link
                         href="/login"
-                        className="absolute right-2 px-3 py-1.5 border border-forest text-forest font-mono text-[9px] uppercase tracking-widest hover:bg-forest hover:text-white transition-all"
+                        className="absolute right-2 ui-btn ui-btn-ghost ui-btn-sm"
                       >
                         Connect Wallet
                       </Link>
                     )}
                   </div>
-                  <p className="font-mono text-[9px] opacity-50 tracking-tight mt-1">
+                  <p className="font-sans text-sm text-[#66756B] mt-1.5">
                     Funds will settle to this address. Must be a valid EVM wallet.
                   </p>
                 </div>
 
-                {/* 06. Target Network */}
+                {/* Network */}
                 <div className="space-y-4">
-                  <label className="font-mono text-[10px] tracking-widest uppercase text-[#1A3C2B] font-bold">
-                    06. Target Network
+                  <label className="font-sans text-[15px] font-semibold text-forest">
+                    Network
                   </label>
                   <div className="flex gap-3">
                     {["arbitrum", "base"].map((net) => (
@@ -414,8 +410,8 @@ export default function SetupPage() {
                         />
                         <label
                           htmlFor={`net-${net}`}
-                          className={`flex items-center justify-center p-3 border cursor-pointer font-mono text-[10px] uppercase tracking-widest font-bold ${
-                            network === net ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/20"
+                          className={`flex items-center justify-center py-3.5 rounded-xl border cursor-pointer transition-colors font-sans text-[15px] font-semibold ${
+                            network === net ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/15 hover:bg-[#F7F7F5]"
                           }`}
                         >
                           {net === "arbitrum" ? "Arbitrum One" : "Base Network"}
@@ -450,7 +446,7 @@ export default function SetupPage() {
                           ? "QTR"
                           : `${customDays || "0"}D`}
                       </div>
-                      <div className="font-mono text-[10px] uppercase tracking-widest opacity-50 mt-1">
+                      <div className="font-sans text-sm text-[#66756B] mt-1">
                         {cycle === "Custom" ? `Every ${customDays || "0"} days` : `${cycle} billing cycle`}
                         {priceInUsd && ` · ≈ $${priceInUsd}`}
                       </div>

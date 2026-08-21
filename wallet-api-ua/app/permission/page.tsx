@@ -276,11 +276,11 @@ function PermissionContent() {
           <div className="text-center mb-10">
             <div className="inline-flex items-center gap-2 border border-[#1A3C2B]/20 px-3 py-1 mb-6 bg-white/50">
               <div className="w-2 h-2 bg-[#9EFFBF] rounded-full"></div>
-              <span className="font-mono text-[10px] tracking-widest uppercase">
+              <span className="font-sans text-sm text-[#66756B]">
                 Authorization Required
               </span>
             </div>
-            <h1 className="font-space text-5xl font-bold tracking-tighter leading-[0.9] text-[#1A3C2B] mb-4 uppercase">
+            <h1 className="font-space text-5xl font-bold tracking-tighter leading-[0.9] text-[#1A3C2B] mb-4">
               Confirm Payment Permission
             </h1>
             <p className="font-sans text-[#3A3A38]/60 text-base">
@@ -308,7 +308,7 @@ function PermissionContent() {
             {/* Technical Breakdown Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#3A3A38]/10 mt-12 border border-[#3A3A38]/10">
               <div className="bg-[#F7F7F5] p-5">
-                <span className="font-mono text-[9px] tracking-widest uppercase opacity-40 block mb-1">
+                <span className="font-sans text-sm text-[#66756B]">
                   Plan ID
                 </span>
                 <span className="font-mono text-[10px] text-[#1A3C2B] font-bold truncate block">
@@ -316,7 +316,7 @@ function PermissionContent() {
                 </span>
               </div>
               <div className="bg-[#F7F7F5] p-5">
-                <span className="font-mono text-[9px] tracking-widest uppercase opacity-40 block mb-1">
+                <span className="font-sans text-sm text-[#66756B]">
                   Merchant
                 </span>
                 <span className="font-mono text-[10px] text-[#1A3C2B] font-bold block truncate">
@@ -324,7 +324,7 @@ function PermissionContent() {
                 </span>
               </div>
               <div className="bg-[#F7F7F5] p-5">
-                <span className="font-mono text-[9px] tracking-widest uppercase opacity-40 block mb-1">
+                <span className="font-sans text-sm text-[#66756B]">
                   Cancelling
                 </span>
                 <span className="font-mono text-[10px] text-[#1A3C2B] font-bold block">
@@ -383,7 +383,7 @@ function PermissionContent() {
 
               <button
                 onClick={() => setError(null)}
-                className="font-mono text-[10px] uppercase tracking-widest text-coral/70 hover:text-coral underline block"
+                className="font-sans text-sm text-[#66756B]"
               >
                 Dismiss
               </button>
@@ -455,7 +455,7 @@ function PermissionContent() {
               <div className="w-12 h-12 bg-[#9EFFBF] text-forest rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
                 ✓
               </div>
-              <h3 className="font-space text-3xl font-bold text-forest uppercase tracking-tight">
+              <h3 className="font-space text-3xl font-bold text-forest tracking-tight">
                 Subscription Authorized!
               </h3>
               <p className="font-sans text-sm text-[#3A3A38]/70">

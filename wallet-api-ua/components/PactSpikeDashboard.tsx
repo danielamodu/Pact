@@ -119,8 +119,8 @@ export function PactSpikeDashboard() {
       <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 pt-12 pb-36 relative z-10">
-        <div className="max-w-[1400px] mx-auto px-10 py-12 space-y-8">
+      <main className="flex-1 pt-14 pb-28 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-10 space-y-8">
 
           {/* Greeting */}
           <div>

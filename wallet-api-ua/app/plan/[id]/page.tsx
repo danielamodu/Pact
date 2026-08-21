@@ -326,7 +326,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
       <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 pt-12 pb-36">
+      <main className="flex-1 pt-14 pb-28">
         <div className="max-w-[1180px] mx-auto px-6 space-y-6">
 
           {loading ? (
@@ -590,7 +590,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                           ) : (
                             <span className="font-sans text-[13px] text-[#56655C] font-bold text-[#1A3C2B]">✓ Payment verified</span>
                           )}
-                          <span className="font-mono text-[9px] opacity-40 block">
+                          <span className="font-sans text-sm text-[#66756B] block">
                             Paid from {insightsPayer.slice(0, 10)}…{insightsPayer.slice(-6)} · {new Date(insightsData.unlockedAt).toLocaleTimeString()}
                           </span>
                         </div>
@@ -644,9 +644,9 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                     {/* Embed */}
                     <div className="space-y-4">
                       <h4 className="font-sans text-[13px] text-[#56655C] text-forest font-bold">Embed Button</h4>
-                      <p className="font-mono text-[9px] opacity-40 leading-relaxed">Drop this on any website to let visitors subscribe directly.</p>
+                      <p className="font-sans text-sm text-[#66756B] leading-relaxed">Drop this on any website to let visitors subscribe directly.</p>
                       <div className="bg-[#F7F7F5] border border-[#3A3A38]/10 p-3 overflow-x-auto rounded-sm">
-                        <code className="font-mono text-[9px] text-forest/60 whitespace-nowrap leading-relaxed">
+                        <code className="font-mono text-[12px] text-forest/70 whitespace-nowrap leading-relaxed">
                           {`<iframe src="${typeof window !== "undefined" ? window.location.origin : "https://www.pact.rest"}/embed/${id}?network=${network}" width="280" height="200" frameborder="0" scrolling="no"></iframe>`}
                         </code>
                       </div>
@@ -658,11 +658,11 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                     {/* Webhooks */}
                     <div className="space-y-4">
                       <h4 className="font-sans text-[13px] text-[#56655C] text-forest font-bold">Payment Notifications</h4>
-                      <p className="font-mono text-[9px] opacity-40 leading-relaxed">We POST to your URL every time a payment succeeds.</p>
+                      <p className="font-sans text-sm text-[#66756B] leading-relaxed">We POST to your URL every time a payment succeeds.</p>
                       {savedWebhookUrl && (
                         <div className="flex items-center gap-2 bg-[#9EFFBF]/10 border border-[#1A3C2B]/20 p-3 rounded-sm">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#1A3C2B] flex-shrink-0"></div>
-                          <span className="font-mono text-[9px] break-all flex-1">{savedWebhookUrl}</span>
+                          <span className="font-mono text-[12px] break-all flex-1">{savedWebhookUrl}</span>
                           <button onClick={handleRemoveWebhook} className="font-sans text-sm text-coral hover:opacity-70 flex-shrink-0">✕</button>
                         </div>
                       )}
@@ -671,7 +671,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                         value={webhookUrl}
                         onChange={(e) => setWebhookUrl(e.target.value)}
                         placeholder="https://yoursite.com/webhooks/pact"
-                        className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 font-mono text-[10px] placeholder:opacity-30 rounded-sm"
+                        className="ui-field font-mono !text-sm"
                       />
                       <button
                         onClick={handleSaveWebhook}
@@ -684,12 +684,12 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                         <div className="bg-amber-50 border border-amber-200 p-4 space-y-2 rounded-sm">
                           <p className="font-sans text-[13px] text-[#56655C] text-amber-700 font-bold">Save this secret — won&apos;t show again</p>
                           <code className="font-mono text-[10px] text-amber-900 break-all block select-all">{webhookSecret}</code>
-                          <p className="font-mono text-[9px] opacity-60">Verify <code>X-Pact-Signature</code> headers.</p>
+                          <p className="font-sans text-sm text-[#66756B]">Verify <code>X-Pact-Signature</code> headers.</p>
                         </div>
                       )}
                       <div className="bg-[#F7F7F5] border border-[#3A3A38]/10 p-3 rounded-sm space-y-1">
                         <p className="font-sans text-[13px] text-[#66756B]">Payload</p>
-                        <code className="font-mono text-[9px] opacity-60 block leading-relaxed">{`{ event, planId, network, subscriber, amount, txHash, timestamp }`}</code>
+                        <code className="font-mono text-[12px] text-[#46564E] block leading-relaxed">{`{ event, planId, network, subscriber, amount, txHash, timestamp }`}</code>
                       </div>
                     </div>
                   </div>
