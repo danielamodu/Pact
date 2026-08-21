@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { NavigationBar } from "@/components/NavigationBar";
+import { DepositModal } from "@/components/DepositModal";
 import { useAuth } from "@/contexts/AuthProvider";
 import { useState, useEffect } from "react";
 import { getUSDCBalance, getETHBalance, withdrawOnchain } from "@/lib/contracts";
@@ -16,9 +16,9 @@ export default function BalanceRevealPage() {
     baseEth: "0.0000"
   });
   const [loading, setLoading] = useState(true);
-  
+  const [depositOpen, setDepositOpen] = useState(false);
+
   const [ethPrice, setEthPrice] = useState<number>(3420); // Fallback price
-  const [showUSDForEth, setShowUSDForEth] = useState<boolean>(false);
 
   // Withdrawal States
   const [selectedNetwork, setSelectedNetwork] = useState<"arbitrum" | "base">("arbitrum");
@@ -69,7 +69,7 @@ export default function BalanceRevealPage() {
       );
       setTxHash(hash);
       setAmount("");
-      
+
       // Update balances
       setTimeout(async () => {
         const [arbUsdc, baseUsdc, arbEth, baseEth] = await Promise.all([
@@ -157,259 +157,260 @@ export default function BalanceRevealPage() {
 
   const totalUSDC = (parseFloat(balances.arbitrumUsdc) + parseFloat(balances.baseUsdc)).toFixed(2);
   const totalETH = (parseFloat(balances.arbitrumEth) + parseFloat(balances.baseEth)).toFixed(5);
-  const totalETHInUSD = (parseFloat(totalETH) * ethPrice).toFixed(2);
+  const totalUsd = (parseFloat(totalETH) * ethPrice + parseFloat(totalUSDC)).toFixed(2);
+
+  const networks = [
+    {
+      key: "arbitrum",
+      label: "Arbitrum One",
+      eth: balances.arbitrumEth,
+      usdc: balances.arbitrumUsdc,
+      color: "#28A0F0",
+      icon: (
+        <svg viewBox="0 0 400 400" className="w-7 h-7" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="290,44 380,200 290,356 110,356 20,200 110,44" fill="#0A1C3A" stroke="#A3D4F5" strokeWidth="24" strokeLinejoin="round"/><polygon points="120,310 180,120 220,120 160,310" fill="#FFFFFF"/><polygon points="180,310 240,120 280,120 220,310" fill="#FFFFFF"/><polygon points="280,120 340,310 300,310 250,160" fill="#28A0F0"/></svg>
+      ),
+    },
+    {
+      key: "base",
+      label: "Base",
+      eth: balances.baseEth,
+      usdc: balances.baseUsdc,
+      color: "#0052FF",
+      icon: (
+        <svg viewBox="0 0 400 400" className="w-7 h-7 text-[#0052FF]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="400" rx="80" fill="currentColor"/></svg>
+      ),
+    },
+  ];
+
+  const grandTotal = parseFloat(totalETH) * ethPrice + parseFloat(totalUSDC);
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
       <div className="mosaic-bg"></div>
       <NavigationBar mode="app" activeItem="balance" />
 
-      <main className="flex-1 pt-24 pb-12">
-        <section className="max-w-7xl mx-auto px-6 py-12">
-          {/* Top Banner */}
-          <div className="text-center mb-16">
-            <h1 className="font-space text-5xl font-bold tracking-tighter leading-[0.9] text-[#1A3C2B] uppercase">
-              Cross-Chain Liquidity Map
-            </h1>
-            <p className="font-sans text-[#3A3A38]/60 text-base mt-4 max-w-lg mx-auto">
-              Unified credit score scanning across your connected EVM network layers.
+      <main className="flex-1 pt-16 pb-12">
+        <div className="max-w-5xl mx-auto px-6 py-8 space-y-5">
+
+          <div>
+            <h1 className="font-space text-2xl font-bold tracking-tight text-forest">Balance</h1>
+            <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+              Your funds across Arbitrum and Base.
             </p>
           </div>
 
-          {/* Core Balance Wheel Visualizer */}
-          <div className="relative w-80 h-80 mx-auto mb-20 flex items-center justify-center">
-            {/* Arbitrum Icon Node */}
-            <div className="absolute top-1/2 left-0 -translate-y-1/2 -translate-x-1/2 z-20">
-              <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <svg viewBox="0 0 400 400" className="w-8 h-8" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="290,44 380,200 290,356 110,356 20,200 110,44" fill="#0A1C3A" stroke="#A3D4F5" strokeWidth="24" strokeLinejoin="round"/><polygon points="120,310 180,120 220,120 160,310" fill="#FFFFFF"/><polygon points="180,310 240,120 280,120 220,310" fill="#FFFFFF"/><polygon points="280,120 340,310 300,310 250,160" fill="#28A0F0"/></svg>
-              </div>
-              <div className="font-mono text-[9px] text-center mt-2 uppercase">Arbitrum</div>
-            </div>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
 
-            {/* Base Icon Node */}
-            <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 z-20">
-              <div className="w-16 h-16 bg-white border border-[#1A3C2B] flex items-center justify-center p-3">
-                <svg viewBox="0 0 400 400" className="w-8 h-8 text-[#0052FF]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="400" rx="80" fill="currentColor"/></svg>
-              </div>
-              <div className="font-mono text-[9px] text-center mt-2 uppercase">Base</div>
-            </div>
+            {/* ── Left: what you hold ─────────────────────────────────────── */}
+            <div className="lg:col-span-2 space-y-5">
 
-            {/* Connecting lines */}
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <div className="w-1/2 h-[1px] bg-gradient-to-l from-[#1A3C2B]/40 to-transparent absolute top-1/2 left-0 -translate-y-1/2"></div>
-              <div className="w-1/2 h-[1px] bg-gradient-to-r from-[#1A3C2B]/40 to-transparent absolute top-1/2 right-0 -translate-y-1/2"></div>
-            </div>
-
-            {/* Center Balance Orb */}
-            <div className="relative z-10 cursor-pointer select-none group" onClick={() => setShowUSDForEth(!showUSDForEth)} title="Click to toggle ETH/USD view">
-              <div className="w-64 h-64 border border-[#1A3C2B] rounded-full flex flex-col items-center justify-center bg-[#F7F7F5] relative transition-transform duration-200 hover:scale-[1.02]">
-                <div className="absolute inset-0 border border-dashed border-[#1A3C2B]/20 rounded-full animate-spin [animation-duration:30s]"></div>
-                
-                {/* Primary Asset Display */}
-                <span className="font-space text-3xl font-bold text-[#1A3C2B] tracking-tighter transition-all duration-300">
-                  {loading ? "..." : (showUSDForEth ? `$${totalETHInUSD}` : `${totalETH} ETH`)}
-                </span>
-                
-                {/* Secondary Asset Display */}
-                <span className="font-mono text-[10px] text-[#1A3C2B]/60 font-bold uppercase tracking-wider mt-1 transition-all duration-300">
-                  {loading ? "..." : (showUSDForEth ? `≈ ${totalETH} ETH` : `≈ $${totalETHInUSD}`)}
-                </span>
-
-                <div className="w-12 h-[1px] bg-[#1A3C2B]/10 my-2"></div>
-                
-                {/* USDC Display */}
-                <span className="font-space text-lg font-bold text-[#1A3C2B]/75 tracking-tighter">
-                  {loading ? "..." : `${totalUSDC} USDC`}
-                </span>
-                
-                <span className="font-mono text-[8px] tracking-widest uppercase mt-3 opacity-60">
-                  Total Assets (Click to toggle)
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Network breakdowns */}
-          <div className="mt-16 space-y-4 max-w-xl mx-auto mb-16">
-            <div className="flex items-center gap-6 p-4 border border-[#3A3A38]/10 bg-white/40">
-              <svg viewBox="0 0 400 400" className="w-8 h-8" fill="none" xmlns="http://www.w3.org/2000/svg"><polygon points="290,44 380,200 290,356 110,356 20,200 110,44" fill="#0A1C3A" stroke="#A3D4F5" strokeWidth="24" strokeLinejoin="round"/><polygon points="120,310 180,120 220,120 160,310" fill="#FFFFFF"/><polygon points="180,310 240,120 280,120 220,310" fill="#FFFFFF"/><polygon points="280,120 340,310 300,310 250,160" fill="#28A0F0"/></svg>
-              <div className="flex-1">
-                <div className="flex justify-between items-baseline mb-2">
-                  <span className="font-mono text-[10px] uppercase font-bold">Arbitrum One</span>
-                  <span className="font-mono text-xs font-bold">{loading ? "Scanning..." : `${balances.arbitrumEth} ETH ($${(parseFloat(balances.arbitrumEth) * ethPrice).toFixed(2)}) / ${balances.arbitrumUsdc} USDC`}</span>
+              <section className="bg-white border border-[#3A3A38]/15 p-6">
+                <span className="font-sans text-[15px] text-[#56655C] block mb-1.5">Total balance</span>
+                <div className="flex items-end justify-between gap-4 flex-wrap">
+                  <div>
+                    <span className="font-space text-[42px] font-bold text-forest leading-none tracking-tight">
+                      {loading ? "—" : `$${totalUsd}`}
+                    </span>
+                    {!loading && (
+                      <p className="font-mono text-[11px] text-[#66756B] mt-2">
+                        {totalETH} ETH · {totalUSDC} USDC
+                      </p>
+                    )}
+                  </div>
+                  <button
+                    onClick={() => setDepositOpen(true)}
+                    className="bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
+                  >
+                    Add funds
+                  </button>
                 </div>
-                <div className="h-1 bg-[#3A3A38]/5 w-full">
-                  <div className="h-full bg-[#28A0F0]" style={{ width: `${Math.min(100, Math.max(0, ((parseFloat(balances.arbitrumEth) * 2000 + parseFloat(balances.arbitrumUsdc)) / ((parseFloat(totalETH) * 2000 + parseFloat(totalUSDC)) || 1)) * 100))}%` }}></div>
+
+                {/* Per-network split */}
+                <div className="mt-6 pt-5 border-t border-[#3A3A38]/10 space-y-4">
+                  {networks.map((n) => {
+                    const usd = parseFloat(n.eth) * ethPrice + parseFloat(n.usdc);
+                    const pct = grandTotal > 0 ? (usd / grandTotal) * 100 : 0;
+                    return (
+                      <div key={n.key} className="flex items-center gap-4">
+                        <div className="flex-shrink-0">{n.icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-baseline gap-3 mb-1.5">
+                            <span className="font-sans text-[15px] text-forest font-medium">{n.label}</span>
+                            <span className="font-mono text-[11px] text-[#46564E]">
+                              {loading ? "…" : `$${usd.toFixed(2)}`}
+                              {!loading && (
+                                <span className="text-[#66756B]"> · {n.eth} ETH · {n.usdc} USDC</span>
+                              )}
+                            </span>
+                          </div>
+                          <div className="h-1 bg-[#3A3A38]/8 w-full">
+                            <div
+                              className="h-full transition-all duration-500"
+                              style={{ width: `${Math.min(100, Math.max(0, pct))}%`, background: n.color }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              </div>
-            </div>
+              </section>
 
-            <div className="flex items-center gap-6 p-4 border border-[#3A3A38]/10 bg-white/40">
-              <svg viewBox="0 0 400 400" className="w-8 h-8 text-[#0052FF]" fill="currentColor" xmlns="http://www.w3.org/2000/svg"><rect width="400" height="400" rx="80" fill="currentColor"/></svg>
-              <div className="flex-1">
-                <div className="flex justify-between items-baseline mb-2">
-                  <span className="font-mono text-[10px] uppercase font-bold">Base Network</span>
-                  <span className="font-mono text-xs font-bold">{loading ? "Scanning..." : `${balances.baseEth} ETH ($${(parseFloat(balances.baseEth) * ethPrice).toFixed(2)}) / ${balances.baseUsdc} USDC`}</span>
-                </div>
-                <div className="h-1 bg-[#3A3A38]/5 w-full">
-                  <div className="h-full bg-[#0052FF]" style={{ width: `${Math.min(100, Math.max(0, ((parseFloat(balances.baseEth) * 2000 + parseFloat(balances.baseUsdc)) / ((parseFloat(totalETH) * 2000 + parseFloat(totalUSDC)) || 1)) * 100))}%` }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Particle Chain-Abstraction Index */}
-          <div className="max-w-xl mx-auto mb-16 p-8 border border-[#3A3A38]/20 bg-[#F7F7F5] relative">
-            <div className="corner-marker corner-tl"></div>
-            <div className="corner-marker corner-tr"></div>
-            <div className="corner-marker corner-bl"></div>
-            <div className="corner-marker corner-br"></div>
-
-            <div className="flex justify-between items-start gap-4 mb-6">
-              <div>
-                <h3 className="font-space text-lg font-bold uppercase tracking-tight">Particle Universal Portfolio</h3>
-                <p className="font-mono text-[9px] uppercase tracking-widest opacity-50 mt-1">
-                  Cross-chain aggregated holdings scan via Universal Account SDK
-                </p>
-              </div>
-              <div className="bg-[#0052FF]/10 text-[#0052FF] font-mono text-[9px] uppercase tracking-wider px-2 py-0.5 font-bold border border-[#0052FF]/20">
-                Chain-Abstracted
-              </div>
-            </div>
-
-            {loadingUa ? (
-              <div className="font-mono text-[10px] uppercase opacity-40 py-4 animate-pulse">
-                Querying Particle Universal indexer...
-              </div>
-            ) : uaAssets ? (
-              <div className="space-y-6">
-                <div className="flex justify-between items-baseline pb-4 border-b border-[#3A3A38]/10">
-                  <span className="font-mono text-[10px] uppercase opacity-60">Consolidated Value</span>
-                  <span className="font-space text-3xl font-bold text-[#1a3c2b]">
-                    ${uaAssets.totalAmountInUSD?.toFixed(2) || "0.00"}
+              {/* Particle — holdings beyond the two Pact networks */}
+              <section className="bg-white border border-[#3A3A38]/15">
+                <div className="flex justify-between items-start gap-4 px-6 py-4 border-b border-[#3A3A38]/10">
+                  <div>
+                    <h2 className="font-space text-lg font-bold text-forest">Across all your chains</h2>
+                    <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+                      Everything you hold, found by Particle Network.
+                    </p>
+                  </div>
+                  <span className="bg-[#0052FF]/10 text-[#0052FF] font-mono text-[9px] uppercase tracking-wider px-2 py-1 font-bold border border-[#0052FF]/20 flex-shrink-0">
+                    Particle
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-4">
-                  {uaAssets.assets?.map((asset: any, idx: number) => (
-                    <div key={idx} className="bg-white/60 p-4 border border-[#3A3A38]/10">
-                      <span className="font-mono text-[8px] uppercase tracking-widest opacity-40 block mb-1">
-                        {asset.tokenType}
-                      </span>
-                      <span className="font-space text-base font-bold text-forest">
-                        {asset.amount?.toFixed(asset.tokenType === "eth" ? 4 : 2)}
-                      </span>
-                      <span className="font-mono text-[9px] opacity-50 block mt-0.5">
-                        ${asset.amountInUSD?.toFixed(2)}
-                      </span>
+                <div className="p-6">
+                  {loadingUa ? (
+                    <p className="font-sans text-[15px] text-[#66756B] py-2">Checking your other chains…</p>
+                  ) : uaAssets ? (
+                    <div className="space-y-5">
+                      <div className="flex justify-between items-baseline">
+                        <span className="font-sans text-[15px] text-[#56655C]">Total across all chains</span>
+                        <span className="font-space text-2xl font-bold text-forest">
+                          ${uaAssets.totalAmountInUSD?.toFixed(2) || "0.00"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                        {uaAssets.assets?.map((asset: any, idx: number) => (
+                          <div key={idx} className="bg-[#F7F7F5] p-3 border border-[#3A3A38]/10">
+                            <span className="font-mono text-[10px] uppercase tracking-wider text-[#66756B] block mb-1">
+                              {asset.tokenType}
+                            </span>
+                            <span className="font-space text-base font-bold text-forest block leading-none">
+                              {asset.amount?.toFixed(asset.tokenType === "eth" ? 4 : 2)}
+                            </span>
+                            <span className="font-mono text-[10px] text-[#66756B] block mt-1">
+                              ${asset.amountInUSD?.toFixed(2)}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
+                  ) : (
+                    <p className="font-sans text-[15px] text-[#46564E] py-2">
+                      Couldn&apos;t reach Particle right now. Your Arbitrum and Base balances above are unaffected.
+                    </p>
+                  )}
                 </div>
-
-                <div className="flex items-center gap-1.5 font-mono text-[8px] text-[#0052FF] uppercase font-bold tracking-widest pt-2">
-                  <iconify-icon icon="lucide:check-circle" className="text-xs"></iconify-icon>
-                  <span>Real-time indexing compiled across all supported chain layers</span>
-                </div>
-              </div>
-            ) : (
-              <div className="font-mono text-[10px] text-red-600 uppercase tracking-wider">
-                Failed to resolve Particle portfolio index. Check configuration.
-              </div>
-            )}
-          </div>
-
-          {/* Withdrawal Section */}
-          <section className="max-w-xl mx-auto mt-16 p-8 border border-[#3A3A38]/20 bg-white/50 relative">
-            <div className="corner-marker corner-tl"></div>
-            <div className="corner-marker corner-tr"></div>
-            <div className="corner-marker corner-bl"></div>
-            <div className="corner-marker corner-br"></div>
-
-            <div className="border-l-4 border-forest pl-4 mb-6">
-              <h3 className="font-space text-2xl font-bold uppercase tracking-tight">Withdraw Funds</h3>
-              <p className="font-mono text-[9px] tracking-widest uppercase opacity-50">Transfer assets out of your TEE secure account</p>
+              </section>
             </div>
 
-            <form onSubmit={handleWithdraw} className="space-y-4">
-              {txHash && (
-                <div className="p-4 border border-mint bg-mint/5 text-forest font-mono text-[11px] break-all">
-                  Withdrawal submitted! Transaction hash:
-                  <a href={selectedNetwork === "arbitrum" ? `https://arbiscan.io/tx/${txHash}` : `https://basescan.org/tx/${txHash}`} target="_blank" rel="noopener noreferrer" className="block text-coral hover:underline mt-1 font-bold">
-                    {txHash}
-                  </a>
-                </div>
-              )}
-              {errorMsg && (
-                <div className="p-4 border border-coral bg-coral/5 text-forest font-mono text-[11px]">
-                  Error: {errorMsg}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-mono text-[9px] tracking-wider uppercase opacity-60 mb-2">Network</label>
-                  <select
-                    value={selectedNetwork}
-                    onChange={(e: any) => setSelectedNetwork(e.target.value)}
-                    className="w-full bg-paper border border-[#3A3A38]/20 p-3 font-mono text-xs text-forest focus:outline-none"
-                  >
-                    <option value="arbitrum">Arbitrum One</option>
-                    <option value="base">Base Network</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block font-mono text-[9px] tracking-wider uppercase opacity-60 mb-2">Asset</label>
-                  <select
-                    value={selectedAsset}
-                    onChange={(e: any) => setSelectedAsset(e.target.value)}
-                    className="w-full bg-paper border border-[#3A3A38]/20 p-3 font-mono text-xs text-forest focus:outline-none"
-                  >
-                    <option value="ETH">ETH</option>
-                    <option value="USDC">USDC</option>
-                  </select>
-                </div>
+            {/* ── Right: move money out ───────────────────────────────────── */}
+            <section className="bg-white border border-[#3A3A38]/15 lg:sticky lg:top-20">
+              <div className="px-6 py-4 border-b border-[#3A3A38]/10">
+                <h2 className="font-space text-lg font-bold text-forest">Send funds</h2>
+                <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+                  Move money out of your Pact wallet.
+                </p>
               </div>
 
-              <div>
-                <label className="block font-mono text-[9px] tracking-wider uppercase opacity-60 mb-2">Recipient Address (EVM)</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="0x..."
-                  value={recipient}
-                  onChange={(e) => setRecipient(e.target.value)}
-                  className="w-full bg-paper border border-[#3A3A38]/20 p-3 font-mono text-xs text-forest focus:outline-none"
-                />
-              </div>
+              <form onSubmit={handleWithdraw} className="p-6 space-y-4">
+                {txHash && (
+                  <div className="p-3 border border-mint bg-mint/5 space-y-1">
+                    <p className="font-sans text-sm text-forest font-medium">Sent</p>
+                    <a
+                      href={selectedNetwork === "arbitrum" ? `https://arbiscan.io/tx/${txHash}` : `https://basescan.org/tx/${txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-sans text-[13px] text-forest underline underline-offset-2 hover:text-coral break-all"
+                    >
+                      View receipt
+                    </a>
+                  </div>
+                )}
+                {errorMsg && (
+                  <div className="p-3 border border-coral bg-coral/5">
+                    <p className="font-sans text-[13px] text-forest break-words">{errorMsg}</p>
+                  </div>
+                )}
 
-              <div>
-                <label className="block font-mono text-[9px] tracking-wider uppercase opacity-60 mb-2">Amount</label>
-                <div className="relative">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Network</label>
+                    <select
+                      value={selectedNetwork}
+                      onChange={(e: any) => setSelectedNetwork(e.target.value)}
+                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 font-sans text-sm text-forest focus:outline-none focus:border-forest"
+                    >
+                      <option value="arbitrum">Arbitrum</option>
+                      <option value="base">Base</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Asset</label>
+                    <select
+                      value={selectedAsset}
+                      onChange={(e: any) => setSelectedAsset(e.target.value)}
+                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 font-sans text-sm text-forest focus:outline-none focus:border-forest"
+                    >
+                      <option value="ETH">ETH</option>
+                      <option value="USDC">USDC</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Send to</label>
                   <input
-                    type="number"
-                    step="any"
+                    type="text"
                     required
-                    placeholder="0.0"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full bg-paper border border-[#3A3A38]/20 p-3 pr-16 font-mono text-xs text-forest focus:outline-none"
+                    placeholder="0x…"
+                    value={recipient}
+                    onChange={(e) => setRecipient(e.target.value)}
+                    className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 font-mono text-[13px] text-forest focus:outline-none focus:border-forest"
                   />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[10px] opacity-50 uppercase">{selectedAsset}</span>
                 </div>
-              </div>
 
-              <button
-                type="submit"
-                disabled={withdrawing}
-                className="w-full bg-forest text-white font-mono text-xs font-bold uppercase tracking-[0.2em] py-4 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50"
-              >
-                {withdrawing ? "Processing Withdrawal..." : "Confirm Withdrawal"}
-              </button>
-            </form>
-          </section>
+                <div>
+                  <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Amount</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      placeholder="0.0"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 pr-16 font-sans text-sm text-forest focus:outline-none focus:border-forest"
+                    />
+                    <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[11px] text-[#66756B]">
+                      {selectedAsset}
+                    </span>
+                  </div>
+                </div>
 
-        </section>
+                <button
+                  type="submit"
+                  disabled={withdrawing}
+                  className="w-full bg-forest text-white text-sm font-semibold py-3 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                >
+                  {withdrawing ? "Sending…" : "Send"}
+                </button>
+
+                <p className="font-sans text-[13px] text-[#66756B] leading-relaxed">
+                  Double-check the address — transfers can&apos;t be reversed.
+                </p>
+              </form>
+            </section>
+          </div>
+        </div>
       </main>
+
+      {publicAddress && (
+        <DepositModal isOpen={depositOpen} onClose={() => setDepositOpen(false)} address={publicAddress} />
+      )}
     </div>
   );
 }
