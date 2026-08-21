@@ -47,10 +47,20 @@ export function DepositModal({ isOpen, onClose, address }: DepositModalProps) {
           </svg>
         </button>
 
-        <h2 className="font-space text-2xl font-bold text-[#1A3C2B] mb-2">Deposit Funds</h2>
-        <p className="text-[#1A3C2B]/60 mb-8 text-sm">
-          Send ETH on Arbitrum or Base to your Universal Account address below. Your balance will automatically update.
+        <h2 className="font-space text-2xl font-bold text-[#1A3C2B] mb-2">Add Funds</h2>
+        <p className="text-[#1A3C2B]/60 mb-4 text-sm">
+          Send to your Pact wallet below and your balance updates automatically.
         </p>
+        <div className="border border-[#1A3C2B]/10 bg-[#F7F7F5] p-4 mb-6 space-y-2">
+          <div className="flex gap-3">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-[#1A3C2B]/40 w-14 flex-shrink-0 pt-0.5">ETH</span>
+            <span className="text-[#1A3C2B]/70 text-xs leading-relaxed">Covers network fees — you need a little to subscribe.</span>
+          </div>
+          <div className="flex gap-3">
+            <span className="font-mono text-[9px] uppercase tracking-widest text-[#1A3C2B]/40 w-14 flex-shrink-0 pt-0.5">USDC<br/>USDT</span>
+            <span className="text-[#1A3C2B]/70 text-xs leading-relaxed">Pays for the subscription itself, if the plan is priced in one of them.</span>
+          </div>
+        </div>
 
         <div className="bg-[#F7F7F5] border border-[#1A3C2B]/10 p-6 flex flex-col items-center justify-center mb-8 gap-4">
           <span className="font-mono text-sm text-[#1A3C2B] font-bold break-all text-center">
@@ -79,8 +89,9 @@ export function DepositModal({ isOpen, onClose, address }: DepositModalProps) {
           </button>
         </div>
 
-        <div className="text-center text-[#1A3C2B]/40 text-xs font-medium">
-          Only send ETH on supported networks (Arbitrum One, Base).
+        <div className="text-center text-[#1A3C2B]/40 text-xs font-medium leading-relaxed">
+          Only send on Arbitrum One or Base.<br />
+          Funds sent on any other network can&apos;t be recovered.
         </div>
       </div>
     </div>
