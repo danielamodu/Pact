@@ -120,7 +120,7 @@ export function PactSpikeDashboard() {
       <NavigationBar mode="app" activeItem="dashboard" />
 
       <main className="flex-1 pt-16">
-        <div className="max-w-5xl mx-auto px-6 py-8 space-y-5">
+        <div className="max-w-7xl mx-auto px-8 py-8 space-y-5">
 
           {/* Greeting */}
           <div>

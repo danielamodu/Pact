@@ -190,7 +190,7 @@ export default function BalanceRevealPage() {
       <NavigationBar mode="app" activeItem="balance" />
 
       <main className="flex-1 pt-16 pb-12">
-        <div className="max-w-5xl mx-auto px-6 py-8 space-y-5">
+        <div className="max-w-7xl mx-auto px-8 py-8 space-y-5">
 
           <div>
             <h1 className="font-space text-2xl font-bold tracking-tight text-forest">Balance</h1>
@@ -199,10 +199,10 @@ export default function BalanceRevealPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-5 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
             {/* ── Left: what you hold ─────────────────────────────────────── */}
-            <div className="lg:col-span-2 space-y-5">
+            <div className="lg:col-span-3 space-y-6">
 
               <section className="bg-white border border-[#3A3A38]/15 p-6">
                 <span className="font-sans text-[15px] text-[#56655C] block mb-1.5">Total balance</span>
@@ -308,7 +308,7 @@ export default function BalanceRevealPage() {
             </div>
 
             {/* ── Right: move money out ───────────────────────────────────── */}
-            <section className="bg-white border border-[#3A3A38]/15 lg:sticky lg:top-20">
+            <section className="lg:col-span-2 bg-white border border-[#3A3A38]/15 lg:sticky lg:top-20">
               <div className="px-6 py-4 border-b border-[#3A3A38]/10">
                 <h2 className="font-space text-lg font-bold text-forest">Send funds</h2>
                 <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
@@ -338,22 +338,22 @@ export default function BalanceRevealPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Network</label>
+                    <label className="block font-sans text-sm text-[#56655C] mb-2">Network</label>
                     <select
                       value={selectedNetwork}
                       onChange={(e: any) => setSelectedNetwork(e.target.value)}
-                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 font-sans text-sm text-forest focus:outline-none focus:border-forest"
+                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 font-sans text-[15px] text-forest focus:outline-none focus:border-forest"
                     >
                       <option value="arbitrum">Arbitrum</option>
                       <option value="base">Base</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Asset</label>
+                    <label className="block font-sans text-sm text-[#56655C] mb-2">Asset</label>
                     <select
                       value={selectedAsset}
                       onChange={(e: any) => setSelectedAsset(e.target.value)}
-                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 font-sans text-sm text-forest focus:outline-none focus:border-forest"
+                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 font-sans text-[15px] text-forest focus:outline-none focus:border-forest"
                     >
                       <option value="ETH">ETH</option>
                       <option value="USDC">USDC</option>
@@ -362,19 +362,19 @@ export default function BalanceRevealPage() {
                 </div>
 
                 <div>
-                  <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Send to</label>
+                  <label className="block font-sans text-sm text-[#56655C] mb-2">Send to</label>
                   <input
                     type="text"
                     required
                     placeholder="0x…"
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
-                    className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 font-mono text-[13px] text-forest focus:outline-none focus:border-forest"
+                    className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 font-mono text-sm text-forest focus:outline-none focus:border-forest"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-sans text-[13px] text-[#56655C] mb-1.5">Amount</label>
+                  <label className="block font-sans text-sm text-[#56655C] mb-2">Amount</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -383,7 +383,7 @@ export default function BalanceRevealPage() {
                       placeholder="0.0"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-2.5 pr-16 font-sans text-sm text-forest focus:outline-none focus:border-forest"
+                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 pr-16 font-sans text-[15px] text-forest focus:outline-none focus:border-forest"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[11px] text-[#66756B]">
                       {selectedAsset}
@@ -394,12 +394,12 @@ export default function BalanceRevealPage() {
                 <button
                   type="submit"
                   disabled={withdrawing}
-                  className="w-full bg-forest text-white text-sm font-semibold py-3 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                  className="w-full bg-forest text-white text-[15px] font-semibold py-3.5 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
                 >
                   {withdrawing ? "Sending…" : "Send"}
                 </button>
 
-                <p className="font-sans text-[13px] text-[#66756B] leading-relaxed">
+                <p className="font-sans text-sm text-[#66756B] leading-relaxed">
                   Double-check the address — transfers can&apos;t be reversed.
                 </p>
               </form>

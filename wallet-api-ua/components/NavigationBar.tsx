@@ -46,7 +46,7 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
   return (
     <>
       <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-[#3A3A38]/10">
-        <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-8 h-16 flex items-center justify-between gap-6">
           <div className="flex items-center gap-10 min-w-0">
             <Link href="/" className="flex items-center gap-3 group cursor-pointer flex-shrink-0">
               <PactLogo className="w-8 h-8 transition-transform group-hover:scale-105" />
