@@ -186,15 +186,15 @@ export default function BalanceRevealPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
-      <div className="mosaic-bg"></div>
+      <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="balance" />
 
-      <main className="flex-1 pt-16 pb-12">
-        <div className="max-w-7xl mx-auto px-8 py-8 space-y-5">
+      <main className="flex-1 pt-16 pb-12 relative z-10">
+        <div className="max-w-7xl mx-auto px-8 py-10 space-y-6">
 
           <div>
-            <h1 className="font-space text-2xl font-bold tracking-tight text-forest">Balance</h1>
-            <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+            <h1 className="font-space text-[32px] font-bold tracking-tight text-forest leading-tight">Balance</h1>
+            <p className="font-sans text-base text-[#46564E] mt-1">
               Your funds across Arbitrum and Base.
             </p>
           </div>
@@ -204,48 +204,50 @@ export default function BalanceRevealPage() {
             {/* ── Left: what you hold ─────────────────────────────────────── */}
             <div className="lg:col-span-3 space-y-6">
 
-              <section className="bg-white border border-[#3A3A38]/15 p-6">
-                <span className="font-sans text-[15px] text-[#56655C] block mb-1.5">Total balance</span>
+              <section className="ui-card-feature p-8">
+                <span className="font-sans text-[15px] text-white/60 block mb-2">Total balance</span>
                 <div className="flex items-end justify-between gap-4 flex-wrap">
                   <div>
-                    <span className="font-space text-[42px] font-bold text-forest leading-none tracking-tight">
+                    <span className="font-space text-[52px] font-bold text-white leading-none ui-num">
                       {loading ? "—" : `$${totalUsd}`}
                     </span>
                     {!loading && (
-                      <p className="font-mono text-[11px] text-[#66756B] mt-2">
+                      <p className="font-mono text-xs text-white/50 mt-3 ui-num">
                         {totalETH} ETH · {totalUSDC} USDC
                       </p>
                     )}
                   </div>
                   <button
                     onClick={() => setDepositOpen(true)}
-                    className="bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
+                    className="ui-btn bg-white text-forest hover:bg-white/90"
                   >
                     Add funds
                   </button>
                 </div>
 
                 {/* Per-network split */}
-                <div className="mt-6 pt-5 border-t border-[#3A3A38]/10 space-y-4">
+                <div className="mt-7 pt-6 border-t border-white/15 space-y-4">
                   {networks.map((n) => {
                     const usd = parseFloat(n.eth) * ethPrice + parseFloat(n.usdc);
                     const pct = grandTotal > 0 ? (usd / grandTotal) * 100 : 0;
                     return (
                       <div key={n.key} className="flex items-center gap-4">
-                        <div className="flex-shrink-0">{n.icon}</div>
+                        <div className="flex-shrink-0 w-10 h-10 rounded-full bg-white/95 flex items-center justify-center">
+                          {n.icon}
+                        </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-baseline gap-3 mb-1.5">
-                            <span className="font-sans text-[15px] text-forest font-medium">{n.label}</span>
-                            <span className="font-mono text-[11px] text-[#46564E]">
+                          <div className="flex justify-between items-baseline gap-3 mb-2">
+                            <span className="font-sans text-[15px] text-white font-medium">{n.label}</span>
+                            <span className="font-mono text-[11px] text-white/70 ui-num">
                               {loading ? "…" : `$${usd.toFixed(2)}`}
                               {!loading && (
-                                <span className="text-[#66756B]"> · {n.eth} ETH · {n.usdc} USDC</span>
+                                <span className="text-white/45"> · {n.eth} ETH · {n.usdc} USDC</span>
                               )}
                             </span>
                           </div>
-                          <div className="h-1 bg-[#3A3A38]/8 w-full">
+                          <div className="h-1.5 bg-white/15 w-full rounded-full overflow-hidden">
                             <div
-                              className="h-full transition-all duration-500"
+                              className="h-full transition-all duration-500 rounded-full"
                               style={{ width: `${Math.min(100, Math.max(0, pct))}%`, background: n.color }}
                             />
                           </div>
@@ -257,7 +259,7 @@ export default function BalanceRevealPage() {
               </section>
 
               {/* Particle — holdings beyond the two Pact networks */}
-              <section className="bg-white border border-[#3A3A38]/15">
+              <section className="ui-card">
                 <div className="flex justify-between items-start gap-4 px-6 py-4 border-b border-[#3A3A38]/10">
                   <div>
                     <h2 className="font-space text-lg font-bold text-forest">Across all your chains</h2>
@@ -308,7 +310,7 @@ export default function BalanceRevealPage() {
             </div>
 
             {/* ── Right: move money out ───────────────────────────────────── */}
-            <section className="lg:col-span-2 bg-white border border-[#3A3A38]/15 lg:sticky lg:top-20">
+            <section className="lg:col-span-2 ui-card lg:sticky lg:top-20">
               <div className="px-6 py-4 border-b border-[#3A3A38]/10">
                 <h2 className="font-space text-lg font-bold text-forest">Send funds</h2>
                 <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
@@ -338,22 +340,22 @@ export default function BalanceRevealPage() {
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block font-sans text-sm text-[#56655C] mb-2">Network</label>
+                    <label className="ui-label font-sans">Network</label>
                     <select
                       value={selectedNetwork}
                       onChange={(e: any) => setSelectedNetwork(e.target.value)}
-                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 font-sans text-[15px] text-forest focus:outline-none focus:border-forest"
+                      className="ui-field font-sans"
                     >
                       <option value="arbitrum">Arbitrum</option>
                       <option value="base">Base</option>
                     </select>
                   </div>
                   <div>
-                    <label className="block font-sans text-sm text-[#56655C] mb-2">Asset</label>
+                    <label className="ui-label font-sans">Asset</label>
                     <select
                       value={selectedAsset}
                       onChange={(e: any) => setSelectedAsset(e.target.value)}
-                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 font-sans text-[15px] text-forest focus:outline-none focus:border-forest"
+                      className="ui-field font-sans"
                     >
                       <option value="ETH">ETH</option>
                       <option value="USDC">USDC</option>
@@ -362,19 +364,19 @@ export default function BalanceRevealPage() {
                 </div>
 
                 <div>
-                  <label className="block font-sans text-sm text-[#56655C] mb-2">Send to</label>
+                  <label className="ui-label font-sans">Send to</label>
                   <input
                     type="text"
                     required
                     placeholder="0x…"
                     value={recipient}
                     onChange={(e) => setRecipient(e.target.value)}
-                    className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 font-mono text-sm text-forest focus:outline-none focus:border-forest"
+                    className="ui-field font-mono !text-sm"
                   />
                 </div>
 
                 <div>
-                  <label className="block font-sans text-sm text-[#56655C] mb-2">Amount</label>
+                  <label className="ui-label font-sans">Amount</label>
                   <div className="relative">
                     <input
                       type="number"
@@ -383,7 +385,7 @@ export default function BalanceRevealPage() {
                       placeholder="0.0"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full bg-[#F7F7F5] border border-[#3A3A38]/20 p-3 pr-16 font-sans text-[15px] text-forest focus:outline-none focus:border-forest"
+                      className="ui-field font-sans pr-16"
                     />
                     <span className="absolute right-3 top-1/2 -translate-y-1/2 font-mono text-[11px] text-[#66756B]">
                       {selectedAsset}
@@ -394,7 +396,7 @@ export default function BalanceRevealPage() {
                 <button
                   type="submit"
                   disabled={withdrawing}
-                  className="w-full bg-forest text-white text-[15px] font-semibold py-3.5 rounded-sm hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                  className="ui-btn ui-btn-primary w-full"
                 >
                   {withdrawing ? "Sending…" : "Send"}
                 </button>

@@ -20,7 +20,7 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
-      <div className="mosaic-bg"></div>
+      <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="settings" />
 
       <main className="flex-1 pt-32 pb-24 px-6 relative overflow-hidden">
@@ -39,10 +39,6 @@ export default function SettingsPage() {
 
           {/* Settings Container */}
           <div className="relative bg-white/50 backdrop-blur-sm border border-[#1A3C2B]/10 p-12">
-            <div className="corner-marker corner-tl"></div>
-            <div className="corner-marker corner-tr"></div>
-            <div className="corner-marker corner-bl"></div>
-            <div className="corner-marker corner-br"></div>
 
             <div className="space-y-12">
               {/* Identity Section */}

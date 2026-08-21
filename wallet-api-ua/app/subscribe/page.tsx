@@ -98,7 +98,7 @@ function SubscribeContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col bg-paper text-forest relative">
-        <div className="mosaic-bg"></div>
+        <div className="app-ground"></div>
         <NavigationBar />
         <main className="flex-1 flex items-center justify-center p-6 pt-24">
           <div className="text-center py-20 font-mono text-sm opacity-60">
@@ -114,14 +114,10 @@ function SubscribeContent() {
 
     return (
       <div className="min-h-screen flex flex-col bg-paper text-forest relative">
-        <div className="mosaic-bg"></div>
+        <div className="app-ground"></div>
         <NavigationBar />
         <main className="flex-1 flex items-center justify-center p-6 pt-24">
           <div className="relative bg-[#F7F7F5] border border-forest/15 p-10 max-w-lg w-full text-center border-l-4 border-l-forest shadow-lg">
-            <div className="corner-marker corner-tl"></div>
-            <div className="corner-marker corner-tr"></div>
-            <div className="corner-marker corner-bl"></div>
-            <div className="corner-marker corner-br"></div>
 
             <div className="w-14 h-14 bg-mint/20 text-forest flex items-center justify-center rounded-full mx-auto mb-6">
               <svg viewBox="0 0 24 24" className="w-7 h-7 fill-none stroke-current stroke-2" xmlns="http://www.w3.org/2000/svg">
@@ -139,10 +135,10 @@ function SubscribeContent() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link href="/setup" className="bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm hover:opacity-90 transition-opacity">
+              <Link href="/setup" className="ui-btn ui-btn-primary">
                 Create a Plan
               </Link>
-              <Link href="/wallet" className="border border-forest/20 text-forest font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm hover:bg-forest/5 transition-colors">
+              <Link href="/wallet" className="ui-btn ui-btn-ghost">
                 Dashboard
               </Link>
             </div>
@@ -153,7 +149,7 @@ function SubscribeContent() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col mosaic-bg">
+    <div className="min-h-screen flex flex-col bg-paper">
       <NavigationBar />
       <main className="flex-1 pt-24">
         <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
@@ -218,10 +214,6 @@ function SubscribeContent() {
             <div className="lg:col-span-4">
               <div className="relative p-10 border border-[#3A3A38]/20 bg-white">
                 {/* Corner Markers */}
-                <div className="corner-marker corner-tl"></div>
-                <div className="corner-marker corner-tr"></div>
-                <div className="corner-marker corner-bl"></div>
-                <div className="corner-marker corner-br"></div>
 
                 <div className="space-y-8">
                   <div className="pb-8 border-b border-[#3A3A38]/10">

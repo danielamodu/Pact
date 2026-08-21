@@ -130,16 +130,12 @@ export default function SetupPage() {
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
-      <div className="mosaic-bg"></div>
+      <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="plans" />
 
       {successTxHash && (
         <div className="fixed inset-0 bg-[#3A3A38]/40 backdrop-blur-md z-50 flex items-center justify-center p-6">
           <div className="relative bg-paper border border-[#3A3A38]/30 max-w-lg w-full p-10 flex flex-col items-center text-center">
-            <div className="corner-marker corner-tl"></div>
-            <div className="corner-marker corner-tr"></div>
-            <div className="corner-marker corner-bl"></div>
-            <div className="corner-marker corner-br"></div>
 
             <div className="w-16 h-16 bg-mint/10 border border-mint flex items-center justify-center text-forest rounded-full mb-6">
               <svg viewBox="0 0 24 24" className="w-8 h-8 stroke-current stroke-2 fill-none" xmlns="http://www.w3.org/2000/svg">
@@ -201,7 +197,7 @@ export default function SetupPage() {
               {createdPlanId && (
                 <button
                   onClick={() => router.push(`/plan/${createdPlanId}?network=${network}`)}
-                  className="flex-1 bg-forest text-white font-mono text-xs font-bold uppercase tracking-widest py-4 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
+                  className="flex-1 ui-btn ui-btn-primary"
                 >
                   View Plan Dashboard
                 </button>
@@ -237,10 +233,6 @@ export default function SetupPage() {
           <div className="max-w-[720px] mx-auto">
             <div className="relative bg-[#F7F7F5] border border-[#3A3A38]/20 p-10">
               {/* Corner Markers */}
-              <div className="corner-marker corner-tl"></div>
-              <div className="corner-marker corner-tr"></div>
-              <div className="corner-marker corner-bl"></div>
-              <div className="corner-marker corner-br"></div>
 
               <form onSubmit={handleSubmit} className="space-y-8">
                 {/* 01. Plan Name */}
@@ -253,7 +245,7 @@ export default function SetupPage() {
                     value={planName}
                     onChange={(e) => setPlanName(e.target.value)}
                     placeholder="e.g. Professional Plan"
-                    className="w-full bg-white border border-[#3A3A38]/20 p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
+                    className="w-full ui-card p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
                   />
                   <p className="font-mono text-[9px] opacity-50 tracking-tight mt-1">
                     This name will be displayed to subscribers
@@ -300,7 +292,7 @@ export default function SetupPage() {
                       value={price}
                       onChange={(e) => setPrice(e.target.value)}
                       placeholder="49.99"
-                      className="flex-1 bg-white border border-[#3A3A38]/20 p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
+                      className="flex-1 ui-card p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
                     />
                     <div className="bg-[#1A3C2B]/5 border border-[#3A3A38]/20 border-l-0 px-6 flex items-center">
                       <span className="font-mono text-[10px] font-bold tracking-widest">
@@ -368,7 +360,7 @@ export default function SetupPage() {
                         value={customDays}
                         onChange={(e) => setCustomDays(e.target.value)}
                         placeholder="14"
-                        className="flex-1 bg-white border border-[#3A3A38]/20 p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
+                        className="flex-1 ui-card p-4 font-mono text-sm placeholder:text-[#3A3A38]/30 rounded-sm"
                       />
                       <div className="bg-[#1A3C2B]/5 border border-[#3A3A38]/20 border-l-0 px-6 flex items-center">
                         <span className="font-mono text-[10px] font-bold tracking-widest">DAYS</span>
@@ -388,7 +380,7 @@ export default function SetupPage() {
                       value={payoutAddress}
                       onChange={(e) => setPayoutAddress(e.target.value)}
                       placeholder="0x7a2C0f8dB8E42Fe5d7f9E9e9e9e9e9e9e9e9c8F"
-                      className="w-full bg-white border border-[#3A3A38]/20 p-4 font-mono text-[12px] placeholder:text-[#3A3A38]/30 rounded-sm"
+                      className="w-full ui-card p-4 font-mono text-[12px] placeholder:text-[#3A3A38]/30 rounded-sm"
                     />
                     {!publicAddress && (
                       <Link

@@ -116,43 +116,40 @@ export function PactSpikeDashboard() {
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
-      <div className="mosaic-bg"></div>
+      <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 pt-16">
-        <div className="max-w-7xl mx-auto px-8 py-8 space-y-5">
+      <main className="flex-1 pt-16 relative z-10">
+        <div className="max-w-7xl mx-auto px-8 py-10 space-y-6">
 
           {/* Greeting */}
           <div>
-            <h1 className="font-space text-2xl font-bold tracking-tight text-forest">
+            <h1 className="font-space text-[32px] font-bold tracking-tight text-forest leading-tight">
               {firstName ? `Hi, ${firstName}` : "Your account"}
             </h1>
-            <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+            <p className="font-sans text-base text-[#46564E] mt-1">
               {isNewUser
                 ? "Let's get you set up — it takes about a minute."
-                : "Subscriptions here renew on their own. Nothing to approve each month."}
+                : "Your subscriptions renew on their own. Nothing to approve each month."}
             </p>
           </div>
 
           {/* Past-due warning */}
           {alertVisible && pastDue && (
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-coral bg-coral/5 border border-coral/20 p-5">
+            <div className="ui-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 border-l-4 border-coral">
               <div>
-                <h5 className="font-space font-bold text-base text-forest">A payment couldn&apos;t go through</h5>
-                <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+                <h5 className="font-space font-bold text-lg text-forest">A payment couldn&apos;t go through</h5>
+                <p className="font-sans text-base text-[#46564E] mt-1">
                   Your balance was too low to cover a subscription. Add funds to keep it active.
                 </p>
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <button
-                  onClick={() => setDepositOpen(true)}
-                  className="bg-forest text-white text-sm font-semibold px-4 py-2 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
-                >
+                <button onClick={() => setDepositOpen(true)} className="ui-btn ui-btn-primary ui-btn-sm">
                   Add funds
                 </button>
                 <button
                   onClick={() => setAlertVisible(false)}
-                  className="text-sm text-[#56655C] hover:text-forest px-3 py-2 cursor-pointer"
+                  className="ui-btn ui-btn-sm text-[#56655C] hover:text-forest"
                 >
                   Dismiss
                 </button>
@@ -160,23 +157,24 @@ export function PactSpikeDashboard() {
             </div>
           )}
 
-          {/* Balance — one number, in dollars */}
-          <section className="bg-white border border-[#3A3A38]/15 p-6">
-            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          {/* Balance — the single most important number, so it gets the one
+              dark surface in the app. */}
+          <section className="ui-card-feature p-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
-                <span className="font-sans text-[15px] text-[#56655C] block mb-1.5">Your balance</span>
+                <span className="font-sans text-[15px] text-white/60 block mb-2">Your balance</span>
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="font-space text-[42px] font-bold text-forest leading-none tracking-tight">
+                  <span className="font-space text-[52px] font-bold text-white leading-none ui-num">
                     {loading ? "—" : totalUsd !== null ? `$${totalUsd.toFixed(2)}` : `${eth.toFixed(4)} ETH`}
                   </span>
-                  {!loading && (
-                    <span className="font-mono text-[11px] text-[#66756B]">
-                      {eth.toFixed(5)} ETH · {usdc.toFixed(2)} USDC
-                    </span>
-                  )}
                 </div>
+                {!loading && (
+                  <p className="font-mono text-xs text-white/50 mt-3 ui-num">
+                    {eth.toFixed(5)} ETH · {usdc.toFixed(2)} USDC
+                  </p>
+                )}
                 {!loading && !hasFunds && (
-                  <p className="font-sans text-[15px] text-[#56655C] mt-2">
+                  <p className="font-sans text-[15px] text-white/70 mt-3">
                     Empty for now — add funds to start subscribing.
                   </p>
                 )}
@@ -184,13 +182,13 @@ export function PactSpikeDashboard() {
               <div className="flex gap-2 flex-shrink-0">
                 <button
                   onClick={() => setDepositOpen(true)}
-                  className="bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
+                  className="ui-btn bg-white text-forest hover:bg-white/90"
                 >
                   Add funds
                 </button>
                 <Link
                   href="/balance"
-                  className="border border-[#3A3A38]/20 text-forest text-sm font-semibold px-5 py-2.5 rounded-sm hover:bg-[#F7F7F5] transition-colors"
+                  className="ui-btn bg-white/10 text-white border border-white/20 hover:bg-white/15"
                 >
                   Details
                 </Link>
@@ -200,7 +198,7 @@ export function PactSpikeDashboard() {
 
           {/* First run — a path, not an empty grid */}
           {isNewUser ? (
-            <section className="bg-white border border-[#3A3A38]/15">
+            <section className="ui-card">
               <div className="px-6 py-4 border-b border-[#3A3A38]/10">
                 <h2 className="font-space text-lg font-bold text-forest">Getting started</h2>
               </div>
@@ -213,7 +211,7 @@ export function PactSpikeDashboard() {
                     action: (
                       <button
                         onClick={() => setDepositOpen(true)}
-                        className="bg-forest text-white text-sm font-semibold px-4 py-2 rounded-sm hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
+                        className="ui-btn ui-btn-primary ui-btn-sm whitespace-nowrap"
                       >
                         Add funds
                       </button>
@@ -226,7 +224,7 @@ export function PactSpikeDashboard() {
                     action: (
                       <Link
                         href="/subscribe"
-                        className="border border-[#3A3A38]/20 text-forest text-sm font-semibold px-4 py-2 rounded-sm hover:bg-[#F7F7F5] transition-colors whitespace-nowrap"
+                        className="ui-btn ui-btn-ghost ui-btn-sm whitespace-nowrap"
                       >
                         Browse plans
                       </Link>
@@ -275,18 +273,18 @@ export function PactSpikeDashboard() {
                 </div>
 
                 {loading ? (
-                  <div className="bg-white border border-[#3A3A38]/15 py-10 text-center font-sans text-[15px] text-[#66756B]">
+                  <div className="ui-card py-10 text-center font-sans text-[15px] text-[#66756B]">
                     Loading your subscriptions…
                   </div>
                 ) : activeSubs.length === 0 ? (
-                  <div className="bg-white border border-[#3A3A38]/15 py-12 px-6 text-center">
+                  <div className="ui-card py-12 px-6 text-center">
                     <p className="font-space text-base font-bold text-forest">No subscriptions yet</p>
                     <p className="font-sans text-[15px] text-[#46564E] mt-1 mb-5">
                       Open a merchant&apos;s subscribe link to set one up.
                     </p>
                     <Link
                       href="/subscribe"
-                      className="inline-block bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity"
+                      className="ui-btn ui-btn-primary"
                     >
                       Browse plans
                     </Link>
@@ -346,7 +344,7 @@ export function PactSpikeDashboard() {
                     </div>
                     <Link
                       href="/setup"
-                      className="bg-forest text-white text-sm font-semibold px-4 py-2 rounded-sm hover:opacity-90 transition-opacity whitespace-nowrap"
+                      className="ui-btn ui-btn-primary ui-btn-sm whitespace-nowrap"
                     >
                       New plan
                     </Link>
@@ -370,13 +368,13 @@ export function PactSpikeDashboard() {
                       ))}
                     </div>
                   ) : (
-                    <div className="bg-white border border-[#3A3A38]/15 py-10 px-6 text-center">
+                    <div className="ui-card py-10 px-6 text-center">
                       <p className="font-sans text-[15px] text-[#46564E] mb-4">
                         Create a plan and share a link — payments arrive on their own.
                       </p>
                       <Link
                         href="/setup"
-                        className="inline-block bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity"
+                        className="ui-btn ui-btn-primary"
                       >
                         Create your first plan
                       </Link>
@@ -386,7 +384,7 @@ export function PactSpikeDashboard() {
               ) : (
                 <button
                   onClick={() => setShowMerchant(true)}
-                  className="w-full text-left bg-white border border-[#3A3A38]/15 px-6 py-4 hover:bg-[#F7F7F5] transition-colors cursor-pointer flex items-center justify-between gap-4"
+                  className="w-full text-left ui-card px-6 py-4 hover:bg-[#F7F7F5] transition-colors cursor-pointer flex items-center justify-between gap-4"
                 >
                   <div>
                     <h3 className="font-space text-base font-bold text-forest">Offering a service?</h3>

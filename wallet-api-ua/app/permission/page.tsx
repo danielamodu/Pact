@@ -267,7 +267,7 @@ function PermissionContent() {
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
-      <div className="mosaic-bg"></div>
+      <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
       <main className="flex-1 flex items-center justify-center pt-28 pb-12">
@@ -290,10 +290,6 @@ function PermissionContent() {
 
           {/* Terms Container */}
           <div className="relative bg-[#F7F7F5] border border-[#3A3A38]/20 p-12 mb-8">
-            <div className="corner-marker corner-tl"></div>
-            <div className="corner-marker corner-tr"></div>
-            <div className="corner-marker corner-bl"></div>
-            <div className="corner-marker corner-br"></div>
 
             <div className="flex gap-8 items-start">
               <div className="w-[1px] h-32 bg-[#1A3C2B] hidden md:block"></div>
@@ -353,7 +349,7 @@ function PermissionContent() {
               <div className="pt-1 flex gap-3">
                 <Link
                   href={`/subscription/${planId}?network=${network}`}
-                  className="bg-forest text-white font-mono text-[10px] font-bold uppercase tracking-widest px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity"
+                  className="ui-btn ui-btn-primary"
                 >
                   View Active Subscription
                 </Link>
@@ -378,7 +374,7 @@ function PermissionContent() {
                   </span>
                   <button
                     onClick={() => setIsDepositOpen(true)}
-                    className="bg-forest text-white px-5 py-2 font-mono text-xs font-bold uppercase hover:bg-forest/90 transition-colors cursor-pointer w-full sm:w-auto"
+                    className="ui-btn ui-btn-primary"
                   >
                     Deposit Gas Funds
                   </button>
@@ -496,13 +492,13 @@ function PermissionContent() {
             <div className="flex flex-col sm:flex-row gap-3 pt-2">
               <Link
                 href={`/subscription/${planId}?network=${network}`}
-                className="flex-1 bg-forest text-white font-space text-xs font-bold uppercase py-3.5 px-4 text-center hover:bg-forest/90 transition-colors tracking-normal flex items-center justify-center"
+                className="flex-1 ui-btn ui-btn-primary"
               >
                 View Plan Details
               </Link>
               <Link
                 href="/wallet"
-                className="flex-1 border border-forest/20 text-forest font-space text-xs font-bold uppercase py-3.5 px-4 text-center hover:bg-forest/5 transition-colors tracking-normal flex items-center justify-center"
+                className="flex-1 ui-btn ui-btn-ghost"
               >
                 Dashboard
               </Link>

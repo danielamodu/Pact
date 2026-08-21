@@ -162,6 +162,129 @@ body {
 }
 .sd-partners-row:hover { opacity: 1; }
 
+/* ═══════════════════════════════════════════════════════════════════
+   Consumer app surface system
+
+   The signed-in app is for people who may have never used crypto, so
+   it reads like a modern banking app rather than a protocol console:
+   soft rounded surfaces that lift off the page, generous padding,
+   friendly weights. Defined once here so every page inherits the same
+   language instead of each screen re-inventing a card.
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* Warm wash behind app pages — gives white cards something to lift off */
+.app-ground {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(900px 420px at 15% -8%, rgba(158, 255, 191, 0.20), transparent 65%),
+    radial-gradient(760px 380px at 92% 4%, rgba(255, 140, 105, 0.11), transparent 62%);
+}
+
+.ui-card {
+  background: #FFFFFF;
+  border-radius: 20px;
+  box-shadow:
+    0 1px 2px rgba(26, 60, 43, 0.04),
+    0 10px 30px -12px rgba(26, 60, 43, 0.13);
+}
+
+/* Cards that are themselves a link or button */
+.ui-card-lift {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.ui-card-lift:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(26, 60, 43, 0.05),
+    0 18px 40px -14px rgba(26, 60, 43, 0.20);
+}
+
+/* The one dark surface — reserved for the single most important number
+   on a screen, so it stays meaningful rather than decorative. */
+.ui-card-feature {
+  background: linear-gradient(145deg, #1F4633 0%, #163224 100%);
+  border-radius: 20px;
+  color: #FFFFFF;
+  box-shadow: 0 14px 40px -16px rgba(26, 60, 43, 0.55);
+}
+
+.ui-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 9999px;
+  padding: 5px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.ui-pill-good    { background: rgba(158, 255, 191, 0.30); color: #145233; }
+.ui-pill-warn    { background: rgba(244, 211, 94, 0.28);  color: #7A5B00; }
+.ui-pill-alert   { background: rgba(255, 140, 105, 0.22); color: #A33A17; }
+.ui-pill-neutral { background: rgba(26, 60, 43, 0.07);    color: #46564E; }
+
+.ui-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 20px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+  cursor: pointer;
+}
+.ui-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.ui-btn:not(:disabled):active { transform: translateY(1px); }
+
+.ui-btn-primary {
+  background: #1A3C2B;
+  color: #FFFFFF;
+  box-shadow: 0 6px 16px -8px rgba(26, 60, 43, 0.7);
+}
+.ui-btn-primary:not(:disabled):hover { box-shadow: 0 10px 22px -8px rgba(26, 60, 43, 0.75); }
+
+.ui-btn-ghost {
+  background: #FFFFFF;
+  color: #1A3C2B;
+  border: 1px solid rgba(26, 60, 43, 0.14);
+}
+.ui-btn-ghost:not(:disabled):hover { background: #FAFAF8; }
+
+.ui-btn-sm { padding: 9px 15px; font-size: 14px; border-radius: 10px; }
+
+.ui-field {
+  width: 100%;
+  border-radius: 12px;
+  background: #F7F7F5;
+  border: 1px solid rgba(26, 60, 43, 0.12);
+  padding: 12px 14px;
+  font-size: 15px;
+  color: #1A3C2B;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.ui-field:focus {
+  outline: none;
+  background: #FFFFFF;
+  border-color: rgba(26, 60, 43, 0.45);
+}
+.ui-field::placeholder { color: rgba(70, 86, 78, 0.45); }
+
+.ui-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  color: #56655C;
+  margin-bottom: 8px;
+}
+
+/* Tabular figures wherever money is shown, so columns of numbers line up */
+.ui-num { font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+
 /* ── Legacy utils still used by app pages ── */
 .jeton-pill  { border-radius: 9999px; }
 .jeton-card  { border-radius: 24px; }

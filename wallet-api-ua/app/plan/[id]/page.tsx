@@ -323,7 +323,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
-      <div className="mosaic-bg"></div>
+      <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
       <main className="flex-1 pt-24 pb-12">
@@ -352,7 +352,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                   <p className="font-mono text-[9px] uppercase opacity-30">{network === "arbitrum" ? "Arbitrum One" : "Base Mainnet"} · Plan #{id}</p>
                 </div>
                 <div className="flex gap-3 flex-shrink-0">
-                  <button onClick={handleCopyLink} className="bg-forest text-white hover:opacity-90 font-mono text-[9px] font-bold uppercase tracking-widest px-5 py-3 rounded-sm transition-all cursor-pointer flex items-center gap-2">
+                  <button onClick={handleCopyLink} className="ui-btn ui-btn-primary">
                     <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2">
                       {copied ? <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round"/> : <g strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></g>}
                     </svg>
@@ -366,11 +366,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
               </div>
 
               {/* ── Billing pulse: what this plan is actually doing right now ── */}
-              <section className="relative bg-forest text-white p-8 sm:p-10">
-                <div className="corner-marker corner-tl" style={{ background: "#9EFFBF" }}></div>
-                <div className="corner-marker corner-tr" style={{ background: "#9EFFBF" }}></div>
-                <div className="corner-marker corner-bl" style={{ background: "#9EFFBF" }}></div>
-                <div className="corner-marker corner-br" style={{ background: "#9EFFBF" }}></div>
+              <section className="ui-card-feature p-8 sm:p-10">
 
                 <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
                   <div className="min-w-0">
@@ -459,9 +455,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Subscribers — each row shows real billing position */}
-                <div className="bg-white border border-[#3A3A38]/15 relative">
-                  <div className="corner-marker corner-tl"></div>
-                  <div className="corner-marker corner-br"></div>
+                <div className="ui-card">
                   <div className="px-6 py-5 border-b border-[#3A3A38]/10 flex items-center justify-between">
                     <h3 className="font-space text-lg font-bold uppercase tracking-tight">Subscribers</h3>
                     <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">
@@ -537,9 +531,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                 </div>
 
                 {/* Plan Health Insights — real x402 settlement via EIP-3009 */}
-                <div className="bg-white border border-[#3A3A38]/15 relative">
-                  <div className="corner-marker corner-tl"></div>
-                  <div className="corner-marker corner-br"></div>
+                <div className="ui-card">
                   <div className="flex justify-between items-start gap-4 px-6 py-5 border-b border-[#3A3A38]/10">
                     <div>
                       <h3 className="font-space text-lg font-bold uppercase tracking-tight">Plan Health Insights</h3>
@@ -609,7 +601,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
               </div>
 
               {/* ── Share & Setup: touched once, so it stays out of the way ── */}
-              <section className="bg-white border border-[#3A3A38]/15">
+              <section className="ui-card">
                 <button
                   onClick={() => setSetupOpen((v) => !v)}
                   className="w-full px-6 py-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-[#F7F7F5] transition-colors text-left"
@@ -658,7 +650,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                           {`<iframe src="${typeof window !== "undefined" ? window.location.origin : "https://www.pact.rest"}/embed/${id}?network=${network}" width="280" height="200" frameborder="0" scrolling="no"></iframe>`}
                         </code>
                       </div>
-                      <button onClick={handleCopyEmbed} className="w-full bg-forest text-white font-mono text-[9px] font-bold uppercase tracking-widest py-3 rounded-sm hover:opacity-90 transition-opacity cursor-pointer">
+                      <button onClick={handleCopyEmbed} className="w-full ui-btn ui-btn-primary">
                         {embedCopied ? "Copied!" : "Copy Embed Code"}
                       </button>
                     </div>
@@ -684,7 +676,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                       <button
                         onClick={handleSaveWebhook}
                         disabled={savingWebhook || !webhookUrl}
-                        className="w-full bg-forest text-white font-mono text-[9px] font-bold uppercase tracking-widest py-3 rounded-sm hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer"
+                        className="w-full ui-btn ui-btn-primary"
                       >
                         {savingWebhook ? "Saving..." : webhookSaved ? "Saved!" : "Save Webhook"}
                       </button>
