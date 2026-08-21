@@ -185,11 +185,19 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
         const data = await getPlanDetails(id, network);
         setDetails(data);
 
-        const whRes = await fetch(`/api/webhooks?planId=${id}&network=${network}`);
-        const whJson = await whRes.json();
-        if (whJson.webhookUrl) {
-          setSavedWebhookUrl(whJson.webhookUrl);
-          setWebhookUrl(whJson.webhookUrl);
+        // Isolated: a webhook lookup failure must not take the plan page with
+        // it, and an error response body is often not JSON at all.
+        try {
+          const whRes = await fetch(`/api/webhooks?planId=${id}&network=${network}`);
+          if (whRes.ok) {
+            const whJson = await whRes.json();
+            if (whJson.webhookUrl) {
+              setSavedWebhookUrl(whJson.webhookUrl);
+              setWebhookUrl(whJson.webhookUrl);
+            }
+          }
+        } catch {
+          /* webhook config is optional — the plan still renders without it */
         }
       } catch (err) {
         console.error("Failed to load plan details:", err);
