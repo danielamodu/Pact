@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { parseUnits } from "ethers";
 
 interface DepositModalProps {
   isOpen: boolean;
@@ -108,10 +109,15 @@ export function DepositModal({ isOpen, onClose, address, network = "arbitrum" }:
       }
       if (!createRes.ok) throw new Error(created.error || "Could not start funding.");
 
-      // USDC and most stables are 6dp; native assets are 18dp.
+      // USDC is 6dp, native assets 18dp. parseUnits handles the decimal string
+      // exactly — float maths here silently loses precision on 18dp values.
       const decimals = sourceAsset === "usdc" ? 6 : 18;
-      const base = BigInt(Math.round(parseFloat(amount || "0") * 10 ** Math.min(decimals, 6)));
-      const scaled = decimals > 6 ? base * BigInt(10) ** BigInt(decimals - 6) : base;
+      let scaled: bigint;
+      try {
+        scaled = parseUnits((amount || "0").trim(), decimals);
+      } catch {
+        throw new Error("Enter a valid amount.");
+      }
       if (scaled <= BigInt(0)) throw new Error("Enter an amount greater than zero.");
 
       const actRes = await fetch("/api/funding", {
