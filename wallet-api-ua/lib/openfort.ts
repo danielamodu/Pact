@@ -186,7 +186,10 @@ export async function verifyOffChainPayment(
   return true;
 }
 
-const BASE_SEPOLIA_RPC = "https://sepolia.base.org";
+export const NETWORK_RPC: Record<PaymentPayload["network"], string> = {
+  "base-sepolia": "https://sepolia.base.org",
+  base: "https://mainnet.base.org",
+};
 
 const USDC_EIP3009_ABI = [
   "function transferWithAuthorization(address from, address to, uint256 value, uint256 validAfter, uint256 validBefore, bytes32 nonce, uint8 v, bytes32 r, bytes32 s) external",
@@ -217,10 +220,15 @@ export async function settlePaymentOnChain(
 ): Promise<{ txHash: string; settledBy: "openfort" | "relayer" }> {
   const { authorization, signature } = payment.payload;
   const sig = ethers.Signature.from(signature);
-  const provider = new ethers.JsonRpcProvider(BASE_SEPOLIA_RPC);
+
+  // Chain is derived from the payment's own network rather than hardcoded, so
+  // switching base-sepolia <-> base is a single config change in the route.
+  const chainId = NETWORK_CHAIN_ID[payment.network];
+  const usdcAddress = USDC_ADDRESSES[chainId];
+  const provider = new ethers.JsonRpcProvider(NETWORK_RPC[payment.network]);
 
   // Replay guard, checked before either signing path spends gas.
-  const usdcRead = new ethers.Contract(USDC_ADDRESSES[84532], USDC_EIP3009_ABI, provider);
+  const usdcRead = new ethers.Contract(usdcAddress, USDC_EIP3009_ABI, provider);
   const alreadyUsed: boolean = await usdcRead.authorizationState(
     authorization.from,
     authorization.nonce
@@ -263,7 +271,7 @@ export async function settlePaymentOnChain(
 
       let gasLimit: bigint;
       try {
-        const est = await provider.estimateGas({ from, to: USDC_ADDRESSES[84532], data });
+        const est = await provider.estimateGas({ from, to: usdcAddress, data });
         gasLimit = (est * BigInt(140)) / BigInt(100);
       } catch {
         gasLimit = BigInt(150_000);
@@ -271,8 +279,8 @@ export async function settlePaymentOnChain(
 
       const tx = ethers.Transaction.from({
         type: 2,
-        chainId: 84532,
-        to: USDC_ADDRESSES[84532],
+        chainId,
+        to: usdcAddress,
         data,
         nonce,
         gasLimit,
@@ -304,7 +312,7 @@ export async function settlePaymentOnChain(
   }
 
   const relayer = new ethers.Wallet(relayerKey, provider);
-  const usdc = new ethers.Contract(USDC_ADDRESSES[84532], USDC_EIP3009_ABI, relayer);
+  const usdc = new ethers.Contract(usdcAddress, USDC_EIP3009_ABI, relayer);
   const tx = await usdc.transferWithAuthorization(
     authorization.from,
     authorization.to,

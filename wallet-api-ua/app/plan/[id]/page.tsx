@@ -65,6 +65,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
   const [insightsPayer, setInsightsPayer] = useState("");
   const [settlementTxHash, setSettlementTxHash] = useState<string | null>(null);
   const [settledBy, setSettledBy] = useState<"openfort" | "relayer" | null>(null);
+  const [settlementNetwork, setSettlementNetwork] = useState<string | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
 
@@ -97,10 +98,16 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
       const validBefore = nowSeconds + 300;
       const nonce = randomNonce();
 
+      // Chain comes from the server's own payment requirements so the signed
+      // domain always matches whatever network the route is configured for.
+      const X402_CHAIN_IDS: Record<string, number> = { "base-sepolia": 84532, base: 8453 };
+      const x402ChainId = X402_CHAIN_IDS[req.network];
+      if (!x402ChainId) throw new Error(`Unsupported payment network: ${req.network}`);
+
       const domain = {
-        name: req.extra?.name || "USDC",
+        name: req.extra?.name || "USD Coin",
         version: req.extra?.version || "2",
-        chainId: 84532, // Base Sepolia
+        chainId: x402ChainId,
         verifyingContract: req.asset,
       };
       const message = {
@@ -146,6 +153,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
       setInsightsPayer(publicAddress);
       setSettlementTxHash(data.settlementTxHash || null);
       setSettledBy(data.settledBy || null);
+      setSettlementNetwork(req.network);
     } catch (err: any) {
       setInsightsError(err.message || "Unexpected error.");
     } finally {
@@ -298,7 +306,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                     <div className="flex justify-between items-center px-6 py-5 border-b border-[#3A3A38]/10">
                       <div>
                         <h3 className="font-space text-lg font-bold uppercase tracking-tight">Plan Health Insights</h3>
-                        <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">x402 pay-per-call — settled on-chain via your wallet (Base Sepolia testnet)</p>
+                        <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">x402 pay-per-call — settled on-chain via your wallet (Base Mainnet)</p>
                       </div>
                       <div className="border border-[#1A3C2B]/10 bg-[#1A3C2B]/5 px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider text-[#1A3C2B] font-bold flex-shrink-0">
                         0.05 USDC / Call
@@ -308,7 +316,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                       {!insightsData ? (
                         <div className="space-y-4">
                           <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed">
-                            Unlock advanced analytics — MRR forecasting, churn rate, LTV, and payment success rates. You'll sign an EIP-3009 payment authorization with your own wallet, which is then broadcast on-chain to settle 0.05 testnet USDC (Base Sepolia).
+                            Unlock advanced analytics — MRR forecasting, churn rate, LTV, and payment success rates. You'll sign an EIP-3009 payment authorization with your own wallet, which is then broadcast on-chain to settle 0.05 USDC on Base.
                           </p>
                           <button onClick={handleUnlockInsights} disabled={loadingInsights} className="bg-[#1A3C2B] text-white hover:opacity-90 font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm transition-all cursor-pointer disabled:opacity-50">
                             {loadingInsights ? "SETTLING X402 PAYMENT..." : "UNLOCK INSIGHTS WITH X402"}
@@ -345,7 +353,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4 border-t border-[#3A3A38]/10">
                             {settlementTxHash ? (
                               <a
-                                href={`https://sepolia.basescan.org/tx/${settlementTxHash}`}
+                                href={`${settlementNetwork === "base-sepolia" ? "https://sepolia.basescan.org" : "https://basescan.org"}/tx/${settlementTxHash}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B] hover:text-coral transition-colors"

@@ -94,7 +94,7 @@ export default function LoginPage() {
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-forest shadow-[0_0_8px_rgba(26,60,43,0.2)]"></div>
           <span className="font-mono text-[9px] text-forest/40 uppercase tracking-[0.2em]">
-            Sepolia Testnet
+            Arbitrum One &amp; Base
           </span>
         </div>
         <div className="hidden md:flex items-center gap-2">

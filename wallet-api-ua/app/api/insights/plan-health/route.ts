@@ -14,22 +14,23 @@ export const dynamic = "force-dynamic";
 const PLAN_HEALTH_REQUIREMENTS: PaymentRequirements = {
   x402Version: 2,
   scheme: "exact",
-  network: "base-sepolia",
+  network: "base",
   maxAmountRequired: "50000", // 0.05 USDC (6 decimals)
   resource: "/api/insights/plan-health",
   description: "Pact Plan Health Insights Pay-Per-Call",
   mimeType: "application/json",
   payTo: BACKEND_WALLET_ADDRESS as `0x${string}`,
   maxTimeoutSeconds: 300,
-  asset: "0x036CbD53842c5426634e7929541eC2318f3dCF7e", // Base Sepolia USDC
+  asset: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // Base Mainnet USDC
   extra: {
     // Must match the token's own EIP-712 domain exactly or transferWithAuthorization
-    // reverts with "FiatTokenV2: invalid signature". Base Sepolia USDC reports
-    // name() == "USDC" (NOT "USD Coin", which is what Base *mainnet* USDC uses)
-    // and version() == "2"; verified against its on-chain DOMAIN_SEPARATOR.
-    // Both the client signer and verifyOffChainPayment read these values, so
-    // a wrong value here passes our own verification and only fails on-chain.
-    name: "USDC",
+    // reverts with "FiatTokenV2: invalid signature". Verified against each
+    // contract's on-chain DOMAIN_SEPARATOR:
+    //   Base mainnet USDC -> name() == "USD Coin", version() == "2"
+    //   Base Sepolia USDC -> name() == "USDC",     version() == "2"
+    // Both the client signer and verifyOffChainPayment read these values, so a
+    // wrong value here passes our own verification and only fails on-chain.
+    name: "USD Coin",
     version: "2"
   }
 };
