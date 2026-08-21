@@ -29,6 +29,13 @@ function randomNonce(): string {
   return "0x" + Array.from(bytes).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
+type SubStatus = {
+  active: boolean;
+  lastPull: string | null;
+  nextPull: string | null;
+  reason?: string;
+};
+
 export default function MerchantPlanDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const searchParams = useSearchParams();
@@ -38,6 +45,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [embedCopied, setEmbedCopied] = useState(false);
+  const [setupOpen, setSetupOpen] = useState(false);
   const [details, setDetails] = useState<{
     name: string;
     token: string;
@@ -68,6 +76,15 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
   const [settlementNetwork, setSettlementNetwork] = useState<string | null>(null);
   const [loadingInsights, setLoadingInsights] = useState(false);
   const [insightsError, setInsightsError] = useState<string | null>(null);
+
+  // Live billing position per subscriber, from the same public status endpoint
+  // third-party apps use. Turns the subscriber list from a log dump into
+  // "where is each person in their cycle right now".
+  const [subStatuses, setSubStatuses] = useState<Record<string, SubStatus>>({});
+  // Distinguishes "still loading" from "looked it up and got nothing", so a
+  // failing status endpoint shows a neutral fallback instead of a spinner that
+  // never resolves.
+  const [statusesResolved, setStatusesResolved] = useState(false);
 
   const [webhookUrl, setWebhookUrl] = useState("");
   const [savedWebhookUrl, setSavedWebhookUrl] = useState("");
@@ -183,6 +200,39 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
     load();
   }, [id, network]);
 
+  // Billing position is fetched after the plan renders so a slow or failing
+  // status lookup degrades the subscriber rows rather than blocking the page.
+  useEffect(() => {
+    const subs = details?.subscribers;
+    if (!subs?.length) return;
+    let cancelled = false;
+
+    (async () => {
+      const entries = await Promise.all(
+        subs.map(async (s) => {
+          try {
+            const res = await fetch(
+              `/api/v1/subscriptions/status?planId=${id}&subscriber=${s.address}&network=${network}`
+            );
+            if (!res.ok) return null;
+            const j = await res.json();
+            return [
+              s.address.toLowerCase(),
+              { active: !!j.active, lastPull: j.lastPull ?? null, nextPull: j.nextPull ?? null, reason: j.reason },
+            ] as const;
+          } catch {
+            return null;
+          }
+        })
+      );
+      if (cancelled) return;
+      setSubStatuses(Object.fromEntries(entries.filter(Boolean) as any));
+      setStatusesResolved(true);
+    })();
+
+    return () => { cancelled = true; };
+  }, [details, id, network]);
+
   const handleCopyLink = () => {
     const checkoutUrl = `${window.location.origin}/subscribe?planId=${id}&network=${network}`;
     navigator.clipboard.writeText(checkoutUrl);
@@ -230,16 +280,49 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
 
   const explorerBase = network === "arbitrum" ? "https://arbiscan.io" : "https://basescan.org";
 
+  // ── Billing rhythm ────────────────────────────────────────────────────────
+  const DAY_MS = 86_400_000;
+  const statusList = Object.values(subStatuses);
+
+  // How far through its current billing cycle a subscriber is (0–1).
+  function cycleProgress(s: SubStatus): number | null {
+    if (!s.lastPull || !s.nextPull) return null;
+    const start = new Date(s.lastPull).getTime();
+    const end = new Date(s.nextPull).getTime();
+    if (end <= start) return null;
+    return Math.min(1, Math.max(0, (Date.now() - start) / (end - start)));
+  }
+
+  function relativeDays(days: number): string {
+    if (days < 0) return `${Math.abs(days)}d overdue`;
+    if (days === 0) return "today";
+    if (days === 1) return "tomorrow";
+    return `in ${days} days`;
+  }
+
+  // The plan's next money-in moment: soonest upcoming charge across subscribers.
+  const upcoming = statusList
+    .filter((s) => s.active && s.nextPull)
+    .map((s) => ({ at: new Date(s.nextPull as string).getTime(), progress: cycleProgress(s) }))
+    .sort((a, b) => a.at - b.at)[0];
+
+  const daysUntilNextCharge =
+    upcoming !== undefined ? Math.ceil((upcoming.at - Date.now()) / DAY_MS) : null;
+
+  const activeCount = statusList.filter((s) => s.active).length;
+  const subCount = details?.subscribers.length ?? 0;
+  const awaitingFirstCharge = subCount > 0 && statusList.length > 0 && statusList.every((s) => !s.lastPull);
+
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
       <div className="mosaic-bg"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
       <main className="flex-1 pt-24 pb-12">
-        <div className="max-w-[1400px] mx-auto px-6 space-y-6">
+        <div className="max-w-[1180px] mx-auto px-6 space-y-6">
 
           {loading ? (
-            <div className="text-center py-32 font-mono text-sm opacity-40">Querying plan contracts...</div>
+            <div className="text-center py-32 font-mono text-sm opacity-40">Loading plan...</div>
           ) : details ? (
             <>
               {/* Plan Title + Action Buttons */}
@@ -274,147 +357,277 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                 </div>
               </div>
 
-              {/* Stats Row */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[
-                  { label: "Active Subscribers", value: String(details.subscribersCount), accent: true },
-                  { label: "Price / Cycle", value: `${details.price} ${details.token}`, accent: false },
-                  { label: "Billing Interval", value: `${details.intervalDays} days`, accent: false },
-                  { label: "Total Revenue", value: `${details.totalRevenue} ${details.token}`, accent: false },
-                ].map(({ label, value, accent }) => (
-                  <div key={label} className={`relative p-6 border ${accent ? "bg-forest text-white border-forest" : "bg-white border-[#3A3A38]/15"}`}>
-                    <div className="corner-marker corner-tl" style={accent ? { background: "#9EFFBF" } : {}}></div>
-                    <div className="corner-marker corner-br" style={accent ? { background: "#9EFFBF" } : {}}></div>
-                    <span className={`font-mono text-[9px] uppercase tracking-widest block mb-2 ${accent ? "text-white/50" : "opacity-40"}`}>{label}</span>
-                    <span className={`font-space text-2xl xl:text-3xl font-bold leading-none ${accent ? "text-white" : "text-forest"}`}>{value}</span>
-                  </div>
-                ))}
-              </div>
+              {/* ── Billing pulse: what this plan is actually doing right now ── */}
+              <section className="relative bg-forest text-white p-8 sm:p-10">
+                <div className="corner-marker corner-tl" style={{ background: "#9EFFBF" }}></div>
+                <div className="corner-marker corner-tr" style={{ background: "#9EFFBF" }}></div>
+                <div className="corner-marker corner-bl" style={{ background: "#9EFFBF" }}></div>
+                <div className="corner-marker corner-br" style={{ background: "#9EFFBF" }}></div>
 
-              {/* Main Dashboard Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-8">
+                  <div className="min-w-0">
+                    <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-white/40 block mb-3">
+                      {subCount === 0
+                        ? "No subscribers yet"
+                        : awaitingFirstCharge
+                        ? "Awaiting first charge"
+                        : daysUntilNextCharge !== null
+                        ? "Next charge"
+                        : "Subscribers"}
+                    </span>
 
-                {/* Left Column — 2/3 width */}
-                <div className="lg:col-span-2 space-y-6">
-
-                  {/* Plan Health Insights — real x402 settlement via EIP-3009 */}
-                  <div className="bg-white border border-[#3A3A38]/15 relative">
-                    <div className="corner-marker corner-tl"></div>
-                    <div className="corner-marker corner-tr"></div>
-                    <div className="corner-marker corner-bl"></div>
-                    <div className="corner-marker corner-br"></div>
-                    <div className="flex justify-between items-center px-6 py-5 border-b border-[#3A3A38]/10">
-                      <div>
-                        <h3 className="font-space text-lg font-bold uppercase tracking-tight">Plan Health Insights</h3>
-                        <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">x402 pay-per-call — settled on-chain via your wallet (Base Mainnet)</p>
-                      </div>
-                      <div className="border border-[#1A3C2B]/10 bg-[#1A3C2B]/5 px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider text-[#1A3C2B] font-bold flex-shrink-0">
-                        0.05 USDC / Call
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      {!insightsData ? (
-                        <div className="space-y-4">
-                          <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed">
-                            Unlock advanced analytics — MRR forecasting, churn rate, LTV, and payment success rates. You'll sign an EIP-3009 payment authorization with your own wallet, which is then broadcast on-chain to settle 0.05 USDC on Base.
-                          </p>
-                          <button onClick={handleUnlockInsights} disabled={loadingInsights} className="bg-[#1A3C2B] text-white hover:opacity-90 font-mono text-xs font-bold uppercase tracking-widest px-6 py-3.5 rounded-sm transition-all cursor-pointer disabled:opacity-50">
-                            {loadingInsights ? "SETTLING X402 PAYMENT..." : "UNLOCK INSIGHTS WITH X402"}
-                          </button>
-                          {insightsError && <p className="font-mono text-[10px] text-red-600 uppercase tracking-wider bg-red-50 border border-red-200/50 p-3">Error: {insightsError}</p>}
-                        </div>
-                      ) : (
-                        <div className="space-y-5">
-                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5">
-                            <div className="space-y-1">
-                              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Forecasted MRR</span>
-                              <span className="font-space text-2xl font-bold text-[#1A3C2B]">${insightsData.mrr}</span>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Churn Rate</span>
-                              <span className="font-space text-2xl font-bold text-red-600">{insightsData.churnRate}</span>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Average LTV</span>
-                              <span className="font-space text-2xl font-bold">${insightsData.averageLtv}</span>
-                            </div>
-                            <div className="space-y-1">
-                              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Payments Succeeded</span>
-                              <span className="font-space text-2xl font-bold text-green-600">{insightsData.dailyPaymentsSucceeded}</span>
-                            </div>
-                            <div className="space-y-1 col-span-2">
-                              <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Payer Wallet</span>
-                              <span className="font-mono text-[10px] font-bold break-all opacity-70">{insightsPayer}</span>
-                            </div>
-                          </div>
-                          {insightsData.fetchError && (
-                            <p className="font-mono text-[9px] text-amber-700 bg-amber-50 border border-amber-200/50 p-2 uppercase tracking-wider">⚠ {insightsData.fetchError}</p>
-                          )}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-4 border-t border-[#3A3A38]/10">
-                            {settlementTxHash ? (
-                              <a
-                                href={`${settlementNetwork === "base-sepolia" ? "https://sepolia.basescan.org" : "https://basescan.org"}/tx/${settlementTxHash}`}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B] hover:text-coral transition-colors"
-                              >
-                                {settledBy === "openfort"
-                                  ? "✓ Settled by Openfort Backend Wallet — View Tx"
-                                  : "✓ Settled On-Chain — View Tx"}
-                              </a>
-                            ) : (
-                              <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B]">✓ x402 Payment Verified</span>
-                            )}
-                            <span className="font-mono text-[9px] opacity-40">Unlocked: {new Date(insightsData.unlockedAt).toLocaleTimeString()}</span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
+                    {subCount === 0 ? (
+                      <>
+                        <p className="font-space text-3xl sm:text-4xl font-bold leading-tight tracking-tight">
+                          Share your link to<br className="hidden sm:block" /> get your first subscriber
+                        </p>
+                        <p className="font-mono text-[10px] text-white/50 mt-3">
+                          Payments start the moment someone subscribes — no action needed from you.
+                        </p>
+                      </>
+                    ) : awaitingFirstCharge ? (
+                      <>
+                        <p className="font-space text-4xl sm:text-5xl font-bold leading-none tracking-tight">
+                          {details.price} {details.token}
+                        </p>
+                        <p className="font-mono text-[10px] text-white/50 mt-3">
+                          {activeCount} subscriber{activeCount === 1 ? "" : "s"} authorized · first pull runs automatically
+                        </p>
+                      </>
+                    ) : daysUntilNextCharge !== null ? (
+                      <>
+                        <p className="font-space text-4xl sm:text-5xl font-bold leading-none tracking-tight capitalize">
+                          {relativeDays(daysUntilNextCharge)}
+                        </p>
+                        <p className="font-mono text-[10px] text-white/50 mt-3">
+                          {activeCount} active · {details.price} {details.token} every {details.intervalDays} days
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="font-space text-4xl sm:text-5xl font-bold leading-none tracking-tight">
+                          {subCount} subscriber{subCount === 1 ? "" : "s"}
+                        </p>
+                        <p className="font-mono text-[10px] text-white/50 mt-3">
+                          {statusesResolved
+                            ? `${details.price} ${details.token} every ${details.intervalDays} days`
+                            : "Loading billing schedule…"}
+                        </p>
+                      </>
+                    )}
                   </div>
 
-                  {/* Active Subscribers */}
-                  <div className="bg-white border border-[#3A3A38]/15 relative">
-                    <div className="corner-marker corner-tl"></div>
-                    <div className="corner-marker corner-tr"></div>
-                    <div className="corner-marker corner-bl"></div>
-                    <div className="corner-marker corner-br"></div>
-                    <div className="px-6 py-5 border-b border-[#3A3A38]/10 flex items-center justify-between">
-                      <h3 className="font-space text-lg font-bold uppercase tracking-tight">Active Subscribers</h3>
-                      <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">{details.subscribers.length} on-chain</span>
+                  <div className="flex gap-10 flex-shrink-0">
+                    <div>
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-white/40 block mb-1.5">Collected</span>
+                      <span className="font-space text-2xl font-bold text-[#9EFFBF]">{details.totalRevenue} {details.token}</span>
                     </div>
-                    <div className="p-6">
-                      {details.subscribers.length === 0 ? (
-                        <p className="font-mono text-[11px] opacity-40 py-4">No subscribers found on-chain yet.</p>
-                      ) : (
-                        <div className="space-y-0">
-                          {details.subscribers.map((sub, idx) => (
-                            <div key={idx} className="flex justify-between items-center py-3 border-b border-[#3A3A38]/8 last:border-0 gap-4">
-                              <a href={`${explorerBase}/address/${sub.address}`} target="_blank" rel="noopener noreferrer" className="font-mono text-xs font-bold text-forest hover:text-coral transition-colors truncate">
-                                {sub.address}
-                              </a>
-                              <span className="font-mono text-[9px] opacity-40 flex-shrink-0">Block #{sub.blockNumber}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                    <div>
+                      <span className="font-mono text-[9px] uppercase tracking-widest text-white/40 block mb-1.5">Per cycle</span>
+                      <span className="font-space text-2xl font-bold">{details.price} {details.token}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Right Sidebar — 1/3 width */}
-                <div className="space-y-6">
-
-                  {/* Plan Configuration */}
-                  <div className="bg-white border border-[#3A3A38]/15 relative">
-                    <div className="corner-marker corner-tl"></div>
-                    <div className="corner-marker corner-br"></div>
-                    <div className="px-6 py-5 border-b border-[#3A3A38]/10">
-                      <h3 className="font-space text-lg font-bold uppercase tracking-tight">Plan Config</h3>
+                {/* Cycle progress — only meaningful once a cycle is underway */}
+                {upcoming?.progress != null && (
+                  <div className="mt-8 pt-6 border-t border-white/10">
+                    <div className="h-1 w-full bg-white/10 overflow-hidden">
+                      <div
+                        className="h-full bg-[#9EFFBF] transition-all duration-700"
+                        style={{ width: `${Math.round(upcoming.progress * 100)}%` }}
+                      />
                     </div>
-                    <div className="p-6 space-y-5">
+                    <div className="flex justify-between mt-2 font-mono text-[9px] uppercase tracking-widest text-white/40">
+                      <span>Cycle started</span>
+                      <span>{Math.round(upcoming.progress * 100)}% elapsed</span>
+                      <span>Charge</span>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+              {/* ── Subscribers + Insights ───────────────────────────────── */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+                {/* Subscribers — each row shows real billing position */}
+                <div className="bg-white border border-[#3A3A38]/15 relative">
+                  <div className="corner-marker corner-tl"></div>
+                  <div className="corner-marker corner-br"></div>
+                  <div className="px-6 py-5 border-b border-[#3A3A38]/10 flex items-center justify-between">
+                    <h3 className="font-space text-lg font-bold uppercase tracking-tight">Subscribers</h3>
+                    <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">
+                      {subCount} on-chain
+                    </span>
+                  </div>
+                  <div className="p-6">
+                    {subCount === 0 ? (
+                      <div className="py-10 text-center space-y-3">
+                        <p className="font-mono text-[10px] uppercase tracking-widest opacity-30">Nobody has subscribed yet</p>
+                        <button
+                          onClick={handleCopyLink}
+                          className="font-mono text-[9px] uppercase tracking-widest text-forest border border-forest/20 px-4 py-2.5 hover:bg-forest hover:text-white transition-colors cursor-pointer"
+                        >
+                          {copied ? "Copied!" : "Copy subscribe link"}
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="space-y-5">
+                        {details.subscribers.map((sub, idx) => {
+                          const st = subStatuses[sub.address.toLowerCase()];
+                          const progress = st ? cycleProgress(st) : null;
+                          const days = st?.nextPull
+                            ? Math.ceil((new Date(st.nextPull).getTime() - Date.now()) / DAY_MS)
+                            : null;
+
+                          return (
+                            <div key={idx} className="space-y-2">
+                              <div className="flex justify-between items-center gap-4">
+                                <a
+                                  href={`${explorerBase}/address/${sub.address}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="font-mono text-xs font-bold text-forest hover:text-coral transition-colors truncate"
+                                >
+                                  {sub.address.slice(0, 10)}…{sub.address.slice(-8)}
+                                </a>
+                                {st ? (
+                                  <span className={`font-mono text-[9px] uppercase tracking-widest font-bold flex-shrink-0 flex items-center gap-1.5 ${st.active ? "text-forest" : "text-coral"}`}>
+                                    <span className={`w-1.5 h-1.5 rounded-full ${st.active ? "bg-forest" : "bg-coral"}`} />
+                                    {st.active ? "Active" : st.reason === "Payment overdue" ? "Overdue" : "Cancelled"}
+                                  </span>
+                                ) : statusesResolved ? (
+                                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-30 flex-shrink-0">Subscribed</span>
+                                ) : (
+                                  <span className="font-mono text-[9px] uppercase tracking-widest opacity-30 flex-shrink-0">Checking…</span>
+                                )}
+                              </div>
+
+                              {progress != null ? (
+                                <>
+                                  <div className="h-[3px] w-full bg-[#3A3A38]/8 overflow-hidden">
+                                    <div
+                                      className="h-full bg-forest/70 transition-all duration-700"
+                                      style={{ width: `${Math.round(progress * 100)}%` }}
+                                    />
+                                  </div>
+                                  <p className="font-mono text-[9px] uppercase tracking-widest opacity-40">
+                                    Next charge {days !== null ? relativeDays(days) : "—"}
+                                  </p>
+                                </>
+                              ) : (
+                                <p className="font-mono text-[9px] uppercase tracking-widest opacity-40">
+                                  {st && !st.lastPull ? "Awaiting first charge" : `Joined at block #${sub.blockNumber}`}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Plan Health Insights — real x402 settlement via EIP-3009 */}
+                <div className="bg-white border border-[#3A3A38]/15 relative">
+                  <div className="corner-marker corner-tl"></div>
+                  <div className="corner-marker corner-br"></div>
+                  <div className="flex justify-between items-start gap-4 px-6 py-5 border-b border-[#3A3A38]/10">
+                    <div>
+                      <h3 className="font-space text-lg font-bold uppercase tracking-tight">Plan Health Insights</h3>
+                      <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">Pay-per-call analytics, settled on Base</p>
+                    </div>
+                    <div className="border border-[#1A3C2B]/10 bg-[#1A3C2B]/5 px-2.5 py-1 font-mono text-[9px] uppercase tracking-wider text-[#1A3C2B] font-bold flex-shrink-0">
+                      0.05 USDC
+                    </div>
+                  </div>
+                  <div className="p-6">
+                    {!insightsData ? (
+                      <div className="space-y-4">
+                        <p className="font-sans text-sm text-[#3A3A38]/70 leading-relaxed">
+                          Forecast MRR, churn, and lifetime value. You&apos;ll approve a 0.05 USDC payment with your own wallet, settled on-chain via x402.
+                        </p>
+                        <button onClick={handleUnlockInsights} disabled={loadingInsights} className="w-full bg-[#1A3C2B] text-white hover:opacity-90 font-mono text-[10px] font-bold uppercase tracking-widest py-3.5 rounded-sm transition-all cursor-pointer disabled:opacity-50">
+                          {loadingInsights ? "Settling payment…" : "Unlock Insights"}
+                        </button>
+                        {insightsError && <p className="font-mono text-[10px] text-red-600 uppercase tracking-wider bg-red-50 border border-red-200/50 p-3">{insightsError}</p>}
+                      </div>
+                    ) : (
+                      <div className="space-y-5">
+                        <div className="grid grid-cols-2 gap-5">
+                          <div className="space-y-1">
+                            <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Forecasted MRR</span>
+                            <span className="font-space text-2xl font-bold text-[#1A3C2B]">${insightsData.mrr}</span>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Churn Rate</span>
+                            <span className="font-space text-2xl font-bold text-red-600">{insightsData.churnRate}</span>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Average LTV</span>
+                            <span className="font-space text-2xl font-bold">${insightsData.averageLtv}</span>
+                          </div>
+                          <div className="space-y-1">
+                            <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Payments Succeeded</span>
+                            <span className="font-space text-2xl font-bold text-green-600">{insightsData.dailyPaymentsSucceeded}</span>
+                          </div>
+                        </div>
+                        {insightsData.fetchError && (
+                          <p className="font-mono text-[9px] text-amber-700 bg-amber-50 border border-amber-200/50 p-2 uppercase tracking-wider">⚠ {insightsData.fetchError}</p>
+                        )}
+                        <div className="pt-4 border-t border-[#3A3A38]/10 space-y-1.5">
+                          {settlementTxHash ? (
+                            <a
+                              href={`${settlementNetwork === "base-sepolia" ? "https://sepolia.basescan.org" : "https://basescan.org"}/tx/${settlementTxHash}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B] hover:text-coral transition-colors block"
+                            >
+                              {settledBy === "openfort"
+                                ? "✓ Settled by Openfort backend wallet — view tx"
+                                : "✓ Settled on-chain — view tx"}
+                            </a>
+                          ) : (
+                            <span className="font-mono text-[9px] uppercase tracking-widest font-bold text-[#1A3C2B]">✓ Payment verified</span>
+                          )}
+                          <span className="font-mono text-[9px] opacity-40 block">
+                            Paid from {insightsPayer.slice(0, 10)}…{insightsPayer.slice(-6)} · {new Date(insightsData.unlockedAt).toLocaleTimeString()}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* ── Share & Setup: touched once, so it stays out of the way ── */}
+              <section className="bg-white border border-[#3A3A38]/15">
+                <button
+                  onClick={() => setSetupOpen((v) => !v)}
+                  className="w-full px-6 py-5 flex items-center justify-between gap-4 cursor-pointer hover:bg-[#F7F7F5] transition-colors text-left"
+                >
+                  <div>
+                    <h3 className="font-space text-lg font-bold uppercase tracking-tight">Share &amp; Setup</h3>
+                    <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">
+                      Embed button · webhooks{savedWebhookUrl ? " (1 active)" : ""} · payout details
+                    </p>
+                  </div>
+                  <svg
+                    viewBox="0 0 24 24"
+                    className={`w-4 h-4 fill-none stroke-current stroke-2 flex-shrink-0 transition-transform ${setupOpen ? "rotate-180" : ""}`}
+                  >
+                    <polyline points="6 9 12 15 18 9" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                {setupOpen && (
+                  <div className="border-t border-[#3A3A38]/10 p-6 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Plan config */}
+                    <div className="space-y-5">
+                      <h4 className="font-mono text-[9px] uppercase tracking-widest text-forest font-bold">Plan Details</h4>
                       <div className="space-y-1">
                         <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Network</span>
-                        <span className="font-mono text-sm font-bold uppercase">{network === "arbitrum" ? "Arbitrum One" : "Base Network"}</span>
+                        <span className="font-mono text-sm font-bold uppercase">{network === "arbitrum" ? "Arbitrum One" : "Base Mainnet"}</span>
                       </div>
                       <div className="space-y-1">
                         <span className="font-mono text-[9px] uppercase tracking-widest opacity-40 block">Token</span>
@@ -427,33 +640,25 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                         </a>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Embed Widget */}
-                  <div className="bg-white border border-[#3A3A38]/15">
-                    <div className="px-6 py-5 border-b border-[#3A3A38]/10">
-                      <h3 className="font-space text-lg font-bold uppercase tracking-tight">Embed Button</h3>
-                      <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">Drop on any website</p>
-                    </div>
-                    <div className="p-6 space-y-4">
+                    {/* Embed */}
+                    <div className="space-y-4">
+                      <h4 className="font-mono text-[9px] uppercase tracking-widest text-forest font-bold">Embed Button</h4>
+                      <p className="font-mono text-[9px] opacity-40 leading-relaxed">Drop this on any website to let visitors subscribe directly.</p>
                       <div className="bg-[#F7F7F5] border border-[#3A3A38]/10 p-3 overflow-x-auto rounded-sm">
                         <code className="font-mono text-[9px] text-forest/60 whitespace-nowrap leading-relaxed">
-                          {`<iframe src="${typeof window !== "undefined" ? window.location.origin : "https://pactxbt.vercel.app"}/embed/${id}?network=${network}" width="280" height="200" frameborder="0" scrolling="no"></iframe>`}
+                          {`<iframe src="${typeof window !== "undefined" ? window.location.origin : "https://www.pact.rest"}/embed/${id}?network=${network}" width="280" height="200" frameborder="0" scrolling="no"></iframe>`}
                         </code>
                       </div>
                       <button onClick={handleCopyEmbed} className="w-full bg-forest text-white font-mono text-[9px] font-bold uppercase tracking-widest py-3 rounded-sm hover:opacity-90 transition-opacity cursor-pointer">
                         {embedCopied ? "Copied!" : "Copy Embed Code"}
                       </button>
                     </div>
-                  </div>
 
-                  {/* Webhooks */}
-                  <div className="bg-white border-l-4 border-l-forest border border-[#3A3A38]/15">
-                    <div className="px-6 py-5 border-b border-[#3A3A38]/10">
-                      <h3 className="font-space text-lg font-bold uppercase tracking-tight">Webhook Notifications</h3>
-                      <p className="font-mono text-[9px] uppercase opacity-40 mt-0.5">POSTed on every successful pull</p>
-                    </div>
-                    <div className="p-6 space-y-4">
+                    {/* Webhooks */}
+                    <div className="space-y-4">
+                      <h4 className="font-mono text-[9px] uppercase tracking-widest text-forest font-bold">Payment Notifications</h4>
+                      <p className="font-mono text-[9px] opacity-40 leading-relaxed">We POST to your URL every time a payment succeeds.</p>
                       {savedWebhookUrl && (
                         <div className="flex items-center gap-2 bg-[#9EFFBF]/10 border border-[#1A3C2B]/20 p-3 rounded-sm">
                           <div className="w-1.5 h-1.5 rounded-full bg-[#1A3C2B] flex-shrink-0"></div>
@@ -477,7 +682,7 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                       </button>
                       {webhookSecret && (
                         <div className="bg-amber-50 border border-amber-200 p-4 space-y-2 rounded-sm">
-                          <p className="font-mono text-[9px] uppercase tracking-widest text-amber-700 font-bold">Save this secret — won't show again</p>
+                          <p className="font-mono text-[9px] uppercase tracking-widest text-amber-700 font-bold">Save this secret — won&apos;t show again</p>
                           <code className="font-mono text-[10px] text-amber-900 break-all block select-all">{webhookSecret}</code>
                           <p className="font-mono text-[9px] opacity-60">Verify <code>X-Pact-Signature</code> headers.</p>
                         </div>
@@ -488,9 +693,8 @@ export default function MerchantPlanDetailPage({ params }: { params: Promise<{ i
                       </div>
                     </div>
                   </div>
-
-                </div>
-              </div>
+                )}
+              </section>
             </>
           ) : (
             <div className="text-center py-32 font-mono text-sm opacity-40">Plan not found.</div>
