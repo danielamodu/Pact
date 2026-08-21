@@ -189,12 +189,12 @@ export default function BalanceRevealPage() {
       <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="balance" />
 
-      <main className="flex-1 pt-16 pb-12 relative z-10">
-        <div className="max-w-7xl mx-auto px-8 py-10 space-y-6">
+      <main className="flex-1 pt-12 pb-36 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-10 py-12 space-y-8">
 
           <div>
-            <h1 className="font-space text-[32px] font-bold tracking-tight text-forest leading-tight">Balance</h1>
-            <p className="font-sans text-base text-[#46564E] mt-1">
+            <h1 className="font-space text-[44px] font-bold tracking-tight text-forest leading-[1.1]">Balance</h1>
+            <p className="font-sans text-[17px] text-[#46564E] mt-1">
               Your funds across Arbitrum and Base.
             </p>
           </div>
@@ -202,13 +202,13 @@ export default function BalanceRevealPage() {
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
             {/* ── Left: what you hold ─────────────────────────────────────── */}
-            <div className="lg:col-span-3 space-y-6">
+            <div className="lg:col-span-3 space-y-8">
 
-              <section className="ui-card-feature p-8">
-                <span className="font-sans text-[15px] text-white/60 block mb-2">Total balance</span>
+              <section className="ui-card-feature p-10 lg:p-12">
+                <span className="font-sans text-[17px] text-white/65 block mb-2">Total balance</span>
                 <div className="flex items-end justify-between gap-4 flex-wrap">
                   <div>
-                    <span className="font-space text-[52px] font-bold text-white leading-none ui-num">
+                    <span className="font-space text-[76px] font-bold text-white leading-none ui-num">
                       {loading ? "—" : `$${totalUsd}`}
                     </span>
                     {!loading && (
@@ -260,25 +260,25 @@ export default function BalanceRevealPage() {
 
               {/* Particle — holdings beyond the two Pact networks */}
               <section className="ui-card">
-                <div className="flex justify-between items-start gap-4 px-6 py-4 border-b border-[#3A3A38]/10">
+                <div className="flex justify-between items-start gap-4 px-8 py-6 border-b border-[#3A3A38]/10">
                   <div>
-                    <h2 className="font-space text-lg font-bold text-forest">Across all your chains</h2>
-                    <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+                    <h2 className="font-space text-2xl font-bold text-forest">Across all your chains</h2>
+                    <p className="font-sans text-[17px] text-[#46564E] mt-0.5">
                       Everything you hold, found by Particle Network.
                     </p>
                   </div>
-                  <span className="bg-[#0052FF]/10 text-[#0052FF] font-mono text-[9px] uppercase tracking-wider px-2 py-1 font-bold border border-[#0052FF]/20 flex-shrink-0">
+                  <span className="ui-pill flex-shrink-0 bg-[#0052FF]/10 text-[#0052FF]">
                     Particle
                   </span>
                 </div>
 
-                <div className="p-6">
+                <div className="p-8">
                   {loadingUa ? (
                     <p className="font-sans text-[15px] text-[#66756B] py-2">Checking your other chains…</p>
                   ) : uaAssets ? (
                     <div className="space-y-5">
                       <div className="flex justify-between items-baseline">
-                        <span className="font-sans text-[15px] text-[#56655C]">Total across all chains</span>
+                        <span className="font-sans text-[16px] text-[#56655C]">Total across all chains</span>
                         <span className="font-space text-2xl font-bold text-forest">
                           ${uaAssets.totalAmountInUSD?.toFixed(2) || "0.00"}
                         </span>
@@ -301,7 +301,7 @@ export default function BalanceRevealPage() {
                       </div>
                     </div>
                   ) : (
-                    <p className="font-sans text-[15px] text-[#46564E] py-2">
+                    <p className="font-sans text-[17px] text-[#46564E] py-2">
                       Couldn&apos;t reach Particle right now. Your Arbitrum and Base balances above are unaffected.
                     </p>
                   )}
@@ -311,9 +311,9 @@ export default function BalanceRevealPage() {
 
             {/* ── Right: move money out ───────────────────────────────────── */}
             <section className="lg:col-span-2 ui-card lg:sticky lg:top-20">
-              <div className="px-6 py-4 border-b border-[#3A3A38]/10">
-                <h2 className="font-space text-lg font-bold text-forest">Send funds</h2>
-                <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+              <div className="px-8 py-6 border-b border-[#3A3A38]/10">
+                <h2 className="font-space text-2xl font-bold text-forest">Send funds</h2>
+                <p className="font-sans text-[17px] text-[#46564E] mt-0.5">
                   Move money out of your Pact wallet.
                 </p>
               </div>

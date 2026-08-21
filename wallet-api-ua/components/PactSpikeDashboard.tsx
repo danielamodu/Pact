@@ -119,15 +119,15 @@ export function PactSpikeDashboard() {
       <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 pt-16 relative z-10">
-        <div className="max-w-7xl mx-auto px-8 py-10 space-y-6">
+      <main className="flex-1 pt-12 pb-36 relative z-10">
+        <div className="max-w-[1400px] mx-auto px-10 py-12 space-y-8">
 
           {/* Greeting */}
           <div>
-            <h1 className="font-space text-[32px] font-bold tracking-tight text-forest leading-tight">
+            <h1 className="font-space text-[44px] font-bold tracking-tight text-forest leading-[1.1]">
               {firstName ? `Hi, ${firstName}` : "Your account"}
             </h1>
-            <p className="font-sans text-base text-[#46564E] mt-1">
+            <p className="font-sans text-[17px] text-[#46564E] mt-1">
               {isNewUser
                 ? "Let's get you set up — it takes about a minute."
                 : "Your subscriptions renew on their own. Nothing to approve each month."}
@@ -139,7 +139,7 @@ export function PactSpikeDashboard() {
             <div className="ui-card flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-6 border-l-4 border-coral">
               <div>
                 <h5 className="font-space font-bold text-lg text-forest">A payment couldn&apos;t go through</h5>
-                <p className="font-sans text-base text-[#46564E] mt-1">
+                <p className="font-sans text-[17px] text-[#46564E] mt-1">
                   Your balance was too low to cover a subscription. Add funds to keep it active.
                 </p>
               </div>
@@ -159,12 +159,12 @@ export function PactSpikeDashboard() {
 
           {/* Balance — the single most important number, so it gets the one
               dark surface in the app. */}
-          <section className="ui-card-feature p-8">
+          <section className="ui-card-feature p-10 lg:p-12">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
               <div>
-                <span className="font-sans text-[15px] text-white/60 block mb-2">Your balance</span>
+                <span className="font-sans text-[17px] text-white/65 block mb-2">Your balance</span>
                 <div className="flex items-baseline gap-3 flex-wrap">
-                  <span className="font-space text-[52px] font-bold text-white leading-none ui-num">
+                  <span className="font-space text-[76px] font-bold text-white leading-none ui-num">
                     {loading ? "—" : totalUsd !== null ? `$${totalUsd.toFixed(2)}` : `${eth.toFixed(4)} ETH`}
                   </span>
                 </div>
@@ -199,8 +199,8 @@ export function PactSpikeDashboard() {
           {/* First run — a path, not an empty grid */}
           {isNewUser ? (
             <section className="ui-card">
-              <div className="px-6 py-4 border-b border-[#3A3A38]/10">
-                <h2 className="font-space text-lg font-bold text-forest">Getting started</h2>
+              <div className="px-8 py-6 border-b border-[#3A3A38]/10">
+                <h2 className="font-space text-2xl font-bold text-forest">Getting started</h2>
               </div>
               <ol className="divide-y divide-[#3A3A38]/8">
                 {[
@@ -243,7 +243,7 @@ export function PactSpikeDashboard() {
                     </span>
                     <div className="flex-1 min-w-0">
                       <h3 className="font-space text-base font-bold text-forest">{step.title}</h3>
-                      <p className="font-sans text-[15px] text-[#46564E] mt-0.5 leading-relaxed">{step.body}</p>
+                      <p className="font-sans text-[17px] text-[#46564E] mt-0.5 leading-relaxed">{step.body}</p>
                     </div>
                     {step.action && <div className="flex-shrink-0">{step.action}</div>}
                   </li>
@@ -256,9 +256,9 @@ export function PactSpikeDashboard() {
               <section className="space-y-4">
                 <div className="flex items-end justify-between gap-4">
                   <div>
-                    <h2 className="font-space text-lg font-bold text-forest">Your subscriptions</h2>
+                    <h2 className="font-space text-2xl font-bold text-forest">Your subscriptions</h2>
                     {activeSubs.length > 0 && (
-                      <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+                      <p className="font-sans text-[17px] text-[#46564E] mt-0.5">
                         About ${monthlySpend} a month across {activeSubs.length} subscription
                         {activeSubs.length === 1 ? "" : "s"}
                       </p>
@@ -279,7 +279,7 @@ export function PactSpikeDashboard() {
                 ) : activeSubs.length === 0 ? (
                   <div className="ui-card py-12 px-6 text-center">
                     <p className="font-space text-base font-bold text-forest">No subscriptions yet</p>
-                    <p className="font-sans text-[15px] text-[#46564E] mt-1 mb-5">
+                    <p className="font-sans text-[17px] text-[#46564E] mt-1 mb-5">
                       Open a merchant&apos;s subscribe link to set one up.
                     </p>
                     <Link
@@ -307,7 +307,7 @@ export function PactSpikeDashboard() {
 
                 {!loading && pastSubs.length > 0 && (
                   <details className="group">
-                    <summary className="cursor-pointer font-sans text-[15px] text-[#56655C] hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
+                    <summary className="cursor-pointer font-sans text-[16px] text-[#56655C] hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
                       <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2 transition-transform group-open:rotate-90">
                         <polyline points="9 18 15 12 9 6" strokeLinecap="round" strokeLinejoin="round" />
                       </svg>
@@ -335,9 +335,9 @@ export function PactSpikeDashboard() {
                 <section className="space-y-4 pt-2">
                   <div className="flex items-end justify-between gap-4">
                     <div>
-                      <h2 className="font-space text-lg font-bold text-forest">Plans you offer</h2>
+                      <h2 className="font-space text-2xl font-bold text-forest">Plans you offer</h2>
                       {hasPlans && (
-                        <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+                        <p className="font-sans text-[17px] text-[#46564E] mt-0.5">
                           {totalSubscribers} subscriber{totalSubscribers === 1 ? "" : "s"} · ${planRevenue} collected
                         </p>
                       )}
@@ -369,7 +369,7 @@ export function PactSpikeDashboard() {
                     </div>
                   ) : (
                     <div className="ui-card py-10 px-6 text-center">
-                      <p className="font-sans text-[15px] text-[#46564E] mb-4">
+                      <p className="font-sans text-[17px] text-[#46564E] mb-4">
                         Create a plan and share a link — payments arrive on their own.
                       </p>
                       <Link
@@ -388,7 +388,7 @@ export function PactSpikeDashboard() {
                 >
                   <div>
                     <h3 className="font-space text-base font-bold text-forest">Offering a service?</h3>
-                    <p className="font-sans text-[15px] text-[#46564E] mt-0.5">
+                    <p className="font-sans text-[17px] text-[#46564E] mt-0.5">
                       Charge customers on a schedule and get paid automatically.
                     </p>
                   </div>
@@ -400,7 +400,7 @@ export function PactSpikeDashboard() {
 
           {/* Live network activity — quiet proof this is really on-chain */}
           <details className="group pt-2">
-            <summary className="cursor-pointer font-sans text-[15px] text-[#56655C] hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
+            <summary className="cursor-pointer font-sans text-[16px] text-[#56655C] hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
               <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2 transition-transform group-open:rotate-90">
                 <polyline points="9 18 15 12 9 6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>

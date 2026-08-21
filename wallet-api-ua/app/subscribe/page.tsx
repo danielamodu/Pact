@@ -100,7 +100,7 @@ function SubscribeContent() {
       <div className="min-h-screen flex flex-col bg-paper text-forest relative">
         <div className="app-ground"></div>
         <NavigationBar />
-        <main className="flex-1 flex items-center justify-center p-6 pt-24">
+        <main className="flex-1 flex items-center justify-center p-6 pb-36">
           <div className="text-center py-20 font-mono text-sm opacity-60">
             Loading plan details...
           </div>
@@ -116,7 +116,7 @@ function SubscribeContent() {
       <div className="min-h-screen flex flex-col bg-paper text-forest relative">
         <div className="app-ground"></div>
         <NavigationBar />
-        <main className="flex-1 flex items-center justify-center p-6 pt-24">
+        <main className="flex-1 flex items-center justify-center p-6 pb-36">
           <div className="relative bg-[#F7F7F5] border border-forest/15 p-10 max-w-lg w-full text-center border-l-4 border-l-forest shadow-lg">
 
             <div className="w-14 h-14 bg-mint/20 text-forest flex items-center justify-center rounded-full mx-auto mb-6">
@@ -151,8 +151,8 @@ function SubscribeContent() {
   return (
     <div className="min-h-screen flex flex-col bg-paper">
       <NavigationBar />
-      <main className="flex-1 pt-24">
-        <section className="max-w-7xl mx-auto px-6 py-12 md:py-20">
+      <main className="flex-1 pt-12 pb-36">
+        <section className="max-w-[1400px] mx-auto px-10 py-12 md:py-20">
         <div className="grid lg:grid-cols-12 gap-16 items-start">
           
           {/* Left Side: Plan Info */}
@@ -296,7 +296,7 @@ function SubscribeContent() {
           </div>
         </section>
 
-        <section className="max-w-7xl mx-auto px-6 py-24 border-t border-[#3A3A38]/10">
+        <section className="max-w-[1400px] mx-auto px-10 py-24 border-t border-[#3A3A38]/10">
           <div className="grid md:grid-cols-3 gap-12">
             <div className="space-y-4">
               <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">YOUR LIMITS</span>

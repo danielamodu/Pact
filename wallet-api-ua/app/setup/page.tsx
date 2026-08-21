@@ -217,8 +217,8 @@ export default function SetupPage() {
         </div>
       )}
 
-      <main className="flex-1 pt-24 pb-12 min-h-screen">
-        <div className="max-w-7xl mx-auto px-6">
+      <main className="flex-1 pt-12 pb-36 min-h-screen">
+        <div className="max-w-[1400px] mx-auto px-10">
           {/* Page Header */}
           <div className="text-center mb-16">
             <h1 className="font-space text-[48px] font-bold tracking-tight text-[#1A3C2B] leading-[0.9] mb-4">
