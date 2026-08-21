@@ -6,53 +6,61 @@ import { useAuth } from "@/contexts/AuthProvider";
 import { NavigationBar } from "@/components/NavigationBar";
 import { SubscriptionCard } from "@/components/SubscriptionCard";
 import { PlanCard } from "@/components/PlanCard";
-import { getPlansForMerchant, getSubscriptionsForUser, getUSDCBalance, getETHBalance, getRecentProtocolActivity, ProtocolEvent } from "@/lib/contracts";
+import { DepositModal } from "@/components/DepositModal";
+import {
+  getPlansForMerchant,
+  getSubscriptionsForUser,
+  getUSDCBalance,
+  getETHBalance,
+  getRecentProtocolActivity,
+  ProtocolEvent,
+} from "@/lib/contracts";
 
 export function PactSpikeDashboard() {
-  const { publicAddress } = useAuth();
-  
-  // Interactive / Dynamic States
+  const { publicAddress, userInfo } = useAuth();
+
   const [plans, setPlans] = useState<any[]>([]);
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
-  const [balance, setBalance] = useState<string>("0.00 USDC");
-  const [loading, setLoading] = useState<boolean>(true);
+  const [eth, setEth] = useState(0);
+  const [usdc, setUsdc] = useState(0);
+  const [ethPrice, setEthPrice] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
   const [alertVisible, setAlertVisible] = useState(true);
   const [activity, setActivity] = useState<ProtocolEvent[]>([]);
   const [activityLoading, setActivityLoading] = useState(true);
-  const [view, setView] = useState<"subscriber" | "merchant">("subscriber");
-  const [autoDetected, setAutoDetected] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(false);
+  const [showMerchant, setShowMerchant] = useState(false);
+  const [merchantAutoShown, setMerchantAutoShown] = useState(false);
 
   useEffect(() => {
     async function loadData() {
       if (!publicAddress) return;
       setLoading(true);
       try {
-        const [arbUsdc, baseUsdc, arbEth, baseEth, arbPlans, basePlans, arbSubs, baseSubs] = await Promise.all([
-          getUSDCBalance(publicAddress, "arbitrum"),
-          getUSDCBalance(publicAddress, "base"),
-          getETHBalance(publicAddress, "arbitrum"),
-          getETHBalance(publicAddress, "base"),
-          getPlansForMerchant(publicAddress, "arbitrum"),
-          getPlansForMerchant(publicAddress, "base"),
-          getSubscriptionsForUser(publicAddress, "arbitrum"),
-          getSubscriptionsForUser(publicAddress, "base")
-        ]);
+        const [arbUsdc, baseUsdc, arbEth, baseEth, arbPlans, basePlans, arbSubs, baseSubs] =
+          await Promise.all([
+            getUSDCBalance(publicAddress, "arbitrum"),
+            getUSDCBalance(publicAddress, "base"),
+            getETHBalance(publicAddress, "arbitrum"),
+            getETHBalance(publicAddress, "base"),
+            getPlansForMerchant(publicAddress, "arbitrum"),
+            getPlansForMerchant(publicAddress, "base"),
+            getSubscriptionsForUser(publicAddress, "arbitrum"),
+            getSubscriptionsForUser(publicAddress, "base"),
+          ]);
 
-        const totalUsdc = (parseFloat(arbUsdc) + parseFloat(baseUsdc)).toFixed(2);
-        const totalEth = (parseFloat(arbEth) + parseFloat(baseEth)).toFixed(5);
-        setBalance(`${totalEth} ETH / ${totalUsdc} USDC`);
+        setUsdc(parseFloat(arbUsdc) + parseFloat(baseUsdc));
+        setEth(parseFloat(arbEth) + parseFloat(baseEth));
 
-        // Combine plans and subscriptions
         const allPlans = [...arbPlans, ...basePlans];
-        const allSubs = [...arbSubs, ...baseSubs];
         setPlans(allPlans);
-        setSubscriptions(allSubs);
+        setSubscriptions([...arbSubs, ...baseSubs]);
 
-        // Land on whichever tab actually has content, without fighting a
-        // manual switch on a later refetch.
-        if (!autoDetected) {
-          if (allSubs.length === 0 && allPlans.length > 0) setView("merchant");
-          setAutoDetected(true);
+        // Someone who already runs plans gets the merchant view opened for
+        // them once; after that their own toggle wins.
+        if (!merchantAutoShown) {
+          if (allPlans.length > 0) setShowMerchant(true);
+          setMerchantAutoShown(true);
         }
       } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -62,7 +70,6 @@ export function PactSpikeDashboard() {
     }
     loadData();
 
-    // Load protocol activity feed independently so it doesn't block the main dashboard
     setActivityLoading(true);
     getRecentProtocolActivity(15)
       .then(setActivity)
@@ -70,187 +77,223 @@ export function PactSpikeDashboard() {
       .finally(() => setActivityLoading(false));
   }, [publicAddress]);
 
+  // Balances are shown in dollars first. "0.00000 ETH / 0.00 USDC" asks a new
+  // user to reason in two units they don't have a feel for yet.
+  useEffect(() => {
+    fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => { if (d?.ethereum?.usd) setEthPrice(d.ethereum.usd); })
+      .catch(() => { /* dollar view falls back to token amounts */ });
+  }, []);
+
   const handleTogglePlan = (id: string) => {
-    // Local toggle for visual feedback
-    setPlans(prev =>
-      prev.map(plan =>
-        plan.id === id
-          ? { ...plan, status: plan.status === "active" ? "paused" : "active" }
-          : plan
+    setPlans((prev) =>
+      prev.map((plan) =>
+        plan.id === id ? { ...plan, status: plan.status === "active" ? "paused" : "active" } : plan
       )
     );
   };
 
+  const activeSubs = subscriptions.filter((s) => s.status === "active");
+  const pastSubs = subscriptions.filter((s) => s.status !== "active");
   const hasPlans = plans.length > 0;
+  const pastDue = subscriptions.some((s) => s.status === "past-due");
 
-  // Calculate dynamic spending
-  const totalMonthlySpending = subscriptions
-    .filter(sub => sub.status === "active")
-    .reduce((acc, sub) => {
-      const val = parseFloat(sub.amount.replace(/[^0-9.]/g, "")) || 0;
-      return acc + val;
-    }, 0)
+  const totalUsd = ethPrice !== null ? eth * ethPrice + usdc : null;
+  const hasFunds = eth > 0 || usdc > 0;
+  const isNewUser = !loading && !hasFunds && activeSubs.length === 0 && !hasPlans;
+
+  const monthlySpend = activeSubs
+    .reduce((acc, s) => acc + (parseFloat(String(s.amount).replace(/[^0-9.]/g, "")) || 0), 0)
     .toFixed(2);
 
-  // Merchant-side overview totals
-  const totalSubscribersAcrossPlans = plans.reduce((acc, p) => acc + (p.subscribers || 0), 0);
-  const totalPlanRevenue = plans
+  const totalSubscribers = plans.reduce((acc, p) => acc + (p.subscribers || 0), 0);
+  const planRevenue = plans
     .reduce((acc, p) => acc + (parseFloat(String(p.revenue).replace(/[^0-9.]/g, "")) || 0), 0)
     .toFixed(2);
+
+  const firstName = userInfo?.name?.split(" ")[0] || null;
 
   return (
     <div className="min-h-screen relative flex flex-col bg-paper text-forest">
       <div className="mosaic-bg"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 pt-24 pb-12">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-8 sm:space-y-12">
-          
-          {/* Alerts Banner */}
-          {alertVisible && subscriptions.some(sub => sub.status === "past-due") && (
-            <section id="alerts">
-              <div className="relative flex flex-col md:flex-row items-center justify-between border border-coral bg-coral/10 p-6 border-l-4">
-                <div className="flex items-center gap-4 text-forest">
-                  <iconify-icon icon="lucide:alert-triangle" className="text-2xl text-coral"></iconify-icon>
-                  <div>
-                    <h5 className="font-space font-bold text-lg leading-tight uppercase tracking-tight">1 Subscription Past Due</h5>
-                    <p className="font-mono text-xs opacity-70 mt-1">One of your active subscriptions requires attention due to insufficient account balance. Deposit funds to maintain active status.</p>
-                  </div>
-                </div>
-                <div className="mt-4 md:mt-0 flex gap-4">
-                  <Link href="/balance" id="alert-primary-btn" className="bg-forest text-white font-mono text-[10px] tracking-widest uppercase px-6 py-3 rounded-sm">
-                    Add Funds
-                  </Link>
-                  <button onClick={() => setAlertVisible(false)} id="alert-dismiss-btn" className="font-mono text-[10px] tracking-widest uppercase px-4 py-3 opacity-50 cursor-pointer">
-                    Dismiss
-                  </button>
-                </div>
+      <main className="flex-1 pt-16">
+        <div className="max-w-6xl mx-auto px-6 py-10 space-y-8">
+
+          {/* Greeting */}
+          <div>
+            <h1 className="font-space text-3xl font-bold tracking-tight text-forest">
+              {firstName ? `Hi, ${firstName}` : "Your account"}
+            </h1>
+            <p className="font-sans text-sm text-[#3A3A38]/60 mt-1">
+              {isNewUser
+                ? "Let's get you set up — it takes about a minute."
+                : "Subscriptions here renew on their own. Nothing to approve each month."}
+            </p>
+          </div>
+
+          {/* Past-due warning */}
+          {alertVisible && pastDue && (
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-l-4 border-coral bg-coral/5 border border-coral/20 p-5">
+              <div>
+                <h5 className="font-space font-bold text-base text-forest">A payment couldn&apos;t go through</h5>
+                <p className="font-sans text-sm text-[#3A3A38]/70 mt-0.5">
+                  Your balance was too low to cover a subscription. Add funds to keep it active.
+                </p>
               </div>
-            </section>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setDepositOpen(true)}
+                  className="bg-forest text-white text-sm font-semibold px-4 py-2 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  Add funds
+                </button>
+                <button
+                  onClick={() => setAlertVisible(false)}
+                  className="text-sm text-[#3A3A38]/50 hover:text-forest px-3 py-2 cursor-pointer"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           )}
 
-          {/* Subscriber / Merchant tab switcher */}
-          <section id="view-switcher" className="pt-4 sm:pt-8">
-            <div className="inline-flex border border-[#3A3A38]/20 bg-white/50 rounded-sm p-1 gap-1">
-              <button
-                onClick={() => setView("subscriber")}
-                className={`px-5 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest rounded-sm transition-colors cursor-pointer ${
-                  view === "subscriber" ? "bg-forest text-white" : "text-forest/50 hover:text-forest"
-                }`}
-              >
-                Subscriptions
-              </button>
-              <button
-                onClick={() => setView("merchant")}
-                className={`px-5 py-2.5 font-mono text-[10px] font-bold uppercase tracking-widest rounded-sm transition-colors cursor-pointer ${
-                  view === "merchant" ? "bg-forest text-white" : "text-forest/50 hover:text-forest"
-                }`}
-              >
-                Merchant
-              </button>
+          {/* Balance — one number, in dollars */}
+          <section className="bg-white border border-[#3A3A38]/15 p-7">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-5">
+              <div>
+                <span className="font-sans text-sm text-[#3A3A38]/50 block mb-1">Your balance</span>
+                <div className="flex items-baseline gap-3 flex-wrap">
+                  <span className="font-space text-4xl font-bold text-forest leading-none">
+                    {loading ? "—" : totalUsd !== null ? `$${totalUsd.toFixed(2)}` : `${eth.toFixed(4)} ETH`}
+                  </span>
+                  {!loading && (
+                    <span className="font-mono text-[11px] text-[#3A3A38]/40">
+                      {eth.toFixed(5)} ETH · {usdc.toFixed(2)} USDC
+                    </span>
+                  )}
+                </div>
+                {!loading && !hasFunds && (
+                  <p className="font-sans text-sm text-[#3A3A38]/50 mt-2">
+                    Empty for now — add funds to start subscribing.
+                  </p>
+                )}
+              </div>
+              <div className="flex gap-2 flex-shrink-0">
+                <button
+                  onClick={() => setDepositOpen(true)}
+                  className="bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity cursor-pointer"
+                >
+                  Add funds
+                </button>
+                <Link
+                  href="/balance"
+                  className="border border-[#3A3A38]/20 text-forest text-sm font-semibold px-5 py-2.5 rounded-sm hover:bg-[#F7F7F5] transition-colors"
+                >
+                  Details
+                </Link>
+              </div>
             </div>
           </section>
 
-          {/* Overview Metrics Cards */}
-          <section id="overview" className="py-4 sm:py-8">
-            {view === "subscriber" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Active Subscriptions</span>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : String(subscriptions.filter(s => s.status === "active").length).padStart(2, "0")}</h2>
-                    <span className="text-[#9EFFBF] font-mono text-xs font-bold">on-chain</span>
-                  </div>
-                </div>
-                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Monthly Spending</span>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="font-space text-4xl sm:text-5xl font-bold">${loading ? "..." : totalMonthlySpending}</h2>
-                    <span className="font-mono text-xs opacity-50">USDC</span>
-                  </div>
-                </div>
-                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Available Balance</span>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="font-space text-xl sm:text-2xl font-bold text-forest leading-tight">{loading ? "..." : balance}</h2>
-                  </div>
-                </div>
+          {/* First run — a path, not an empty grid */}
+          {isNewUser ? (
+            <section className="bg-white border border-[#3A3A38]/15">
+              <div className="px-7 py-5 border-b border-[#3A3A38]/10">
+                <h2 className="font-space text-lg font-bold text-forest">Getting started</h2>
               </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
-                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Plans Live</span>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : String(plans.length).padStart(2, "0")}</h2>
-                    <span className="text-[#9EFFBF] font-mono text-xs font-bold">on-chain</span>
+              <ol className="divide-y divide-[#3A3A38]/8">
+                {[
+                  {
+                    n: 1,
+                    title: "Add funds",
+                    body: "Send USDC, USDT, or ETH on Arbitrum or Base. You need a little ETH for network fees.",
+                    action: (
+                      <button
+                        onClick={() => setDepositOpen(true)}
+                        className="bg-forest text-white text-sm font-semibold px-4 py-2 rounded-sm hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap"
+                      >
+                        Add funds
+                      </button>
+                    ),
+                  },
+                  {
+                    n: 2,
+                    title: "Subscribe to something",
+                    body: "Open a subscribe link from a merchant, and approve the amount and schedule once.",
+                    action: (
+                      <Link
+                        href="/subscribe"
+                        className="border border-[#3A3A38]/20 text-forest text-sm font-semibold px-4 py-2 rounded-sm hover:bg-[#F7F7F5] transition-colors whitespace-nowrap"
+                      >
+                        Browse plans
+                      </Link>
+                    ),
+                  },
+                  {
+                    n: 3,
+                    title: "That's it",
+                    body: "Payments run on schedule by themselves. Cancel any time — no email, no waiting.",
+                    action: null,
+                  },
+                ].map((step) => (
+                  <li key={step.n} className="flex items-start gap-5 px-7 py-5">
+                    <span className="w-7 h-7 rounded-full border border-forest/20 text-forest font-space text-sm font-bold flex items-center justify-center flex-shrink-0 mt-0.5">
+                      {step.n}
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-space text-base font-bold text-forest">{step.title}</h3>
+                      <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5 leading-relaxed">{step.body}</p>
+                    </div>
+                    {step.action && <div className="flex-shrink-0">{step.action}</div>}
+                  </li>
+                ))}
+              </ol>
+            </section>
+          ) : (
+            <>
+              {/* Subscriptions */}
+              <section className="space-y-4">
+                <div className="flex items-end justify-between gap-4">
+                  <div>
+                    <h2 className="font-space text-lg font-bold text-forest">Your subscriptions</h2>
+                    {activeSubs.length > 0 && (
+                      <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5">
+                        About ${monthlySpend} a month across {activeSubs.length} subscription
+                        {activeSubs.length === 1 ? "" : "s"}
+                      </p>
+                    )}
                   </div>
+                  <Link
+                    href="/subscribe"
+                    className="font-sans text-sm text-forest font-semibold hover:text-coral transition-colors whitespace-nowrap"
+                  >
+                    Browse plans →
+                  </Link>
                 </div>
-                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Total Subscribers</span>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="font-space text-4xl sm:text-5xl font-bold">{loading ? "..." : totalSubscribersAcrossPlans}</h2>
-                  </div>
-                </div>
-                <div className="border border-[#3A3A38]/20 p-6 sm:p-8 bg-white/50 relative">
-                  <span className="font-mono text-[10px] tracking-widest uppercase opacity-50 block mb-4">Total Revenue</span>
-                  <div className="flex items-baseline gap-2">
-                    <h2 className="font-space text-4xl sm:text-5xl font-bold">${loading ? "..." : totalPlanRevenue}</h2>
-                  </div>
-                </div>
-              </div>
-            )}
-          </section>
 
-          {/* My Subscriptions List */}
-          {view === "subscriber" && (
-          <section id="subscriptions" className="space-y-8 pb-12 border-b border-[#3A3A38]/10">
-            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-              <div className="border-l-4 border-forest pl-4">
-                <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">My Active Subscriptions</h2>
-                <p className="font-mono text-[10px] tracking-widest uppercase opacity-50">Active recurring payments authorized via Pact</p>
-              </div>
-              <Link href="/subscribe" id="new-sub-link" className="font-mono text-[10px] tracking-widest uppercase bg-forest/5 border border-forest/10 px-6 py-3 hover:bg-white transition-colors">
-                Explore Subscription Plans
-              </Link>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {loading ? (
-                <div className="col-span-full py-8 text-center font-mono text-xs opacity-50 uppercase tracking-widest">
-                  Loading your subscriptions...
-                </div>
-              ) : subscriptions.filter(s => s.status === "active").length === 0 ? (
-                <div className="col-span-full py-8 text-center font-mono text-xs opacity-50 uppercase tracking-widest">
-                  No active subscriptions found
-                </div>
-              ) : (
-                subscriptions
-                  .filter(s => s.status === "active")
-                  .map((sub, i) => (
-                    <SubscriptionCard
-                      key={i}
-                      plan={sub.plan}
-                      merchant={sub.merchant}
-                      status={sub.status}
-                      amount={sub.amount}
-                      nextBilling={sub.nextBilling}
-                      revokeHref={sub.revokeHref}
-                    />
-                  ))
-              )}
-            </div>
-
-            {/* Revoked & Past Subscriptions section */}
-            {!loading && subscriptions.filter(s => s.status !== "active").length > 0 && (
-              <div className="pt-8 space-y-6 border-t border-[#3A3A38]/10">
-                <div className="border-l-4 border-coral/50 pl-4">
-                  <h3 className="font-space text-2xl font-bold uppercase tracking-tight text-[#3A3A38]/70">Cancelled &amp; Past Subscriptions</h3>
-                  <p className="font-mono text-[10px] tracking-widest uppercase opacity-40">Subscriptions you&apos;ve cancelled or that are no longer active</p>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 opacity-80">
-                  {subscriptions
-                    .filter(s => s.status !== "active")
-                    .map((sub, i) => (
+                {loading ? (
+                  <div className="bg-white border border-[#3A3A38]/15 py-12 text-center font-sans text-sm text-[#3A3A38]/40">
+                    Loading your subscriptions…
+                  </div>
+                ) : activeSubs.length === 0 ? (
+                  <div className="bg-white border border-[#3A3A38]/15 py-12 px-6 text-center">
+                    <p className="font-space text-base font-bold text-forest">No subscriptions yet</p>
+                    <p className="font-sans text-sm text-[#3A3A38]/60 mt-1 mb-5">
+                      Open a merchant&apos;s subscribe link to set one up.
+                    </p>
+                    <Link
+                      href="/subscribe"
+                      className="inline-block bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity"
+                    >
+                      Browse plans
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+                    {activeSubs.map((sub, i) => (
                       <SubscriptionCard
                         key={i}
                         plan={sub.plan}
@@ -261,119 +304,163 @@ export function PactSpikeDashboard() {
                         revokeHref={sub.revokeHref}
                       />
                     ))}
-                </div>
-              </div>
-            )}
-          </section>
-          )}
-
-          {/* Merchant Plans List */}
-          {view === "merchant" && (
-          <section id="merchant" className="space-y-8 py-12">
-            {hasPlans ? (
-              <div className="space-y-8">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                  <div className="border-l-4 border-gold pl-4">
-                    <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">My Plans</h2>
-                    <p className="font-mono text-[10px] tracking-widest uppercase opacity-50">Subscriptions and services you are offering as a merchant</p>
                   </div>
-                  <Link href="/setup" id="create-plan-btn" className="bg-forest text-white font-mono text-[10px] tracking-widest uppercase px-6 py-4 rounded-sm text-center">
-                    Create New Plan
-                  </Link>
-                </div>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {plans.map((plan, i) => (
-                    <PlanCard
-                      key={plan.id || i}
-                      planId={plan.id}
-                      network={plan.network}
-                      planName={plan.planName}
-                      token={plan.token}
-                      status={plan.status}
-                      price={plan.price}
-                      subscribers={plan.subscribers}
-                      revenue={plan.revenue}
-                      onToggleActive={() => handleTogglePlan(plan.id)}
-                    />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <div className="border border-[#3A3A38]/20 bg-white/30 p-12 text-center">
-                <p className="font-mono text-[10px] opacity-40 uppercase tracking-[0.2em] mb-4">No plans created yet</p>
-                <h3 className="font-space text-2xl font-bold mb-8 uppercase tracking-tight">Start accepting on-chain subscriptions</h3>
-                <Link href="/setup" id="empty-create-plan-btn" className="inline-block bg-forest text-white font-mono text-[10px] tracking-widest uppercase px-8 py-4 rounded-sm hover:opacity-95 transition-opacity">
-                  Create Your First Plan
-                </Link>
-              </div>
-            )}
-          </section>
+                {!loading && pastSubs.length > 0 && (
+                  <details className="group">
+                    <summary className="cursor-pointer font-sans text-sm text-[#3A3A38]/50 hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
+                      <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2 transition-transform group-open:rotate-90">
+                        <polyline points="9 18 15 12 9 6" strokeLinecap="round" strokeLinejoin="round" />
+                      </svg>
+                      {pastSubs.length} cancelled or past subscription{pastSubs.length === 1 ? "" : "s"}
+                    </summary>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 pt-4 opacity-75">
+                      {pastSubs.map((sub, i) => (
+                        <SubscriptionCard
+                          key={i}
+                          plan={sub.plan}
+                          merchant={sub.merchant}
+                          status={sub.status}
+                          amount={sub.amount}
+                          nextBilling={sub.nextBilling}
+                          revokeHref={sub.revokeHref}
+                        />
+                      ))}
+                    </div>
+                  </details>
+                )}
+              </section>
+
+              {/* Merchant side — kept out of the way until it's relevant */}
+              {hasPlans || showMerchant ? (
+                <section className="space-y-4 pt-2">
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <h2 className="font-space text-lg font-bold text-forest">Plans you offer</h2>
+                      {hasPlans && (
+                        <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5">
+                          {totalSubscribers} subscriber{totalSubscribers === 1 ? "" : "s"} · ${planRevenue} collected
+                        </p>
+                      )}
+                    </div>
+                    <Link
+                      href="/setup"
+                      className="bg-forest text-white text-sm font-semibold px-4 py-2 rounded-sm hover:opacity-90 transition-opacity whitespace-nowrap"
+                    >
+                      New plan
+                    </Link>
+                  </div>
+
+                  {hasPlans ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {plans.map((plan, i) => (
+                        <PlanCard
+                          key={plan.id || i}
+                          planId={plan.id}
+                          network={plan.network}
+                          planName={plan.planName}
+                          token={plan.token}
+                          status={plan.status}
+                          price={plan.price}
+                          subscribers={plan.subscribers}
+                          revenue={plan.revenue}
+                          onToggleActive={() => handleTogglePlan(plan.id)}
+                        />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="bg-white border border-[#3A3A38]/15 py-10 px-6 text-center">
+                      <p className="font-sans text-sm text-[#3A3A38]/60 mb-4">
+                        Create a plan and share a link — payments arrive on their own.
+                      </p>
+                      <Link
+                        href="/setup"
+                        className="inline-block bg-forest text-white text-sm font-semibold px-5 py-2.5 rounded-sm hover:opacity-90 transition-opacity"
+                      >
+                        Create your first plan
+                      </Link>
+                    </div>
+                  )}
+                </section>
+              ) : (
+                <button
+                  onClick={() => setShowMerchant(true)}
+                  className="w-full text-left bg-white border border-[#3A3A38]/15 px-7 py-5 hover:bg-[#F7F7F5] transition-colors cursor-pointer flex items-center justify-between gap-4"
+                >
+                  <div>
+                    <h3 className="font-space text-base font-bold text-forest">Offering a service?</h3>
+                    <p className="font-sans text-sm text-[#3A3A38]/60 mt-0.5">
+                      Charge customers on a schedule and get paid automatically.
+                    </p>
+                  </div>
+                  <span className="font-sans text-sm text-forest font-semibold whitespace-nowrap">Set up →</span>
+                </button>
+              )}
+            </>
           )}
 
-          {/* Protocol Activity Feed */}
-          <section id="protocol-feed" className="space-y-8 py-12 border-t border-[#3A3A38]/10">
-            <div className="border-l-4 border-[#9EFFBF] pl-4">
-              <h2 className="font-space text-4xl font-bold uppercase tracking-tighter">Live Protocol Feed</h2>
-              <p className="font-mono text-[10px] tracking-widest uppercase opacity-50">Real-time on-chain subscriptions and autonomous pull executions</p>
-            </div>
+          {/* Live network activity — quiet proof this is really on-chain */}
+          <details className="group pt-2">
+            <summary className="cursor-pointer font-sans text-sm text-[#3A3A38]/50 hover:text-forest transition-colors list-none flex items-center gap-2 py-2">
+              <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 fill-none stroke-current stroke-2 transition-transform group-open:rotate-90">
+                <polyline points="9 18 15 12 9 6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              Recent activity across Pact
+            </summary>
 
-            <div className="border border-[#3A3A38]/20 bg-white/50 overflow-hidden">
-              <div className="border-b border-[#3A3A38]/10 px-6 py-3 grid grid-cols-4 gap-4">
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Event</span>
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Plan / Address</span>
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Network</span>
-                <span className="font-mono text-[9px] uppercase tracking-widest opacity-40">Tx</span>
-              </div>
-
+            <div className="border border-[#3A3A38]/15 bg-white overflow-hidden mt-3">
               {activityLoading ? (
-                <div className="px-6 py-12 text-center font-mono text-xs opacity-40 uppercase tracking-widest">
-                  Scanning chain for recent activity...
+                <div className="px-6 py-10 text-center font-sans text-sm text-[#3A3A38]/40">
+                  Checking the network…
                 </div>
               ) : activity.length === 0 ? (
-                <div className="px-6 py-12 text-center font-mono text-xs opacity-40 uppercase tracking-widest">
-                  No recent activity found on-chain
+                <div className="px-6 py-10 text-center font-sans text-sm text-[#3A3A38]/40">
+                  No recent activity
                 </div>
               ) : (
                 activity.map((event, i) => (
                   <div
                     key={event.txHash + i}
-                    className="grid grid-cols-4 gap-4 px-6 py-4 border-b border-[#3A3A38]/10 hover:bg-[#F7F7F5] transition-colors items-center"
+                    className="flex items-center justify-between gap-4 px-6 py-3.5 border-b border-[#3A3A38]/8 last:border-0 hover:bg-[#F7F7F5] transition-colors"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className={`inline-block w-2 h-2 rounded-full flex-shrink-0 ${event.type === "pull" ? "bg-[#9EFFBF]" : "bg-[#FF8C69]"}`} />
-                      <span className="font-mono text-[10px] font-bold uppercase tracking-wider">
-                        {event.type === "pull" ? "Pull" : "Subscribe"}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <span
+                        className={`inline-block w-1.5 h-1.5 rounded-full flex-shrink-0 ${
+                          event.type === "pull" ? "bg-forest" : "bg-[#FF8C69]"
+                        }`}
+                      />
+                      <span className="font-sans text-sm text-forest">
+                        {event.type === "pull" ? "Payment collected" : "New subscriber"}
                       </span>
-                      {event.type === "pull" && event.amount && (
-                        <span className="font-mono text-[10px] text-[#1A3C2B] font-bold">{parseFloat(event.amount).toFixed(2)}</span>
-                      )}
+                      <span className="font-mono text-[10px] text-[#3A3A38]/40 truncate">
+                        Plan #{event.planId}
+                      </span>
                     </div>
-                    <div className="font-mono text-[10px] opacity-60">
-                      <span className="block">Plan #{event.planId}</span>
-                      <span>{event.address.slice(0, 6)}...{event.address.slice(-4)}</span>
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <span className="font-mono text-[9px] uppercase tracking-wider text-[#3A3A38]/40">
+                        {event.network === "arbitrum" ? "Arbitrum" : "Base"}
+                      </span>
+                      <a
+                        href={event.explorerUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-sans text-xs text-forest/60 hover:text-coral underline underline-offset-2 transition-colors"
+                      >
+                        Receipt
+                      </a>
                     </div>
-                    <span className={`font-mono text-[9px] font-bold uppercase px-2 py-0.5 w-fit ${
-                      event.network === "arbitrum" ? "bg-[#1A3C2B]/10 text-[#1A3C2B]" : "bg-[#0052FF]/10 text-[#0052FF]"
-                    }`}>
-                      {event.network === "arbitrum" ? "Arbitrum" : "Base"}
-                    </span>
-                    <a
-                      href={event.explorerUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-mono text-[10px] text-[#1A3C2B] underline underline-offset-2 hover:opacity-60 transition-opacity truncate"
-                    >
-                      {event.txHash.slice(0, 8)}...{event.txHash.slice(-6)}
-                    </a>
                   </div>
                 ))
               )}
             </div>
-          </section>
-
+          </details>
         </div>
       </main>
+
+      {publicAddress && (
+        <DepositModal isOpen={depositOpen} onClose={() => setDepositOpen(false)} address={publicAddress} />
+      )}
     </div>
   );
 }

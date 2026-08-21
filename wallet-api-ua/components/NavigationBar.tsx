@@ -16,10 +16,6 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
   const { publicAddress, isAuthenticated, handleLogout } = useAuth();
   const [isDepositOpen, setIsDepositOpen] = useState(false);
 
-  const formatAddress = (addr: string) => {
-    return `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-  };
-
   if (mode === "landing") {
     return (
       <header className="w-full pt-8 pb-4 relative z-50">
@@ -43,76 +39,86 @@ export function NavigationBar({ mode = "app", activeItem }: NavigationBarProps) 
     );
   }
 
-  // App Page navigation mode - Floating Glassmorphic Header
+  // App navigation — a solid, full-width bar. The previous floating
+  // glassmorphic pill sat on top of page content with a blur behind it, which
+  // left every page feeling unanchored and read as "crypto site" rather than
+  // something a first-time user would trust with money.
   return (
-    <div className="fixed top-5 left-1/2 -translate-x-1/2 w-[94%] max-w-7xl z-50">
-      <header className="w-full bg-white/40 backdrop-blur-2xl border border-white/60 rounded-full px-6 py-2.5 shadow-[0_8px_32px_rgba(26,60,43,0.06)] flex items-center justify-between transition-all">
-        <Link href="/" className="flex items-center gap-3 group cursor-pointer">
-          <PactLogo className="w-9 h-9 shadow-sm transition-transform group-hover:scale-105" />
-        </Link>
-
-        <nav className="hidden sm:flex items-center gap-8 px-4">
-          {[
-            { href: "/wallet", id: "dashboard", label: "Dashboard" },
-            { href: "/setup", id: "plans", label: "Create Plan" },
-            { href: "/balance", id: "balance", label: "Balances" },
-            { href: "/settings", id: "settings", label: "Settings" },
-          ].map((item) => (
-            <Link
-              key={item.id}
-              href={item.href}
-              className={`font-space text-xs tracking-tight transition-all relative py-1 ${
-                activeItem === item.id
-                  ? "text-forest font-bold"
-                  : "text-forest/60 hover:text-forest font-medium"
-              }`}
-            >
-              {item.label}
-              {activeItem === item.id && (
-                <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-forest rounded-full"></span>
-              )}
+    <>
+      <header className="fixed top-0 inset-x-0 z-50 bg-white border-b border-[#3A3A38]/10">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between gap-6">
+          <div className="flex items-center gap-10 min-w-0">
+            <Link href="/" className="flex items-center gap-3 group cursor-pointer flex-shrink-0">
+              <PactLogo className="w-8 h-8 transition-transform group-hover:scale-105" />
             </Link>
-          ))}
-        </nav>
 
-        <div className="flex items-center gap-3">
-          <LanguageSelector />
-          {publicAddress ? (
-            <div className="flex items-center gap-2">
-              <button 
-                onClick={() => setIsDepositOpen(true)}
-                title="Deposit Funds"
-                className="font-mono text-xs bg-forest/5 text-forest px-3.5 py-1.5 border border-forest/10 rounded-full font-bold hover:bg-forest/10 transition-colors cursor-pointer flex items-center gap-2"
-              >
-                {formatAddress(publicAddress)}
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                  <path d="M12 5v14M5 12h14" strokeLinecap="square"/>
-                </svg>
-              </button>
-              <button
-                onClick={handleLogout}
-                className="font-space text-xs font-bold text-coral hover:text-coral/80 transition-colors px-2 py-1"
-              >
-                Logout
-              </button>
+            <nav className="hidden sm:flex items-center gap-7">
+              {[
+                { href: "/wallet", id: "dashboard", label: "Home" },
+                { href: "/balance", id: "balance", label: "Balance" },
+                { href: "/setup", id: "plans", label: "Create a plan" },
+                { href: "/settings", id: "settings", label: "Settings" },
+              ].map((item) => (
+                <Link
+                  key={item.id}
+                  href={item.href}
+                  className={`font-sans text-sm transition-colors relative h-16 flex items-center ${
+                    activeItem === item.id
+                      ? "text-forest font-semibold"
+                      : "text-[#3A3A38]/60 hover:text-forest"
+                  }`}
+                >
+                  {item.label}
+                  {activeItem === item.id && (
+                    <span className="absolute bottom-0 inset-x-0 h-[2px] bg-forest" />
+                  )}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="hidden md:block">
+              <LanguageSelector />
             </div>
-          ) : (
-            <Link
-              href="/login"
-              className="bg-forest text-white px-5 py-2 rounded-full font-bold text-xs hover:scale-105 transition-all shadow-md font-space"
-            >
-              Sign In
-            </Link>
-          )}
+            {publicAddress ? (
+              <>
+                <button
+                  onClick={() => setIsDepositOpen(true)}
+                  className="bg-forest text-white text-sm font-semibold px-4 py-2 rounded-sm hover:opacity-90 transition-opacity cursor-pointer flex items-center gap-1.5"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M12 5v14M5 12h14" strokeLinecap="round" />
+                  </svg>
+                  Add funds
+                </button>
+                <button
+                  onClick={handleLogout}
+                  title={publicAddress}
+                  className="font-sans text-sm text-[#3A3A38]/50 hover:text-forest transition-colors px-2 py-1 cursor-pointer"
+                >
+                  Sign out
+                </button>
+              </>
+            ) : (
+              <Link
+                href="/login"
+                className="bg-forest text-white px-5 py-2 rounded-sm font-semibold text-sm hover:opacity-90 transition-opacity font-sans"
+              >
+                Sign in
+              </Link>
+            )}
+          </div>
         </div>
       </header>
+
       {publicAddress && (
-        <DepositModal 
-          isOpen={isDepositOpen} 
-          onClose={() => setIsDepositOpen(false)} 
-          address={publicAddress} 
+        <DepositModal
+          isOpen={isDepositOpen}
+          onClose={() => setIsDepositOpen(false)}
+          address={publicAddress}
         />
       )}
-    </div>
+    </>
   );
 }
