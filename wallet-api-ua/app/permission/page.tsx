@@ -270,64 +270,64 @@ function PermissionContent() {
       <div className="app-ground"></div>
       <NavigationBar mode="app" activeItem="dashboard" />
 
-      <main className="flex-1 flex items-center justify-center pt-28 pb-12">
-        <div className="w-full max-w-[680px] px-6 py-12">
+      <main className="flex-1 pt-14 pb-28 relative z-10">
+        <div className="w-full max-w-[720px] mx-auto px-10 space-y-6">
           {/* Header */}
           <div className="text-center mb-10">
-            <div className="inline-flex items-center gap-2 border border-[#1A3C2B]/20 px-3 py-1 mb-6 bg-white/50">
+            <div className="ui-pill ui-pill-good mb-5">
               <div className="w-2 h-2 bg-[#9EFFBF] rounded-full"></div>
               <span className="font-sans text-sm text-[#66756B]">
-                Authorization Required
+                One approval, then it runs itself
               </span>
             </div>
-            <h1 className="font-space text-5xl font-bold tracking-tighter leading-[0.9] text-[#1A3C2B] mb-4">
-              Confirm Payment Permission
+            <h1 className="font-space text-[44px] font-bold tracking-tight leading-[1.1] text-forest mb-3">
+              Approve this subscription
             </h1>
-            <p className="font-sans text-[#3A3A38]/60 text-base">
+            <p className="font-sans text-[17px] text-[#46564E]">
               Here&apos;s exactly what you&apos;re approving. Take a second to check it over.
             </p>
           </div>
 
           {/* Terms Container */}
-          <div className="relative bg-[#F7F7F5] border border-[#3A3A38]/20 p-12 mb-8">
+          <div className="ui-card p-10">
 
             <div className="flex gap-8 items-start">
-              <div className="w-[1px] h-32 bg-[#1A3C2B] hidden md:block"></div>
+              <div className="w-1 self-stretch bg-mint rounded-full hidden md:block"></div>
               <div className="flex-1">
                 <p className="font-space text-2xl font-medium leading-relaxed tracking-tight text-[#1A3C2B]">
-                  <span className="font-bold">{planName}</span> can pull up to{" "}
+                  <span className="font-bold">{planName}</span> can charge up to{" "}
                   <span className="font-bold">{price} {token}</span> every{" "}
                   <span className="font-bold">{intervalDays} days</span>.
                 </p>
-                <p className="font-space text-2xl font-medium leading-relaxed tracking-tight text-[#1A3C2B] opacity-40 mt-1">
-                  Nothing else. Revoke anytime.
+                <p className="font-sans text-[17px] text-[#66756B] mt-2">
+                  Nothing else. Cancel any time.
                 </p>
               </div>
             </div>
 
             {/* Technical Breakdown Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-[#3A3A38]/10 mt-12 border border-[#3A3A38]/10">
-              <div className="bg-[#F7F7F5] p-5">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10 pt-8 border-t border-[#3A3A38]/10">
+              <div className="bg-[#F7F7F5] rounded-xl p-4">
                 <span className="font-sans text-sm text-[#66756B]">
                   Plan ID
                 </span>
-                <span className="font-mono text-[10px] text-[#1A3C2B] font-bold truncate block">
+                <span className="font-sans text-[15px] font-semibold text-forest truncate block mt-0.5">
                   #{planId} · {network === "arbitrum" ? "Arbitrum" : "Base"}
                 </span>
               </div>
-              <div className="bg-[#F7F7F5] p-5">
+              <div className="bg-[#F7F7F5] rounded-xl p-4">
                 <span className="font-sans text-sm text-[#66756B]">
                   Merchant
                 </span>
-                <span className="font-mono text-[10px] text-[#1A3C2B] font-bold block truncate">
+                <span className="font-mono text-[13px] text-forest block truncate mt-0.5">
                   {merchant}
                 </span>
               </div>
-              <div className="bg-[#F7F7F5] p-5">
+              <div className="bg-[#F7F7F5] rounded-xl p-4">
                 <span className="font-sans text-sm text-[#66756B]">
                   Cancelling
                 </span>
-                <span className="font-mono text-[10px] text-[#1A3C2B] font-bold block">
+                <span className="font-sans text-[15px] font-semibold text-forest block mt-0.5">
                   Instant, Free
                 </span>
               </div>
@@ -336,14 +336,14 @@ function PermissionContent() {
 
           {/* Already Subscribed Notice */}
           {alreadySubscribed && (
-            <div className="mb-6 p-6 bg-[#9EFFBF]/20 border border-forest/20 text-forest space-y-3">
+            <div className="ui-card p-6 border-l-4 border-mint text-forest space-y-3">
               <div className="flex items-center gap-2">
                 <div className="w-2.5 h-2.5 bg-forest rounded-full"></div>
-                <p className="font-mono text-xs font-bold uppercase tracking-wider">
+                <p className="font-space text-lg font-bold">
                   Active Subscription Already Exists
                 </p>
               </div>
-              <p className="font-sans text-xs opacity-80 leading-relaxed">
+              <p className="font-sans text-[15px] text-[#46564E] leading-relaxed">
                 You already have an active subscription for <strong className="font-bold">{planName}</strong>. You can view or manage your active subscription session below.
               </p>
               <div className="pt-1 flex gap-3">
@@ -359,24 +359,24 @@ function PermissionContent() {
 
           {/* Error display with Deposit prompt */}
           {error && (
-            <div className="mb-6 p-6 border border-coral bg-coral/5 space-y-4">
+            <div className="ui-card p-6 border-l-4 border-coral space-y-4">
               <div>
-                <p className="font-mono text-xs text-forest font-bold uppercase tracking-wide mb-1">
-                  {isGasError ? "FUNDING REQUIRED" : "Authorization Error"}
+                <p className="font-space text-lg font-bold text-forest mb-1">
+                  {isGasError ? "You need a little ETH first" : "Something went wrong"}
                 </p>
-                <p className="font-mono text-xs text-[#3A3A38]">{error}</p>
+                <p className="font-sans text-[15px] text-[#46564E]">{error}</p>
               </div>
 
               {isGasError && publicAddress && (
                 <div className="pt-2 border-t border-coral/20 flex flex-col sm:flex-row gap-3 items-center justify-between">
-                  <span className="font-mono text-[10px] uppercase opacity-70">
+                  <span className="font-mono text-[13px] text-[#66756B]">
                     Wallet: {publicAddress.slice(0, 6)}...{publicAddress.slice(-4)}
                   </span>
                   <button
                     onClick={() => setIsDepositOpen(true)}
                     className="ui-btn ui-btn-primary"
                   >
-                    Deposit Gas Funds
+                    Add funds
                   </button>
                 </div>
               )}
@@ -391,17 +391,17 @@ function PermissionContent() {
           )}
 
           {/* Checkbox */}
-          <div className="flex items-start gap-3 mb-8">
+          <div className="ui-card p-6 flex items-start gap-4">
             <input
               type="checkbox"
               id="confirm-terms"
               checked={isChecked}
               onChange={(e) => setIsChecked(e.target.checked)}
-              className="mt-1 w-4 h-4 accent-[#1A3C2B] cursor-pointer"
+              className="mt-1 w-5 h-5 accent-[#1A3C2B] cursor-pointer flex-shrink-0"
             />
-            <label htmlFor="confirm-terms" className="font-mono text-xs uppercase tracking-tight text-[#1A3C2B] cursor-pointer select-none">
+            <label htmlFor="confirm-terms" className="font-sans text-[17px] font-semibold text-forest cursor-pointer select-none">
               I understand and agree to this authorization
-              <span className="block text-[10px] text-[#3A3A38]/50 normal-case mt-0.5">
+              <span className="block font-sans text-[15px] font-normal text-[#46564E] mt-1 leading-relaxed">
                 I&apos;ve reviewed the amount and schedule above, and I know I can cancel anytime from my dashboard.
               </span>
             </label>
@@ -412,11 +412,7 @@ function PermissionContent() {
             <button
               onClick={handleConfirm}
               disabled={!isChecked || confirming}
-              className={`w-full font-mono text-xs tracking-[0.2em] uppercase py-5 transition-all flex items-center justify-center gap-2 ${
-                isChecked && !confirming
-                  ? "bg-[#1A3C2B] text-white hover:opacity-95 cursor-pointer shadow-md"
-                  : "bg-[#3A3A38]/20 text-[#3A3A38]/40 cursor-not-allowed"
-              }`}
+              className={`ui-btn ui-btn-primary w-full`}
             >
               {confirming ? (
                 <>
@@ -430,9 +426,9 @@ function PermissionContent() {
 
             <Link
               href={cancelHref}
-              className="block w-full text-center border border-[#3A3A38]/20 text-[#1A3C2B] font-mono text-xs tracking-[0.2em] uppercase py-5 hover:bg-white transition-all"
+              className="ui-btn ui-btn-ghost w-full"
             >
-              Cancel &amp; Exit
+              Not now
             </Link>
           </div>
         </div>
@@ -450,39 +446,38 @@ function PermissionContent() {
       {/* Success Modal with Redirect to Subscribed Plan */}
       {successTxHash && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-md z-50 flex items-center justify-center p-6">
-          <div className="relative w-full max-w-lg bg-white border border-forest p-10 shadow-2xl space-y-6">
+          <div className="ui-card w-full max-w-lg p-10 space-y-6">
             <div className="text-center space-y-2">
               <div className="w-12 h-12 bg-[#9EFFBF] text-forest rounded-full flex items-center justify-center mx-auto text-2xl font-bold">
                 ✓
               </div>
               <h3 className="font-space text-3xl font-bold text-forest tracking-tight">
-                Subscription Authorized!
+                You're subscribed
               </h3>
-              <p className="font-sans text-sm text-[#3A3A38]/70">
-                Your session permission has been recorded on-chain via EIP-7702.
+              <p className="font-sans text-[17px] text-[#46564E]">Your approval is recorded on-chain. Payments run on schedule from here.
               </p>
             </div>
 
-            <div className="bg-[#F7F7F5] border border-forest/10 p-6 space-y-3 font-mono text-xs">
+            <div className="bg-[#F7F7F5] rounded-xl p-6 space-y-3 font-sans text-[15px]">
               <div className="flex justify-between border-b border-[#3A3A38]/10 pb-2">
-                <span className="opacity-50">Plan</span>
-                <span className="font-bold text-forest">{planName}</span>
+                <span className="text-[#66756B]">Plan</span>
+                <span className="font-semibold text-forest">{planName}</span>
               </div>
               <div className="flex justify-between border-b border-[#3A3A38]/10 pb-2">
-                <span className="opacity-50">Rate</span>
-                <span className="font-bold">{price} {token} / {intervalDays} Days</span>
+                <span className="text-[#66756B]">Rate</span>
+                <span className="font-semibold text-forest">{price} {token} / {intervalDays} days</span>
               </div>
               <div className="flex justify-between border-b border-[#3A3A38]/10 pb-2">
-                <span className="opacity-50">Network</span>
-                <span className="font-bold uppercase">{network}</span>
+                <span className="text-[#66756B]">Network</span>
+                <span className="font-semibold text-forest">{network === "arbitrum" ? "Arbitrum" : "Base"}</span>
               </div>
               <div className="flex justify-between">
-                <span className="opacity-50">Transaction</span>
+                <span className="text-[#66756B]">Transaction</span>
                 <a
                   href={`${explorerBase}/tx/${successTxHash}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-forest underline font-bold"
+                  className="text-forest underline underline-offset-2 font-semibold hover:text-coral transition-colors"
                 >
                   {successTxHash.slice(0, 8)}...{successTxHash.slice(-6)} ↗
                 </a>
@@ -494,7 +489,7 @@ function PermissionContent() {
                 href={`/subscription/${planId}?network=${network}`}
                 className="flex-1 ui-btn ui-btn-primary"
               >
-                View Plan Details
+                View subscription
               </Link>
               <Link
                 href="/wallet"
@@ -513,7 +508,7 @@ function PermissionContent() {
 export default function PermissionPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-paper flex items-center justify-center text-forest font-mono text-sm">
+      <div className="min-h-screen bg-paper flex items-center justify-center text-forest font-sans text-[17px]">
         Loading permission parameters...
       </div>
     }>

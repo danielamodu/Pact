@@ -148,181 +148,154 @@ function SubscribeContent() {
     );
   }
 
+  const permissionHref = planData
+    ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}`
+    : "/permission";
+
   return (
-    <div className="min-h-screen flex flex-col bg-paper">
+    <div className="min-h-screen flex flex-col bg-paper text-forest relative">
+      <div className="app-ground"></div>
       <NavigationBar />
-      <main className="flex-1 pt-14 pb-28">
-        <section className="max-w-[1400px] mx-auto px-10 py-12 md:py-20">
-        <div className="grid lg:grid-cols-12 gap-16 items-start">
-          
-          {/* Left Side: Plan Info */}
-          <div className="lg:col-span-8 space-y-12">
-            <div className="flex items-center gap-4">
-              <div className="w-10 h-10 bg-forest/5 border border-forest/20 flex items-center justify-center rounded-sm">
-                <iconify-icon icon="lucide:user" className="text-2xl text-forest/40"></iconify-icon>
-              </div>
-              <div>
-                <h3 className="font-space text-2xl font-bold tracking-tight">
-                  {planData ? `Merchant: ${planData.merchant}` : "Merchant"}
-                </h3>
-              </div>
+
+      <main className="flex-1 pt-14 pb-28 relative z-10">
+        <div className="max-w-[1100px] mx-auto px-10 space-y-8">
+
+          {/* Who's charging you */}
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-forest/8 flex items-center justify-center flex-shrink-0">
+              <svg viewBox="0 0 24 24" className="w-4 h-4 fill-none stroke-forest/50 stroke-2">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="7" r="4" />
+              </svg>
             </div>
+            <span className="font-sans text-[15px] text-[#46564E]">
+              {planData ? planData.merchant : "Merchant"}
+            </span>
+          </div>
 
-            <h1 className="font-space text-6xl md:text-[80px] leading-[0.9] tracking-tighter text-[#1A3C2B] font-bold mb-8">
-              {planData ? planData.name : "Loading Plan..."}
-            </h1>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6 items-start">
 
-            <p className="font-sans text-xl text-[#3A3A38]/70 max-w-2xl mb-12">
-              Approve this subscription once, and payments happen automatically on schedule. You&apos;ll never need to sign again.
-            </p>
+            {/* What you're subscribing to */}
+            <div className="lg:col-span-3 space-y-6">
+              <section className="ui-card-feature p-10 lg:p-12">
+                <h1 className="font-space text-[40px] font-bold tracking-tight text-white leading-[1.1]">
+                  {planData ? planData.name : "Loading…"}
+                </h1>
 
-            <div className="mb-16">
-              <span className="font-mono text-[12px] opacity-40 uppercase block mb-2">
-                Subscription Cost
-              </span>
-              <div className="flex items-baseline gap-2">
-                <h2 className="font-space text-7xl font-bold text-[#1A3C2B]">
-                  {planData ? planData.price : "--"}
-                </h2>
-                <span className="font-space text-3xl font-medium">
-                  {planData ? planData.token : "USDC"} / {planData ? `${planData.intervalDays} DAYS` : "MO"}
-                </span>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[#3A3A38]/10 border border-[#3A3A38]/10 rounded-sm overflow-hidden">
-              <div className="bg-white p-6">
-                <span className="font-sans text-sm text-[#66756B]">Token</span>
-                <span className="font-space text-lg font-bold">{planData ? planData.token : "USDC"}</span>
-              </div>
-              <div className="bg-white p-6">
-                <span className="font-sans text-sm text-[#66756B]">Interval</span>
-                <span className="font-space text-lg font-bold">{planData ? `${planData.intervalDays} Days` : "--"}</span>
-              </div>
-                <div className="bg-white p-6">
-                  <span className="font-sans text-sm text-[#66756B]">Network</span>
-                  <span className="font-space text-lg font-bold">{network === "arbitrum" ? "Arbitrum" : "Base"}</span>
+                <div className="mt-8">
+                  <span className="font-sans text-[15px] text-white/60 block mb-2">You&apos;ll pay</span>
+                  <div className="flex items-baseline gap-2 flex-wrap">
+                    <span className="font-space text-[64px] font-bold text-white leading-none ui-num">
+                      {planData ? planData.price : "—"}
+                    </span>
+                    <span className="font-space text-2xl font-semibold text-white/80">
+                      {planData ? planData.token : ""}
+                    </span>
+                    <span className="font-sans text-[17px] text-white/60">
+                      every {planData ? planData.intervalDays : "—"} days
+                    </span>
+                  </div>
                 </div>
-                <div className="bg-white p-6">
-                  <span className="font-sans text-sm text-[#66756B]">Renewal</span>
-                  <span className="font-space text-lg font-bold">Automatic</span>
+
+                <div className="grid grid-cols-3 gap-4 mt-9 pt-7 border-t border-white/15">
+                  <div>
+                    <span className="font-sans text-sm text-white/50 block mb-1">Network</span>
+                    <span className="font-sans text-[15px] font-semibold text-white">
+                      {network === "arbitrum" ? "Arbitrum" : "Base"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-sans text-sm text-white/50 block mb-1">Renews</span>
+                    <span className="font-sans text-[15px] font-semibold text-white">Automatically</span>
+                  </div>
+                  <div>
+                    <span className="font-sans text-sm text-white/50 block mb-1">Cancel</span>
+                    <span className="font-sans text-[15px] font-semibold text-white">Any time</span>
+                  </div>
                 </div>
-              </div>
+              </section>
+
+              {/* Reassurance, in plain terms */}
+              <section className="ui-card p-8 space-y-5">
+                {[
+                  {
+                    title: "They can never take more",
+                    body: "You set a hard cap when you approve. This merchant cannot charge a penny more, or any sooner than the schedule you agreed to.",
+                  },
+                  {
+                    title: "Every payment is on the record",
+                    body: "See exactly what you were charged and when, any time, from your dashboard.",
+                  },
+                  {
+                    title: "Cancelling is instant and free",
+                    body: "Straight from your dashboard. No emails, no waiting, no permission needed from the merchant.",
+                  },
+                ].map((item) => (
+                  <div key={item.title} className="flex gap-4">
+                    <svg viewBox="0 0 24 24" className="w-5 h-5 fill-none stroke-forest stroke-2 flex-shrink-0 mt-0.5">
+                      <path d="M20 6L9 17l-5-5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                    <div>
+                      <h3 className="font-space text-lg font-bold text-forest">{item.title}</h3>
+                      <p className="font-sans text-[15px] text-[#46564E] leading-relaxed mt-0.5">{item.body}</p>
+                    </div>
+                  </div>
+                ))}
+              </section>
             </div>
 
-            {/* Right Side: Confirm Card */}
-            <div className="lg:col-span-4">
-              <div className="relative p-10 border border-[#3A3A38]/20 bg-white">
-                {/* Corner Markers */}
-
-                <div className="space-y-8">
-                  <div className="pb-8 border-b border-[#3A3A38]/10">
-                    <h4 className="font-space text-xl font-bold mb-4">Confirm Intent</h4>
-                    <p className="font-sans text-sm text-[#3A3A38]/60 leading-relaxed">
-                      Next you&apos;ll review and approve the exact amount and schedule. No money moves in this step.
+            {/* The ask */}
+            <div className="lg:col-span-2 lg:sticky lg:top-8 space-y-4">
+              <section className="ui-card p-8">
+                {alreadySubscribed ? (
+                  <>
+                    <span className="ui-pill ui-pill-good mb-4">
+                      <span className="w-1.5 h-1.5 rounded-full bg-[#145233]" />
+                      Already subscribed
+                    </span>
+                    <h2 className="font-space text-2xl font-bold text-forest">You&apos;re all set</h2>
+                    <p className="font-sans text-[15px] text-[#46564E] mt-1.5 mb-6 leading-relaxed">
+                      You already have an active subscription to this plan.
                     </p>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-3">
-                      <iconify-icon icon="lucide:shield-check" className="text-[#9EFFBF] text-lg"></iconify-icon>
-                      <span className="font-sans text-sm text-[#66756B]">Cancel Anytime</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <iconify-icon icon="lucide:zap" className="text-[#F4D35E] text-lg"></iconify-icon>
-                      <span className="font-sans text-sm text-[#66756B]">No Fees From Pact</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <iconify-icon icon="lucide:refresh-ccw" className="text-[#FF8C69] text-lg"></iconify-icon>
-                      <span className="font-sans text-sm text-[#66756B]">Direct To Merchant</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-8 space-y-3">
-                    {alreadySubscribed ? (
-                      <>
-                        <div className="bg-[#9EFFBF]/20 border border-forest/20 p-4 text-center rounded-sm">
-                          <p className="font-mono text-xs text-forest font-bold uppercase tracking-tight">
-                            ✓ Active Subscription Detected
-                          </p>
-                          <p className="font-sans text-xs text-forest/70 mt-1">
-                            You already have an active session permission for this plan.
-                          </p>
-                        </div>
-                        <Link
-                          href={`/subscription/${planId}?network=${network}`}
-                          className="block w-full text-center bg-forest text-white font-mono text-xs font-bold tracking-[0.15em] uppercase py-4 rounded-sm hover:opacity-90 transition-opacity"
-                        >
-                          View / Manage Subscription
-                        </Link>
-                        <Link
-                          href={planData ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}` : "/permission"}
-                          className="block w-full text-center border border-forest/20 text-forest font-mono text-[10px] font-bold tracking-widest uppercase py-3 rounded-sm hover:bg-forest/5 transition-colors"
-                        >
-                          Renew Approval
-                        </Link>
-                      </>
-                    ) : (
-                      <Link
-                        href={planData ? `/permission?planId=${planId}&network=${network}&name=${encodeURIComponent(planData.name)}&price=${encodeURIComponent(planData.price)}&intervalDays=${planData.intervalDays}&token=${encodeURIComponent(planData.token)}&merchant=${encodeURIComponent(planData.merchant)}&payoutAddress=${encodeURIComponent(planData.payoutAddress)}` : "/permission"}
-                        id="cta-subscribe-authorize"
-                        className="block w-full text-center bg-forest text-white font-mono text-xs tracking-[0.2em] uppercase py-5 rounded-sm hover:opacity-95 transition-opacity"
-                      >
-                        Subscribe
-                      </Link>
-                    )}
                     <Link
-                      href="/"
-                      className="block w-full text-center border border-[#3A3A38]/20 text-[#1A3C2B] font-mono text-xs tracking-[0.2em] uppercase py-4 rounded-sm hover:bg-[#F7F7F5] transition-all"
+                      href={`/subscription/${planId}?network=${network}`}
+                      className="ui-btn ui-btn-primary w-full"
                     >
-                      Cancel &amp; Exit
+                      Manage subscription
                     </Link>
-                  </div>
+                    <Link href={permissionHref} className="ui-btn ui-btn-ghost w-full mt-2">
+                      Renew approval
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="font-space text-2xl font-bold text-forest">Ready to subscribe?</h2>
+                    <p className="font-sans text-[15px] text-[#46564E] mt-1.5 mb-6 leading-relaxed">
+                      Next you&apos;ll review the exact amount and schedule, then approve it once. No money moves in this step.
+                    </p>
+                    <Link href={permissionHref} id="cta-subscribe-authorize" className="ui-btn ui-btn-primary w-full">
+                      Subscribe
+                    </Link>
+                  </>
+                )}
+
+                <Link href="/" className="ui-btn ui-btn-ghost w-full mt-2">
+                  Not now
+                </Link>
+
+                <div className="flex items-center justify-between gap-3 mt-6 pt-5 border-t border-[#3A3A38]/10">
+                  <span className="font-sans text-sm text-[#66756B]">Your wallet</span>
+                  <span className="flex items-center gap-2">
+                    <span className={`w-1.5 h-1.5 rounded-full ${publicAddress ? "bg-forest" : "bg-coral"}`} />
+                    <span className="font-sans text-sm font-medium text-forest">
+                      {publicAddress ? "Connected" : "Sign in at checkout"}
+                    </span>
+                  </span>
                 </div>
-              </div>
-
-              <div className="mt-8 border border-[#3A3A38]/10 p-6 bg-[#3A3A38]/5 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className={`w-2 h-2 rounded-full ${publicAddress ? "bg-mint animate-pulse" : "bg-coral"}`}></div>
-                  <span className="font-sans text-sm text-[#66756B]">Wallet Status</span>
-                </div>
-                <span className="font-sans text-sm text-[#66756B]">
-                  {publicAddress ? "Connected" : "Not Connected"}
-                </span>
-              </div>
-
-            </div>
-
-          </div>
-        </section>
-
-        <section className="max-w-[1400px] mx-auto px-10 py-24 border-t border-[#3A3A38]/10">
-          <div className="grid md:grid-cols-3 gap-12">
-            <div className="space-y-4">
-              <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">YOUR LIMITS</span>
-              <h5 className="font-space text-xl font-bold tracking-tight">Hard Limits</h5>
-              <p className="font-sans text-sm text-[#3A3A38]/60">
-                You set a hard spending cap when you approve. This merchant cannot charge you a penny more, or any sooner than the schedule you agreed to.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">FULL TRANSPARENCY</span>
-              <h5 className="font-space text-xl font-bold tracking-tight">Audit Trail</h5>
-              <p className="font-sans text-sm text-[#3A3A38]/60">
-                Every payment is recorded on-chain. See exactly what you were charged and when, any time, from your dashboard.
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              <span className="font-mono text-[10px] tracking-widest text-[#1A3C2B] font-bold">ALWAYS IN CONTROL</span>
-              <h5 className="font-space text-xl font-bold tracking-tight">Cancel Instantly</h5>
-              <p className="font-sans text-sm text-[#3A3A38]/60">
-                Cancel whenever you want, straight from your dashboard. No emails, no waiting, and no permission needed from the merchant.
-              </p>
+              </section>
             </div>
           </div>
-        </section>
+        </div>
       </main>
     </div>
   );
